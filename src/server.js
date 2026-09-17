@@ -69,7 +69,7 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
     updateLists();
   }
   function attach(ws, room, member) {
-    ws.room = room; ws.member = member; member.ws = ws; member.offlineAt = null;
+    ws.room = room; ws.member = member; member.ws = ws; member.offlineGen = null;
     send(ws, { type: 'welcome', id: member.id, token: member.token, code: room.code });
     broadcastRoom(room);
     if (room.game) { send(ws, { type: 'started', id: member.id, rules: RULES }); send(ws, room.game.state()); ws.send(room.game.packet(true)); }
@@ -169,7 +169,7 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
         if(room.host === m.id) { room.host = room.members.find(other => other.ws)?.id ?? room.host; broadcastRoom(room); }
       }
       if (game.status === 'playing') {
-        if (game.generation % 30 === 0) runBots(game);
+        if (game.generation % Math.max(1, Math.round(RULES.hz * 3)) === 0) runBots(game); // 保持约每秒 0.33 次 AI 决策，与 hz 解耦
         const t = performance.now(); game.step(); room.tickMs = performance.now() - t;
       }
       if (game.status === 'finished') {
@@ -186,7 +186,7 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
         if (ws?.readyState !== WebSocket.OPEN) continue;
         if (ws.bufferedAmount > 262144) { ws.needsSnapshot = true; continue; }
         ws.send(ws.needsSnapshot ? game.packet(true) : packet); ws.needsSnapshot = false;
-        if (game.generation % 2 === 0 || game.status === 'finished') send(ws, { ...game.state(), tickMs: Math.round((room.tickMs || 0) * 100) / 100 });
+        if (game.generation % Math.max(1, Math.round(RULES.hz / 5)) === 0 || game.status === 'finished') send(ws, { ...game.state(), tickMs: Math.round((room.tickMs || 0) * 100) / 100 }); // 状态推送保持约 5Hz，与 hz 解耦
       }
       game.changes.clear();
       if (game.status === 'finished') room.finishedBroadcast = true;
