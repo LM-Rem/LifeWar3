@@ -1,5 +1,6 @@
 @echo off
 cd /d "%~dp0"
+$env:PUBLIC_URL="https://omen-womanhood-cranberry.ngrok-free.dev"
 where node >nul 2>nul
 if errorlevel 1 (
   echo Please install Node.js 22 or newer, then run this file again.

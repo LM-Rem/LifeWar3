@@ -20,6 +20,33 @@ npm start
 - 保持服务器终端运行。按 Ctrl+C 停止。使用 `$env:PORT=3001; npm start` 可更改端口。
 - 若其他设备访问失败，检查是否在同一网络、Wi-Fi 是否启用设备隔离，以及 Windows 防火墙是否允许 Node.js 在**专用网络**接收入站连接。无需配置公网端口转发。
 
+## 公网对战（Ngrok 内网穿透）
+
+本游戏是**服务器权威**架构：本机运行权威服务器，浏览器作为客户端。用 Ngrok 把本机的 HTTP 与 WebSocket 端口暴露到公网后，外网朋友通过网址即可直接游玩，**无需将游戏改造为 WebRTC P2P**。
+
+1. 安装 [ngrok](https://ngrok.com/)，注册并完成 `ngrok config add-authtoken <token>`。
+2. 启动隧道：
+
+   ```powershell
+   ngrok http 3000
+   ```
+
+3. 从启动日志复制公网地址，例如 `https://xxxx.ngrok-free.app`。
+4. 让本机服务器把该地址作为「公网地址」返回（联机页会自动优先展示，复制的邀请链接也使用它）：
+
+   ```powershell
+   $env:PUBLIC_URL="https://xxxx.ngrok-free.app"; npm start
+   ```
+
+5. 把公网地址或 `https://xxxx.ngrok-free.app/?room=XXXXXX` 邀请链接发给朋友。对方浏览器打开后会自动通过 `wss://xxxx.ngrok-free.app/ws` 连接本机服务器，加入房间正常对战。
+
+注意事项：
+
+- 免费版 ngrok 每次启动域名随机；需要固定域名可升级套餐，改用 `ngrok http --domain=你的域名 3000`。
+- ngrok 免费带宽有限，游戏流量为服务器 10 Hz 广播；大规模混战或对延迟敏感时仍推荐同一局域网游玩。
+- 页面为 HTTPS，WebSocket 自动使用 WSS，无需额外证书配置；服务器需保持运行。
+- 也可在启动时设置 `$env:NGROK_URL` 作为 `PUBLIC_URL` 的别名。
+
 ## 操作
 
 | 操作 | 功能 |

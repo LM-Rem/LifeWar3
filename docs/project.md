@@ -283,6 +283,7 @@ npm run benchmark                # 运行性能基准
 ```
 
 - **改端口**：`$env:PORT=3001; npm start`。
+- **公网穿透（Ngrok）**：项目保持服务器权威架构即可实现公网联机，**无需 WebRTC P2P 改造**。本机运行 `ngrok http 3000` 获得 `https://xxxx.ngrok-free.app`，再以 `$env:PUBLIC_URL="https://xxxx.ngrok-free.app"; npm start` 启动；`/api/info` 会把该公网地址加入 `addresses` 并返回 `publicUrl`，联机页的 `lanAddress` 与邀请链接自动使用它。外部浏览器通过 `wss://xxxx.ngrok-free.app/ws` 连接本机（同源 Origin 校验在 Ngrok 场景下 Host 一致，可正常通过）。免费版域名随机、带宽有限；固定域名使用 `ngrok http --domain=你的域名 3000`。代码改动见 `src/server.js`（`/api/info`）与 `public/app.js`（`loadInfo`）。
 - **局域网接入**：其他设备访问启动日志中的 LAN 地址；需同一网络，并允许 Node.js 在专用网络入站。
 - **状态说明**：房间仅存内存，服务器重启会清空所有对局；刷新页面自动重连，重连令牌存于 `sessionStorage`。
 - **约束**：适用于可信局域网，不含公网账号/排名/匹配/持久化战绩。

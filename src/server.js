@@ -21,8 +21,13 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
       if (pathname === '/api/info') {
         const actualPort = server.address()?.port || port;
         const addresses = Object.values(os.networkInterfaces()).flat().filter(i => i.family === 'IPv4' && !i.internal).map(i => `http://${i.address}:${actualPort}`);
+        // 可选公网地址（如 Ngrok）：PUBLIC_URL 或 NGROK_URL。设置后加入地址列表，
+        // 供联机页优先展示，使复制出的邀请链接对外网玩家可直接访问。
+        const publicUrl = (process.env.PUBLIC_URL || process.env.NGROK_URL || '').replace(/\/+$/, '');
+        const payload = { addresses: publicUrl ? [publicUrl, ...addresses] : addresses, rules: RULES, rooms: rooms.size };
+        if (publicUrl) payload.publicUrl = publicUrl;
         res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-        return res.end(JSON.stringify({ addresses, rules: RULES, rooms: rooms.size }));
+        return res.end(JSON.stringify(payload));
       }
       const file = path.resolve(ROOT, '.' + (pathname === '/' ? '/index.html' : pathname));
       if (!file.startsWith(ROOT) || pathname.includes('..')) { res.writeHead(403); return res.end('Forbidden'); }

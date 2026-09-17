@@ -110,7 +110,7 @@ function onMessage(msg) {
     case 'lobby':state=null;closeDialogs();showPage('lobby');break;
   }
 }
-async function loadInfo(){try{const info=await fetch('/api/info').then(r=>r.json());if(['localhost','127.0.0.1'].includes(location.hostname))lanAddress=info.addresses.find(a=>/\/\/192\.168\./.test(a))||info.addresses.find(a=>/\/\/10\./.test(a))||info.addresses[0]||location.origin;$('#lan-address').textContent=lanAddress;}catch{$('#lan-address').textContent=location.origin;}}
+async function loadInfo(){try{const info=await fetch('/api/info').then(r=>r.json());lanAddress=info.publicUrl||location.origin;if(!info.publicUrl&&['localhost','127.0.0.1'].includes(location.hostname))lanAddress=info.addresses.find(a=>/\/\/192\.168\./.test(a))||info.addresses.find(a=>/\/\/10\./.test(a))||info.addresses[0]||location.origin;$('#lan-address').textContent=lanAddress;}catch{$('#lan-address').textContent=location.origin;}}
 loadInfo();connect().catch(()=>{});
 setInterval(()=>{if(socket?.readyState===WebSocket.OPEN)socket.send(JSON.stringify({type:'ping',time:Date.now()}));},2500);
 $('#enter-lobby').onclick=()=>{showPage('lobby');send({type:'list'});};
