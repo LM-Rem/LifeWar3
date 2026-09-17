@@ -25,7 +25,7 @@ const battlefield = new Battlefield($('#battlefield'), $('#minimap'), settings);
 let page = 'home', room = null, playerId = 1, state = null, socket = null, connectionPromise = null;
 let reconnectTimer, retries = 0, latency = 0, pendingAutoJoin = new URLSearchParams(location.search).get('room');
 let session = readStorage('lifewar.session', null, sessionStorage);
-let customPatterns = readStorage('lifewar.patterns', []).filter(p => Array.isArray(p.cells) && p.cells.length > 0 && p.cells.length <= 256 && p.cells.every(c=>Array.isArray(c)&&c.length===2&&c.every(n=>Number.isInteger(n)&&n>=0&&n<32))).slice(0,30);
+let customPatterns = readStorage('lifewar.patterns', []).filter(p => Array.isArray(p.cells) && p.cells.length > 0 && p.cells.length <= 4096 && p.cells.every(c=>Array.isArray(c)&&c.length===2&&c.every(n=>Number.isInteger(n)&&n>=0&&n<128))).slice(0,30);
 let allPatterns = [...PATTERNS, ...customPatterns], selected = allPatterns[0], rotation = 0, flipped = false, lanAddress = location.origin, resultShown = false;
 let eventIds = new Set(), editorCells = new Set(), editingId = null;
 $('#commander-name').value = readStorage('lifewar.name', '指挥官');
@@ -235,21 +235,121 @@ window.addEventListener('keydown',e=>{
 window.addEventListener('keyup',e=>battlefield.keys.delete(e.key.toLowerCase()));
 window.addEventListener('blur',()=>{battlefield.keys.clear();drag=null;battlefield.pointer=null;});
 
-// Pattern Lab: free drawing is confined to this offline template editor.
-function drawEditor(){
-  const c=$('#pattern-editor').getContext('2d'),s=14;c.fillStyle='#08131a';c.fillRect(0,0,448,448);
-  c.strokeStyle='#253f4b';c.lineWidth=.5;c.beginPath();for(let i=0;i<=32;i++){c.moveTo(i*s,0);c.lineTo(i*s,448);c.moveTo(0,i*s);c.lineTo(448,i*s);}c.stroke();
-  c.fillStyle=COLORS[playerId-1];for(const cell of editorCells){const[x,y]=cell.split(',').map(Number);c.fillRect(x*s+2,y*s+2,s-3,s-3);}
-  $('#editor-count').textContent=`${editorCells.size} / 256 CELLS`;
+// Pattern Lab: 128×128 模板编辑器。初始视口显示左上 32×32，
+// 滚轮以指针为中心缩放，右键拖动平移，左键在空白处绘制、在已有细胞上擦除。
+const editor = $('#pattern-editor');
+const EDITOR_SIZE = 128, EDITOR_MAX_CELLS = 4096;
+const editorView = { x: 0, y: 0, scale: 14 }; // scale = 每格像素，14 → 448px 显示 32 格
+const EDITOR_MIN_SCALE = editor.width / EDITOR_SIZE; // 最小缩放恰好显示完整 128×128
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+function drawEditor() {
+  const c = editor.getContext('2d'), W = editor.width, H = editor.height, { x, y, scale } = editorView;
+  c.fillStyle = '#08131a'; c.fillRect(0, 0, W, H);
+  const startX = Math.max(0, Math.floor(x)), endX = Math.min(EDITOR_SIZE, Math.ceil(x + W / scale));
+  const startY = Math.max(0, Math.floor(y)), endY = Math.min(EDITOR_SIZE, Math.ceil(y + H / scale));
+  // 细网格（每格）
+  c.strokeStyle = '#253f4b'; c.lineWidth = 1; c.beginPath();
+  for (let i = startX; i <= endX; i++) { const px = (i - x) * scale; c.moveTo(px, 0); c.lineTo(px, H); }
+  for (let j = startY; j <= endY; j++) { const py = (j - y) * scale; c.moveTo(0, py); c.lineTo(W, py); }
+  c.stroke();
+  // 粗网格（每 8 格）
+  c.strokeStyle = '#2f5566'; c.lineWidth = 1; c.beginPath();
+  for (let i = Math.ceil(startX / 8) * 8; i <= endX; i += 8) { const px = (i - x) * scale; c.moveTo(px, 0); c.lineTo(px, H); }
+  for (let j = Math.ceil(startY / 8) * 8; j <= endY; j += 8) { const py = (j - y) * scale; c.moveTo(0, py); c.lineTo(W, py); }
+  c.stroke();
+  // 图案边界 128×128
+  c.strokeStyle = '#67f5d1'; c.lineWidth = 2;
+  c.strokeRect((0 - x) * scale, (0 - y) * scale, EDITOR_SIZE * scale, EDITOR_SIZE * scale);
+  // 细胞
+  c.fillStyle = COLORS[playerId - 1];
+  for (const cell of editorCells) {
+    const [gx, gy] = cell.split(',').map(Number);
+    const px = (gx - x) * scale, py = (gy - y) * scale;
+    if (px + scale < 0 || py + scale < 0 || px > W || py > H) continue;
+    c.fillRect(px + 1, py + 1, scale - 1, scale - 1);
+  }
+  $('#editor-count').textContent = `${editorCells.size} / ${EDITOR_MAX_CELLS} CELLS`;
 }
-$('#open-editor').onclick=()=>{
-  editingId=selected.custom?selected.id:null;editorCells=new Set(editingId?selected.cells.map(c=>c.join(',')):[]);$('#pattern-name').value=editingId?selected.name:'';$('#rle-input').value='';$('#delete-pattern').classList.toggle('hidden',!editingId);drawEditor();openDialog('#editor-dialog');
+function fitEditorView(cells) {
+  const minX = Math.min(...cells.map(c => c[0])), maxX = Math.max(...cells.map(c => c[0]));
+  const minY = Math.min(...cells.map(c => c[1])), maxY = Math.max(...cells.map(c => c[1]));
+  const w = Math.max(1, maxX - minX + 1), h = Math.max(1, maxY - minY + 1);
+  editorView.scale = clamp(Math.min(editor.width / (w + 4), editor.height / (h + 4)), EDITOR_MIN_SCALE, 64);
+  const cxp = (minX + maxX) / 2, cyp = (minY + maxY) / 2;
+  editorView.x = clamp(cxp - editor.width / editorView.scale / 2, 0, Math.max(0, EDITOR_SIZE - editor.width / editorView.scale));
+  editorView.y = clamp(cyp - editor.height / editorView.scale / 2, 0, Math.max(0, EDITOR_SIZE - editor.height / editorView.scale));
+  drawEditor();
+}
+$('#open-editor').onclick = () => {
+  editingId = selected.custom ? selected.id : null;
+  editorCells = new Set(editingId ? selected.cells.map(c => c.join(',')) : []);
+  $('#pattern-name').value = editingId ? selected.name : '';
+  $('#rle-input').value = '';
+  $('#delete-pattern').classList.toggle('hidden', !editingId);
+  editorView.x = 0; editorView.y = 0; editorView.scale = editor.width / 32; // 初始显示 32×32
+  drawEditor(); openDialog('#editor-dialog');
 };
-const editor=$('#pattern-editor');let painting=null;
-function paint(e){const r=editor.getBoundingClientRect(),x=Math.floor((e.clientX-r.left)/r.width*32),y=Math.floor((e.clientY-r.top)/r.height*32);if(x<0||x>=32||y<0||y>=32)return;const key=`${x},${y}`;if(painting===2)editorCells.delete(key);else if(editorCells.size<256)editorCells.add(key);drawEditor();}
-editor.oncontextmenu=e=>e.preventDefault();editor.onpointerdown=e=>{if(![0,2].includes(e.button))return;painting=e.button;editor.setPointerCapture(e.pointerId);paint(e);};editor.onpointermove=e=>{if(painting!==null)paint(e);};editor.onpointerup=e=>{painting=null;if(editor.hasPointerCapture(e.pointerId))editor.releasePointerCapture(e.pointerId);};editor.onpointercancel=()=>{painting=null;};
+let painting = null, panning = null;
+function editorPos(e) {
+  const r = editor.getBoundingClientRect(), { x, y, scale } = editorView;
+  return {
+    gx: Math.floor((e.clientX - r.left) / r.width * editor.width / scale + x),
+    gy: Math.floor((e.clientY - r.top) / r.height * editor.height / scale + y),
+  };
+}
+function applyPaint(pos, mode) {
+  if (pos.gx < 0 || pos.gx >= EDITOR_SIZE || pos.gy < 0 || pos.gy >= EDITOR_SIZE) return;
+  const key = `${pos.gx},${pos.gy}`;
+  if (mode === 'erase') editorCells.delete(key);
+  else if (!editorCells.has(key) && editorCells.size < EDITOR_MAX_CELLS) editorCells.add(key);
+  drawEditor();
+}
+editor.oncontextmenu = e => e.preventDefault();
+editor.onpointerdown = e => {
+  if (e.button === 2) { // 右键：平移视图
+    panning = { startX: e.clientX, startY: e.clientY, viewX: editorView.x, viewY: editorView.y };
+    editor.setPointerCapture(e.pointerId);
+    e.preventDefault();
+    return;
+  }
+  if (e.button !== 0) return;
+  const pos = editorPos(e);
+  painting = editorCells.has(`${pos.gx},${pos.gy}`) ? 'erase' : 'draw'; // 左键：空白绘制，已有细胞擦除
+  applyPaint(pos, painting);
+  editor.setPointerCapture(e.pointerId);
+};
+editor.onpointermove = e => {
+  if (panning) {
+    const r = editor.getBoundingClientRect();
+    const dx = (e.clientX - panning.startX) / r.width * editor.width / editorView.scale;
+    const dy = (e.clientY - panning.startY) / r.height * editor.height / editorView.scale;
+    editorView.x = clamp(panning.viewX - dx, 0, Math.max(0, EDITOR_SIZE - editor.width / editorView.scale));
+    editorView.y = clamp(panning.viewY - dy, 0, Math.max(0, EDITOR_SIZE - editor.height / editorView.scale));
+    drawEditor();
+    return;
+  }
+  if (painting) applyPaint(editorPos(e), painting);
+};
+editor.onpointerup = e => {
+  panning = null; painting = null;
+  if (editor.hasPointerCapture(e.pointerId)) editor.releasePointerCapture(e.pointerId);
+};
+editor.onpointercancel = () => { painting = null; panning = null; };
+editor.onwheel = e => {
+  e.preventDefault();
+  const r = editor.getBoundingClientRect();
+  const px = (e.clientX - r.left) / r.width * editor.width;
+  const py = (e.clientY - r.top) / r.height * editor.height;
+  const { x, y, scale } = editorView;
+  const gx = x + px / scale, gy = y + py / scale;
+  const next = clamp(scale * (e.deltaY < 0 ? 1.15 : 1 / 1.15), EDITOR_MIN_SCALE, 64);
+  editorView.x = clamp(gx - px / next, 0, Math.max(0, EDITOR_SIZE - editor.width / next));
+  editorView.y = clamp(gy - py / next, 0, Math.max(0, EDITOR_SIZE - editor.height / next));
+  editorView.scale = next;
+  drawEditor();
+};
 $('#clear-editor').onclick=()=>{editorCells.clear();drawEditor();};
-$('#import-rle').onclick=()=>{try{const cells=parseRLE($('#rle-input').value);editorCells=new Set(cells.map(c=>c.join(',')));drawEditor();toast('图案已导入');}catch(e){toast(e.message,true);}};
+$('#import-rle').onclick=()=>{try{const cells=parseRLE($('#rle-input').value);editorCells=new Set(cells.map(c=>c.join(',')));fitEditorView(cells);toast('图案已导入');}catch(e){toast(e.message,true);}};
 $('#export-rle').onclick=()=>{if(!editorCells.size)return toast('先添加一些细胞',true);$('#rle-input').value=toRLE([...editorCells].map(c=>c.split(',').map(Number)));toast('RLE 编码已生成，可选中复制');};
 $('#save-pattern').onclick=()=>{
   if(!editorCells.size)return toast('图案不能为空',true);

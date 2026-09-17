@@ -25,7 +25,7 @@ test('birth inherits neighbor majority; survivors retain ownership',()=>{
 test('deployment is atomic, bounded, non-overlapping and charges unique cells',()=>{
   const g=game(),p=g.players[0];assert.ok(g.deploy(1,200,200,[[0,0],[0,0],[1,1]]).ok);assert.equal(p.energy,118);assert.equal(g.alive.length,2);
   const before=p.energy;assert.ok(g.deploy(1,201,201,[[0,0],[1,0]]).error);assert.equal(p.energy,before);assert.equal(g.board[201*1000+202],0);
-  assert.ok(g.deploy(1,800,100,[[0,0]]).error);assert.ok(g.deploy(1,200,200,[[32,0]]).error);assert.ok(g.deploy(1,1.1,0,[[0,0]]).error);assert.ok(g.deploy(1,200,200,[[NaN,0]]).error);
+  assert.ok(g.deploy(1,800,100,[[0,0]]).error);assert.ok(g.deploy(1,200,200,[[128,0]]).error);assert.ok(g.deploy(1,1.1,0,[[0,0]]).error);assert.ok(g.deploy(1,200,200,[[NaN,0]]).error);
   p.energy=0;assert.ok(g.deploy(1,220,220,[[0,0]]).error);
 });
 test('energy regenerates and is capped; nodes increase regen',()=>{
@@ -57,7 +57,7 @@ test('binary snapshot and delta can reconstruct exact authoritative board',()=>{
 });
 test('pattern transforms round trip, RLE round trips and rejects oversized input',()=>{
   const cells=PATTERNS[0].cells;assert.deepEqual(sorted(transform(cells,4)),sorted(cells));assert.deepEqual(sorted(transform(transform(cells,0,true),0,true)),sorted(cells));assert.deepEqual(sorted(parseRLE(toRLE(cells))),sorted(cells));
-  assert.throws(()=>parseRLE('9999o!'));assert.throws(()=>parseRLE('33$3o!'));assert.throws(()=>parseRLE('hello'));assert.throws(()=>parseRLE('b!'));
+  assert.throws(()=>parseRLE('9999o!'));assert.throws(()=>parseRLE('129$3o!'));assert.throws(()=>parseRLE('4097o!'));assert.throws(()=>parseRLE('hello'));assert.throws(()=>parseRLE('b!'));
   assert.throws(()=>parseRLE('x = 3, y = 3, rule = B36/S23\n3o!'));
 });
 test('population capacity is enforced',()=>{const g=game();g.players[0].cells=RULES.playerCells;assert.ok(g.deploy(1,200,200,[[0,0]]).error);});

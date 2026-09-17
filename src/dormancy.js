@@ -5,7 +5,7 @@ export class RegionalCycleDetector {
     this.history1=new Uint32Array(this.length*maxPeriod);this.history2=new Uint32Array(this.length*maxPeriod);this.historyCount=new Uint16Array(this.length*maxPeriod);
     this.period=new Uint8Array(this.length);this.age=new Uint16Array(this.length);
     this.snapshots=Array.from({length:maxPeriod+1},()=>new Uint8Array(size*size));this.tick=0;
-    // 精确验证的观察扩展格数：足够覆盖可部署图案（≤32×32）中静态局部与
+    // 精确验证的观察扩展格数：足够覆盖可部署图案（≤128×128）中静态局部与
     // 活跃振荡核心的最大间距，避免误删大型振荡器（如高斯帕滑翔机枪）的静态尾巴，
     // 同时不影响真正独立静物（周围 halo 格内确实静止）的清理。
     this.halo=halo;

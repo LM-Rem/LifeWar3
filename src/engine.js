@@ -34,10 +34,10 @@ export class Game {
   deploy(id, x, y, cells) {
     const p = this.players.find(p => p.id === id);
     if (this.status !== 'playing' || !p || p.eliminated) return { error: '当前无法部署' };
-    if (!Number.isInteger(x) || !Number.isInteger(y) || !Array.isArray(cells) || !cells.length || cells.length > 256) return { error: '无效图案：需要 1–256 个细胞' };
+    if (!Number.isInteger(x) || !Number.isInteger(y) || !Array.isArray(cells) || !cells.length || cells.length > 4096) return { error: '无效图案：需要 1–4096 个细胞' };
     const positions = new Set();
     for (const cell of cells) {
-      if (!Array.isArray(cell) || cell.length !== 2 || !cell.every(v => Number.isInteger(v) && v >= 0 && v < 32)) return { error: '图案尺寸不得超过 32×32' };
+      if (!Array.isArray(cell) || cell.length !== 2 || !cell.every(v => Number.isInteger(v) && v >= 0 && v < 128)) return { error: '图案尺寸不得超过 128×128' };
       const cx = x + cell[0], cy = y + cell[1];
       if (cx < 0 || cy < 0 || cx >= this.size || cy >= this.size) return { error: '图案超出地图边界' };
       if (!this.inRange(p, cx, cy)) return { error: '图案必须完整位于己方已控制的多边形领地内' };

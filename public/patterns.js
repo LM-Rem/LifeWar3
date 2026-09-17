@@ -32,7 +32,7 @@ export function parseRLE(source) {
     if (ch === '$') { y += n; x = 0; }
     else if (ch === 'b' || ch === 'o') { if (ch === 'o') for (let i = 0; i < n; i++) cells.push([x + i, y]); x += n; }
     else throw new Error('仅支持标准 B3/S23 的 b / o / $ / ! RLE 图案');
-    if (x > 32 || y > 31 || cells.length > 256) throw new Error('图案最大 32×32，最多 256 个细胞');
+    if (x > 127 || y > 127 || cells.length > 4096) throw new Error('图案最大 128×128，最多 4096 个细胞');
   }
   if (!cells.length) throw new Error('图案中没有活细胞');
   return normalize(cells);
