@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#080e13">
+  <meta name="description" content="LifeWar 生命战争 — 基于康威生命游戏的局域网实时策略对抗。部署、演化、占领，成为最后的生命。">
+  <title>LIFEWAR — 生命战争</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <canvas id="ambient" aria-hidden="true"></canvas>
+  <div class="noise" aria-hidden="true"></div>
+  <main id="home" class="screen active">
+    <header class="site-header">
+      <a class="brand" href="#" aria-label="LifeWar 首页"><span class="brand-symbol">✣</span><span>LIFEWAR<span class="brand-version"> / NEXUS</span></span></a>
+      <nav><button class="nav-link" data-action="help">作战手册 <span>↗</span></button><button class="icon-button" data-action="settings" aria-label="设置" data-icon="settings"></button><span class="build-tag">BUILD 1.0</span></nav>
+    </header>
+    <section class="hero">
+      <div class="hero-copy">
+        <div class="eyebrow"><i class="status-dot"></i> CONWAY'S GAME OF LIFE, REIMAGINED</div>
+        <h1>生命<span class="outline-text">战争</span><span class="title-period">.</span></h1>
+        <div class="hero-subtitle"><span>部署生命</span><i></i><span>演化战争</span></div>
+        <p class="hero-description">最简单的生命法则，最不可预测的战场。<br>在百万格深空中建立你的秩序，让每一次演化成为武器。</p>
+        <div class="hero-actions"><button class="button primary large" id="enter-lobby">进入战区 <span>↗</span></button><button class="button ghost large" id="practice">模拟训练 <span class="small-tag">VS AI</span></button></div>
+        <div class="connection-note"><span class="tiny-dot"></span><span>局域网直连</span><span class="note-slash">/</span><span>无需账号 · 即刻开战</span></div>
+      </div>
+      <div class="hero-art-label"><span class="crosshair-mark">+</span><div>生命不是静止的。<br><b>YOUR NEXT MOVE IS ALIVE.</b></div><span class="art-coordinate">X: 0500<br>Y: 0500</span></div>
+      <div class="art-top-label"><span>FIG. 01 / EMERGENT SYSTEM</span><span class="live-label"><i></i> LIVE SIMULATION</span></div>
+    </section>
+    <section class="features-strip" aria-label="游戏特点">
+      <div class="feature"><span class="feature-index">01</span><div><strong>1,000 <span>×</span> 1,000</strong><p>百万格战术空间</p></div><span class="feature-icon" data-icon="grid"></span></div>
+      <div class="feature"><span class="feature-index">02</span><div><strong>2 — 4 <small>PLAYERS</small></strong><p>实时局域网对抗</p></div><span class="feature-icon" data-icon="network"></span></div>
+      <div class="feature"><span class="feature-index">03</span><div><strong>B3 <span>/</span> S23</strong><p>经典规则，无限可能</p></div><span class="feature-icon" data-icon="cells"></span></div>
+    </section>
+    <footer class="home-footer"><span>小小的细胞，也能改变整个宇宙。</span><span><i class="status-dot"></i> SYSTEMS ONLINE <b>© 2026 LIFEWAR</b></span></footer>
+  </main>
+
+  <main id="lobby" class="screen">
+    <header class="site-header"><button class="brand clean" data-action="home"><span class="brand-symbol">✣</span><span>LIFEWAR<span class="brand-version"> / COMMAND</span></span></button><nav><span class="server-status"><i class="status-dot"></i><span id="connection-status">连接服务器中</span></span><button class="icon-button" data-action="help" aria-label="作战手册" data-icon="help"></button></nav></header>
+    <div class="lobby-content">
+      <div class="section-heading"><div><div class="eyebrow">MULTIPLAYER / LOCAL NETWORK</div><h2>战区指挥中心<span>.</span></h2><p>接入同一局域网，与你的对手一起见证生命的演化。</p></div><span class="large-coordinate">[ 01 — 04 ]</span></div>
+      <div class="lobby-grid">
+        <section class="panel identity-panel"><div class="panel-heading"><span>指挥官档案</span><span class="micro">IDENTITY</span></div><div class="commander-avatar">⌘<span>01</span></div><label for="commander-name">呼号 <span>CALLSIGN</span></label><input id="commander-name" maxlength="16" placeholder="输入你的指挥官名称" value="指挥官"><div class="identity-detail"><span>连接协议</span><b>WEBSOCKET / LAN</b></div><div class="identity-detail"><span>同步模式</span><b>服务器权威</b></div><div class="server-address"><span class="micro">邀请同一 Wi-Fi 的朋友打开</span><code id="lan-address">正在读取局域网地址…</code><button class="button subtle full" id="copy-address">复制联机地址 <span>↗</span></button></div><div class="hint-note">由一台电脑启动服务器，其他玩家使用浏览器访问上方地址即可。</div></section>
+        <section id="room-browser" class="panel room-panel"><div class="panel-heading"><span><i class="status-dot"></i> 可用战区</span><button class="text-button" id="refresh-rooms">刷新 ↻</button></div><div class="room-table-head"><span>战区 / SECTOR</span><span>状态</span><span>人数</span></div><div id="room-list"></div><div class="join-row"><input id="join-code" maxlength="6" placeholder="输入 6 位房间码" aria-label="房间码"><button class="button ghost" id="join-room">加入战区 ↗</button></div><div class="room-create"><div><h3>新的战争，由你开启。</h3><p>创建战区，邀请最多 3 位对手。</p></div><button class="button primary" id="create-room">创建战区 <span>+</span></button></div></section>
+        <section id="room-detail" class="panel room-panel hidden"><div class="panel-heading"><span><i class="status-dot"></i> 战区 <b id="room-code"></b></span><button class="text-button" id="copy-room">复制邀请 ↗</button></div><div class="match-config"><span>标准战术对抗</span><span>1000² 地图 <i>·</i> 10 GEN/S <i>·</i> 无暂停</span></div><div id="player-slots"></div><div class="room-actions"><button class="button subtle" id="add-bot">＋ 添加 AI</button><button class="button ghost" id="leave-room">离开</button><button class="button primary" id="start-game">启动对局 ↗</button><button class="button primary hidden" id="ready-game">准备就绪 ✓</button></div><p id="room-guidance" class="hint-note">所有指挥官准备后，房主即可启动对局。</p></section>
+      </div>
+      <div class="lobby-footnote"><span>◈ <b>任务目标</b> 占领中继节点，扩展部署范围，摧毁所有敌方核心。</span><button class="text-button" data-action="help">查看完整规则 ↗</button></div>
+    </div>
+  </main>
+
+  <main id="game" class="screen">
+    <canvas id="battlefield" aria-label="战术地图，右键拖动移动，滚轮缩放，左键部署图案" tabindex="0"></canvas>
+    <div id="game-hud">
+      <header class="battle-top panel"><div class="battle-brand"><span class="brand-symbol">✣</span><b>LIFEWAR</b><span class="micro">LIVE OPERATION</span></div><div class="battle-clock"><i class="status-dot"></i><span id="match-time">00:00</span><span class="micro" id="generation">GEN 000000</span></div><div class="battle-tools"><span class="network-stat"><i></i><span id="ping">— ms</span></span><button class="icon-button" id="toggle-sound" aria-label="切换音效" data-icon="volume"></button><button class="icon-button" data-action="help" aria-label="作战手册" data-icon="help"></button><button class="icon-button" data-action="settings" aria-label="设置" data-icon="settings"></button><button class="icon-button" id="exit-game" aria-label="退出对局" data-icon="exit"></button></div></header>
+      <section class="panel roster-panel collapsible"><button class="panel-heading collapse-button"><span>战场态势 <span class="micro">/ COMMANDERS</span></span><span class="collapse-mark">−</span></button><div class="panel-body"><div id="battle-players"></div><div class="objective-line"><span class="objective-diamond">◇</span><span>摧毁所有敌方核心<br><small id="territory-summary">随机节点 · 多边形领地</small></span></div></div></section>
+      <section class="panel telemetry-panel collapsible"><button class="panel-heading collapse-button"><span>部署协议 <span class="micro">/ DEPLOY</span></span><span class="collapse-mark">−</span></button><div class="panel-body"><div class="selected-header"><canvas id="selected-preview" width="88" height="72"></canvas><div><span class="micro" id="selected-en">GLIDER</span><h3 id="selected-name">滑翔机</h3><span class="selected-role" id="selected-role">侦察 / 推进</span></div></div><p id="selected-description"></p><div class="deploy-detail"><span>部署消耗</span><b><span id="selected-cost">5</span> <small>EN</small></b></div><div class="deploy-detail"><span>变换状态</span><b id="transform-label">0° / 正向</b></div><div class="transform-actions"><button class="button subtle" id="rotate-pattern"><kbd>R</kbd> 旋转</button><button class="button subtle" id="flip-pattern"><kbd>E</kbd> 翻转</button></div><div class="range-legend"><i></i> 己方阵营色多边形内可部署</div></div></section>
+      <section class="event-feed" id="event-feed" aria-live="polite"></section>
+      <section class="panel arsenal-panel collapsible"><button class="panel-heading collapse-button"><span>生命图谱 <span class="micro">/ ARSENAL</span></span><span class="collapse-mark">−</span></button><div class="panel-body"><div class="arsenal-top"><div class="energy-block"><span class="micro">可用能量</span><strong><span id="energy-number">120</span><small> / 180</small></strong><span id="energy-regen">+5.0 / s</span><div class="energy-meter"><i id="energy-meter"></i></div></div><button class="button subtle" id="open-editor"><span>＋</span> 自定义图案</button></div><div class="pattern-list" id="pattern-list"></div></div></section>
+      <section class="panel minimap-panel collapsible"><button class="panel-heading collapse-button"><span>战术总览</span><span class="collapse-mark">−</span></button><div class="panel-body"><canvas id="minimap" width="180" height="180" aria-label="点击小地图快速移动视角"></canvas><div class="minimap-footer"><span id="camera-coordinates">X 0180 / Y 0180</span><button class="text-button" id="home-camera" title="回到基地（空格）">⌖ 基地</button></div></div></section>
+      <div class="map-controls"><button class="icon-button" id="zoom-out" aria-label="缩小">−</button><span id="zoom-label">400%</span><button class="icon-button" id="zoom-in" aria-label="放大">＋</button><span class="control-divider"></span><button class="icon-button" id="toggle-hud" title="隐藏界面（Tab）" aria-label="隐藏界面" data-icon="panels"></button></div>
+      <div class="control-guide"><span><kbd>左键</kbd> 部署</span><span><kbd>右键</kbd> 平移</span><span><kbd>滚轮</kbd> 缩放</span><span><kbd>空格</kbd> 基地</span><span><kbd>Tab</kbd> 隐藏界面</span></div>
+    </div>
+    <button id="restore-hud" class="button subtle hidden">显示界面 <kbd>Tab</kbd></button>
+    <div id="connection-banner" class="connection-banner hidden">连接中断 · 正在尝试重连，战场仍在演化…</div>
+    <div id="placement-tooltip" class="placement-tooltip hidden"></div>
+  </main>
+
+  <dialog id="help-dialog" class="modal help-modal"><div class="modal-heading"><div><div class="eyebrow">FIELD MANUAL / V1.0</div><h2>生命，即是武器。</h2></div><button class="icon-button close-dialog" aria-label="关闭">×</button></div><div class="manual-grid"><article><span class="manual-number">01</span><h3>遵循生命法则</h3><p>活细胞有 2 或 3 个邻居时存活，空格有恰好 3 个邻居时诞生。新细胞继承邻居的多数阵营；三方平票按位置和代数确定。地图边界不环绕。</p></article><article><span class="manual-number">02</span><h3>连接你的领地</h3><p>每局随机均匀分布 12–16 个节点，与基地一起将全地图分为多边形领地，每个基地或节点各对应一块。节点 10 格内独占接触 3 秒即可取得整块领地，并获得 +1 能量/秒。双方接触时进度冻结。</p></article><article><span class="manual-number">03</span><h3>让每份能量有价值</h3><p>每个细胞消耗 1 能量。初始 120，上限 180，基础回复 5/秒。图案不可覆盖活细胞。每人最多 6,000 活细胞；全场上限 24,000。</p></article><article><span class="manual-number">04</span><h3>摧毁敌方核心</h3><p>基地有 240 点耐久。敌细胞进入 12 格内将消耗并造成 3 点伤害，每代最多 15 点。敌基地 28 格内禁止直接部署。最后存活者获胜。</p></article></div><div class="manual-tip"><b>第一次出击？</b> 在己方多边形内发射「滑翔机」或「轻型飞船」，让细胞越过边界接触中立节点。占领后可在整个新分区内投放图案，再逐步向敌方基地推进。基地标注的 12 格圆线为实际受击边界。</div><div class="key-reference"><span><kbd>1–7</kbd> 选择图案</span><span><kbd>R</kbd> 旋转 90°</span><span><kbd>E</kbd> 水平翻转</span><span><kbd>右键 / WASD</kbd> 平移</span><span><kbd>滚轮</kbd> 缩放</span><span><kbd>空格</kbd> 回到基地</span><span><kbd>Esc</kbd> 关闭窗口</span></div><p class="unpaused-note">休眠消散：周期 1–8 的原地重复结构，确认连续休眠 600 代后整组清除；最后 100 代显示琥珀色预警。移动图案不计休眠，附近活动或新部署会推迟清理，节点归属保留。</p><p class="unpaused-note">对局开始后不会暂停，包括查看手册或编辑图案期间。断线后 90 秒内可自动重连，逾时判负。</p></dialog>
+  <dialog id="settings-dialog" class="modal small-modal"><div class="modal-heading"><div><div class="eyebrow">SYSTEM CONFIGURATION</div><h2>系统设置</h2></div><button class="icon-button close-dialog" aria-label="关闭">×</button></div><label class="setting-row">战术网格 <input id="setting-grid" type="checkbox" checked></label><label class="setting-row">部署范围 <input id="setting-ranges" type="checkbox" checked></label><label class="setting-row">环境动效 <input id="setting-motion" type="checkbox" checked></label><label class="setting-row">交互音效 <input id="setting-sound" type="checkbox"></label><p class="hint-note">设置自动保存在当前浏览器。动效不会影响战场模拟速度。</p></dialog>
+  <dialog id="editor-dialog" class="modal editor-modal"><div class="modal-heading"><div><div class="eyebrow">PATTERN LAB / CUSTOM DNA</div><h2>创造你的生命图案</h2></div><button class="icon-button close-dialog" aria-label="关闭">×</button></div><div class="editor-layout"><div><canvas id="pattern-editor" width="448" height="448" aria-label="32×32 自定义图案编辑器，左键添加细胞，右键擦除"></canvas><div class="editor-canvas-footer"><span><kbd>左键</kbd> 添加 <kbd>右键</kbd> 擦除</span><span id="editor-count">0 / 256 CELLS</span></div></div><div class="editor-fields"><label for="pattern-name">图案名称</label><input id="pattern-name" maxlength="16" placeholder="给你的图案命名"><label for="rle-input">RLE 图案编码 <span class="micro">IMPORT / EXPORT</span></label><textarea id="rle-input" rows="7" placeholder="x = 3, y = 3, rule = B3/S23&#10;bo$2bo$3o!"></textarea><div class="row"><button class="button subtle" id="import-rle">导入 RLE</button><button class="button subtle" id="export-rle">导出 RLE</button></div><p class="hint-note">最大 32×32、256 个细胞。保存到此浏览器的图谱，可在任何对局中部署。</p><button class="button ghost" id="clear-editor">清空编辑器</button><button class="button primary" id="save-pattern">保存并装备 ↗</button><button class="text-button danger hidden" id="delete-pattern">删除当前自定义图案</button></div></div></dialog>
+  <dialog id="confirm-dialog" class="modal small-modal"><div class="eyebrow">DISCONNECT PROTOCOL</div><h2>撤离当前战场？</h2><p>主动退出将判定为投降，所属细胞与节点将被清除。其他玩家继续对局。</p><div class="row"><button class="button ghost close-dialog">继续战斗</button><button class="button danger-button" id="confirm-exit">确认撤离</button></div></dialog>
+  <dialog id="result-dialog" class="modal result-modal"><div class="eyebrow">OPERATION COMPLETE</div><div class="result-symbol">◇</div><h2 id="result-title">战场已被掌控</h2><p id="result-description"></p><div id="result-stats"></div><div class="row"><button class="button ghost" id="result-leave">返回指挥中心</button><button class="button primary" id="rematch">再次备战 ↗</button></div></dialog>
+  <div id="toasts" aria-live="polite"></div>
+</body>
+</html>
+
