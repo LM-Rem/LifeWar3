@@ -92,9 +92,10 @@ LifeWar3/
   - `size: 1000` 地图边长；`hz: 10` 演化频率
   - `dormancyGenerations: 600` 休眠清理阈值；`dormancyWarning: 100` 预警窗口
   - `nodeCountMin: 12` / `nodeCountMax: 16`
-  - `baseHitRadius: 12` 基地受击半径；`captureRadius: 10` 节点占领半径；`captureTime: 3` 秒
-  - `maxEnergy: 180`；`regen: 5`（基础能量回复 /s）；`baseHP: 240`
+  - `baseHitRadius: 12` 基地受击半径；`captureRadius: 10` 节点占领半径；`captureTime: 30` 代（10Hz 下 3 秒）；`captureDecay: 0.05`（空置每代衰减）
+  - `maxEnergy: 180`；`regen: 0.5`（每代基础回复，10Hz 下每秒 5）；`nodeRegen: 0.1`（每代每节点 +1/s）；`baseHP: 240`
   - `maxCells: 24000` 全场上限；`playerCells: 6000` 单人上限
+  - `deployCooldown: 1` 部署冷却（代）；`disconnectGenerations: 900` 断线判负（代）；`roomIdleGenerations: 900` 房间清理（代）
 - `COLORS`：四个阵营颜色 `['#67f5d1', '#ff796c', '#ac98ff', '#f4cc75']`
 - `Game` 类。
 
@@ -122,7 +123,7 @@ LifeWar3/
   3. 容量限制：达到 `playerCells` / `maxCells` 时拒绝新生细胞；
   4. 调用 `resolveObjectives` 结算节点与基地；
   5. 调用 `dormancy.update` 检测休眠结构；
-  6. 回复能量：`min(180, energy + (5 + 节点数) * dt)`；
+  6. 回复能量：`min(180, energy + regen + 节点数 * nodeRegen)`（默认每代 `0.5 + 节点数 × 0.1`）；
   7. `checkVictory`。
 - `resolveObjectives(dt)`：
   - 节点：半径 10 内仅单一阵营时累计进度，3 秒占领；多阵营争夺时进度冻结；空置时进度半速衰减。
@@ -144,7 +145,7 @@ LifeWar3/
   - `start` 重排玩家 id（1-4），创建 `Game`，发送快照。
   - `rematch` 对局结束后由房主重置回备战。
 - **断线与重连**：
-  - 对局中断开：`ws` 置空并记录 `offlineAt`，90 秒内可凭 token `resume`；逾时判负。
+  - 对局中断开：`ws` 置空并记录 `offlineGen`，900 代内（10Hz 下 90 秒）可凭 token `resume`；逾时判负。
   - 主动 `leave`：立即投降，清除该玩家细胞与节点；房主权限迁移给在线成员。
   - 慢连接保护：`ws.bufferedAmount > 256 KB` 时下一包改发完整快照。
 - **主循环**：`setInterval(1000 / hz)` 内逐房间 `step()`，向每个客户端发送二进制增量与 5 Hz 状态；AI 每 30 代运行一次。
@@ -283,6 +284,7 @@ npm run benchmark                # 运行性能基准
 ```
 
 - **改端口**：`$env:PORT=3001; npm start`。
+- **规则配置**：`RULES` 已改为从项目根目录 `config.json` 读取（`src/config.js` 负责合并与校验，`src/engine.js` 重新导出 `RULES`）。只写需修改的项即可，非法值自动回退默认；`hz`/`captureTime`/`regen` 允许小数，其余取整。配置启动时读取，改后需重启服务器。注意 `hz` 变化会影响带宽、休眠清理代数与 AI 决策频率。
 - **公网穿透（Ngrok）**：项目保持服务器权威架构即可实现公网联机，**无需 WebRTC P2P 改造**。本机运行 `ngrok http 3000` 获得 `https://xxxx.ngrok-free.app`，再以 `$env:PUBLIC_URL="https://xxxx.ngrok-free.app"; npm start` 启动；`/api/info` 会把该公网地址加入 `addresses` 并返回 `publicUrl`，联机页的 `lanAddress` 与邀请链接自动使用它。外部浏览器通过 `wss://xxxx.ngrok-free.app/ws` 连接本机（同源 Origin 校验在 Ngrok 场景下 Host 一致，可正常通过）。免费版域名随机、带宽有限；固定域名使用 `ngrok http --domain=你的域名 3000`。代码改动见 `src/server.js`（`/api/info`）与 `public/app.js`（`loadInfo`）。
 - **局域网接入**：其他设备访问启动日志中的 LAN 地址；需同一网络，并允许 Node.js 在专用网络入站。
 - **状态说明**：房间仅存内存，服务器重启会清空所有对局；刷新页面自动重连，重连令牌存于 `sessionStorage`。

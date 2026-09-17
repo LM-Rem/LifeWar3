@@ -80,6 +80,65 @@ npm start
 
 首版按「节点推进、围绕基地的战术攻防」设计，以 10–20 分钟为平衡目标；实际时长与阵营数、图案、操作和对抗程度有关，尚未经过多台真机的长期平衡测试。AI 是基础战术练习对手，会占领节点并发射滑翔机，不能代表高水平玩家。
 
+## 自定义规则配置
+
+游戏规则集中在项目根目录的 `config.json` 中，无需修改代码即可调整。除网络层（心跳、消息限流、动画）外，**所有游戏规则均以「演化代数」为单位**，修改 `hz` 时全部规则按相同比例加速/减速。当前默认值（即 `config.json` 实际内容）：
+
+```json
+{
+  "size": 1000,
+  "hz": 10,
+  "dormancyGenerations": 600,
+  "dormancyWarning": 100,
+  "nodeCountMin": 12,
+  "nodeCountMax": 16,
+  "baseHitRadius": 12,
+  "captureRadius": 10,
+  "captureTime": 30,
+  "captureDecay": 0.05,
+  "maxEnergy": 180,
+  "regen": 0.5,
+  "nodeRegen": 0.1,
+  "baseHP": 240,
+  "maxCells": 24000,
+  "playerCells": 6000,
+  "deployCooldown": 1,
+  "disconnectGenerations": 900,
+  "roomIdleGenerations": 900
+}
+```
+
+各配置项含义（括号内为默认 `hz = 10` 时的实际时间）：
+
+| 配置项 | 默认值 | 含义 |
+| --- | ---: | --- |
+| `size` | `1000` | 战场边长，地图为 `size × size` 格，有界不环绕 |
+| `hz` | `10` | 每秒演化代数，即服务器主循环频率 |
+| `dormancyGenerations` | `600` | 静止结构（含低周期振荡）持续多少代后被休眠清理（= 60 秒） |
+| `dormancyWarning` | `100` | 休眠清理前多少代发出「休眠结构消散」警告（= 10 秒） |
+| `nodeCountMin` | `12` | 每局随机节点数下限 |
+| `nodeCountMax` | `16` | 每局随机节点数上限 |
+| `baseHitRadius` | `12` | 敌方细胞进入基地多少格范围内会被消耗并造成伤害 |
+| `captureRadius` | `10` | 节点被占领的接触半径（格） |
+| `captureTime` | `30` | 节点被唯一阵营细胞持续接触多少代后完成占领（= 3 秒） |
+| `captureDecay` | `0.05` | 空置节点每代进度衰减量 |
+| `maxEnergy` | `180` | 每名玩家的能量上限 |
+| `regen` | `0.5` | 每代基础能量回复（= 每秒 5） |
+| `nodeRegen` | `0.1` | 每占领一个节点，每代额外能量回复（= 每秒 +1） |
+| `baseHP` | `240` | 基地（核心）耐久值 |
+| `maxCells` | `24000` | 全场活细胞容量上限 |
+| `playerCells` | `6000` | 每名玩家的活细胞容量上限 |
+| `deployCooldown` | `1` | 部署冷却所需代数（= 0.1 秒） |
+| `disconnectGenerations` | `900` | 断线判负所需代数（= 90 秒） |
+| `roomIdleGenerations` | `900` | 房间无人在线超过多少代后清理（= 90 秒） |
+
+- 只写需要修改的项即可，其余使用内置默认值；删除 `config.json` 即完全恢复默认。
+- `hz`、`regen`、`nodeRegen`、`captureDecay` 允许小数，其余按整数处理。
+- 数值自动校验：非法值忽略并回退默认；`nodeCountMin > nodeCountMax` 或 `playerCells > maxCells` 时整组回退默认。
+- 修改 `hz` 会等比例改变所有代次驱动规则的**实际时间**（例如 `hz: 20` 时能量回复翻倍为每秒 10、占领 30 代仅需 1.5 秒），网络增量流量也随之成倍增加。
+- `baseHitRadius` 调整后浏览器端基地受击圈仍按代码内常量绘制，建议保持默认。
+- 配置在服务器启动时读取，修改后需**重启服务器**生效。
+
 ## 技术实现
 
 ```

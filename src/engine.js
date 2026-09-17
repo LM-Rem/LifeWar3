@@ -1,6 +1,7 @@
-import { BASE_HIT_RADIUS, generateNodes, createTerritories, canDeployInTerritory } from '../public/territory.js';
+import { generateNodes, createTerritories, canDeployInTerritory } from '../public/territory.js';
 import { RegionalCycleDetector } from './dormancy.js';
-export const RULES = Object.freeze({ size: 1000, hz: 10, dormancyGenerations: 600, dormancyWarning: 100, nodeCountMin: 12, nodeCountMax: 16, baseHitRadius: BASE_HIT_RADIUS, captureRadius: 10, captureTime: 3, maxEnergy: 180, regen: 5, baseHP: 240, maxCells: 24000, playerCells: 6000 });
+import { RULES } from './config.js';
+export { RULES };
 export const COLORS = ['#67f5d1', '#ff796c', '#ac98ff', '#f4cc75'];
 const SPAWNS = [[180, 180], [820, 820], [820, 180], [180, 820]];
 const dist2 = (a, b, x, y) => (a - x) ** 2 + (b - y) ** 2;
@@ -97,11 +98,11 @@ export class Game {
     }
     this.board = next; this.next = board; this.alive = nextAlive;
     for (const p of this.players) p.cells = totals[p.id];
-    this.resolveObjectives(dt);
+    this.resolveObjectives();
     this.dormancy.update(this, RULES.dormancyGenerations, RULES.dormancyWarning);
     for (const p of this.players) {
       p.nodes = this.nodes.filter(n => n.owner === p.id).length;
-      if (!p.eliminated) p.energy = Math.min(RULES.maxEnergy, p.energy + (RULES.regen + p.nodes) * dt);
+      if (!p.eliminated) p.energy = Math.min(RULES.maxEnergy, p.energy + RULES.regen + p.nodes * RULES.nodeRegen);
     }
     this.checkVictory();
   }
@@ -116,20 +117,20 @@ export class Game {
     }
   }
 
-  resolveObjectives(dt) {
+  resolveObjectives() {
     for (const n of this.nodes) {
       let mask = 0;
       this.nearby(n.x, n.y, RULES.captureRadius, owner => { mask |= 1 << owner; });
       if (mask && (mask & (mask - 1)) === 0) {
         const owner = Math.log2(mask);
-        if (owner === n.owner) { n.progress = Math.max(0, n.progress - dt); if (!n.progress) n.claimant = 0; continue; }
+        if (owner === n.owner) { n.progress = Math.max(0, n.progress - 1); if (!n.progress) n.claimant = 0; continue; }
         if (n.claimant !== owner) { n.claimant = owner; n.progress = 0; }
-        n.progress += dt;
+        n.progress += 1;
         if (n.progress + 1e-9 >= RULES.captureTime) {
           n.owner = owner; n.claimant = 0; n.progress = 0;
           this.event('capture', owner, `占领中继节点 N-${String(n.id + 1).padStart(2, '0')}`);
         }
-      } else if (!mask) { n.progress = Math.max(0, n.progress - dt * 0.5); if (!n.progress) n.claimant = 0; }
+      } else if (!mask) { n.progress = Math.max(0, n.progress - RULES.captureDecay); if (!n.progress) n.claimant = 0; }
     }
     for (const p of this.players) {
       if (p.eliminated) continue;

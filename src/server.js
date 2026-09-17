@@ -15,6 +15,7 @@ const send = (ws, value) => { if (ws?.readyState === WebSocket.OPEN) ws.send(JSO
 
 export function createServer({ port = Number(process.env.PORT) || 3000, host = '0.0.0.0' } = {}) {
   const rooms = new Map();
+  let serverGen = 0; // 服务器全局演化代数，用于按代判断的房间清理
   const server = http.createServer(async (req, res) => {
     try {
       const pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
@@ -53,7 +54,7 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
     const room = ws.room, member = ws.member;
     if (!room || !member) return;
     if (room.game && room.game.status === 'playing') {
-      member.ws = null; member.offlineAt = Date.now();
+      member.ws = null; member.offlineGen = room.game.generation;
       if (explicit) {
         member.token = ''; room.game.eliminate(member.id); room.game.checkVictory();
         if (room.host === member.id) room.host = room.members.find(m => m !== member && m.ws)?.id ?? room.host;
@@ -78,7 +79,7 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
     const hostMember = room.members.find(m => m.id === room.host);
     room.members.forEach((m, i) => { m.id = i + 1; });
     room.host = hostMember.id;
-    room.game = new Game(room.members); room.startedAt = Date.now(); room.lastActive = Date.now(); room.finishedBroadcast = false;
+    room.game = new Game(room.members); room.startedGen = serverGen; room.lastActiveGen = serverGen; room.finishedBroadcast = false;
     for (const m of room.members) { send(m.ws, { type: 'started', id: m.id, rules: RULES }); send(m.ws, room.game.state()); if (m.ws?.readyState === WebSocket.OPEN) m.ws.send(room.game.packet(true)); }
     broadcastRoom(room); updateLists();
   }
@@ -146,10 +147,10 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
         }
         case 'deploy': {
           if (!room?.game || !member) return fail('尚未进入对局');
-          if (Date.now() - (member.lastDeploy || 0) < 100) return fail('部署冷却中');
+          if (member.lastDeployGen !== undefined && room.game.generation - member.lastDeployGen < RULES.deployCooldown) return fail('部署冷却中');
           const result = room.game.deploy(member.id, msg.x, msg.y, msg.cells);
           if (result.error) return fail(result.error);
-          member.lastDeploy = Date.now(); send(ws, { type: 'deployed', x: msg.x, y: msg.y, cost: result.cost }); return;
+          member.lastDeployGen = room.game.generation; send(ws, { type: 'deployed', x: msg.x, y: msg.y, cost: result.cost }); return;
         }
       }
     });
