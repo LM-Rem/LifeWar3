@@ -1,10 +1,14 @@
 export class RegionalCycleDetector {
-  constructor(size=1000,maxPeriod=8) {
+  constructor(size=1000,maxPeriod=8,halo=10) {
     this.size=size;this.side=Math.ceil(size/32);this.length=this.side**2;this.maxPeriod=maxPeriod;
     this.hash1=new Uint32Array(this.length);this.hash2=new Uint32Array(this.length);this.count=new Uint16Array(this.length);
     this.history1=new Uint32Array(this.length*maxPeriod);this.history2=new Uint32Array(this.length*maxPeriod);this.historyCount=new Uint16Array(this.length*maxPeriod);
     this.period=new Uint8Array(this.length);this.age=new Uint16Array(this.length);
     this.snapshots=Array.from({length:maxPeriod+1},()=>new Uint8Array(size*size));this.tick=0;
+    // 精确验证的观察扩展格数：足够覆盖可部署图案（≤32×32）中静态局部与
+    // 活跃振荡核心的最大间距，避免误删大型振荡器（如高斯帕滑翔机枪）的静态尾巴，
+    // 同时不影响真正独立静物（周围 halo 格内确实静止）的清理。
+    this.halo=halo;
   }
   invalidate(keys) {
     // Include neighbouring observation tiles, even if deployment dies next step.
@@ -43,7 +47,7 @@ export class RegionalCycleDetector {
     this.snapshots[this.tick%this.snapshots.length].set(game.board);this.tick++;
     return candidates;
   }
-  exactCandidates(game,minimumAge=50) {
+  exactCandidates(game,minimumAge=50,halo=2) {
     const verified=new Uint8Array(this.length);
     for(let tile=0;tile<this.length;tile++){
       if(this.age[tile]<minimumAge||!this.period[tile])continue;
@@ -51,7 +55,7 @@ export class RegionalCycleDetector {
       const past=this.snapshots[(this.tick-1-p)%this.snapshots.length];
       const tx=tile%this.side,ty=Math.floor(tile/this.side);
       let same=true;
-      for(let y=Math.max(0,ty*32-2);y<Math.min(this.size,ty*32+34)&&same;y++)for(let x=Math.max(0,tx*32-2);x<Math.min(this.size,tx*32+34);x++)if(game.board[y*this.size+x]!==past[y*this.size+x]){same=false;break;}
+      for(let y=Math.max(0,ty*32-halo);y<Math.min(this.size,ty*32+32+halo)&&same;y++)for(let x=Math.max(0,tx*32-halo);x<Math.min(this.size,tx*32+32+halo);x++)if(game.board[y*this.size+x]!==past[y*this.size+x]){same=false;break;}
       if(same)verified[tile]=1;
     }
     return verified;
@@ -59,34 +63,28 @@ export class RegionalCycleDetector {
   exactCandidateCount(game,minimumAge=50) { return this.exactCandidates(game,minimumAge).reduce((sum,n)=>sum+n,0); }
   update(game, lifetime=600, warning=100) {
     this.scan(game);
-    const visited=new Uint8Array(this.length),remove=new Uint8Array(this.length);
+    const remove=new Uint8Array(this.length);
     const warnings=[];
     let verified=null;
-    // Include every tile occupied in ANY recent phase. This joins oscillators
-    // across tile boundaries, including phases with an empty tile between them.
+    // 仅最近 maxPeriod 代内任一相位有细胞的瓦片参与判定，
+    // 避免空瓦片在 lifetime==warning 等边界配置下产生虚假警告。
     const occupied=new Uint8Array(this.length);
     for(let t=0;t<this.length;t++)for(let p=0;p<Math.min(this.tick,this.maxPeriod);p++)
       if(this.historyCount[p*this.length+t]){occupied[t]=1;break;}
-    for(let root=0;root<this.length;root++) {
-      if(visited[root]||!occupied[root])continue;
-      const group=[root];visited[root]=1;let age=65535;
-      for(let i=0;i<group.length;i++) {
-        const t=group[i],x=t%this.side,y=Math.floor(t/this.side);
-        age=Math.min(age,this.age[t]);
-        for(let yy=Math.max(0,y-1);yy<=Math.min(this.side-1,y+1);yy++)
-          for(let xx=Math.max(0,x-1);xx<=Math.min(this.side-1,x+1);xx++) {
-            const n=yy*this.side+xx;
-            if(occupied[n]&&!visited[n]){visited[n]=1;group.push(n);}
-          }
-      }
+    // 每个观察瓦片独立判定，不把相邻瓦片合并成区域：
+    // 即使一小块区域仍在演化，也不会拖住整片连在一起的其他静物/振荡器。
+    for(let t=0;t<this.length;t++) {
+      if(!occupied[t])continue;
+      const age=this.age[t];
       if(age<lifetime-warning)continue;
       if(age>=lifetime) {
-        verified??=this.exactCandidates(game,lifetime);
-        if(group.every(t=>verified[t])){for(const t of group)remove[t]=1;continue;}
-        for(const t of group){this.age[t]=0;this.period[t]=0;}
+        verified??=this.exactCandidates(game,lifetime,this.halo);
+        if(verified[t]){remove[t]=1;continue;}
+        // 精确验证不通过（哈希碰撞或移动模式恰好经过该瓦片），仅重置本瓦片
+        this.age[t]=0;this.period[t]=0;
         continue;
       }
-      warnings.push({tiles:group,remaining:lifetime-age});
+      warnings.push({tiles:[t],remaining:lifetime-age});
     }
     let removed=0;
     for(const key of game.alive) {

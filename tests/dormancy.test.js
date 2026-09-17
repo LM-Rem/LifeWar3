@@ -40,10 +40,10 @@ test('successful deployment resets local aging even if new cells immediately die
   step(g,590);assert.equal(g.alive.length,0);
 });
 
-test('active adjacent regions defer cleanup, distant static debris still expires',()=>{
+test('static debris expires independently even with active adjacent regions',()=>{
   const g=fresh();seed(g,'block',450,450);seed(g,'block',100,400);step(g,590);
-  seed(g,'glider',460,460);step(g,20);
-  assert.equal(g.board[400100],0);assert.equal(g.board[450450],1);assert.ok(g.players[0].cells>0);
+  seed(g,'glider',490,490);step(g,20);
+  assert.equal(g.board[400100],0);assert.equal(g.board[450450],0);assert.equal(g.alive.length,5);
 });
 
 test('age follows generations regardless of dt, finished games do not age',()=>{
