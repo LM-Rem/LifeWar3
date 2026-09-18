@@ -272,6 +272,7 @@ canvas.addEventListener('contextmenu',e=>e.preventDefault());
 canvas.addEventListener('pointerdown',e=>{
   if(e.button!==0&&e.button!==2&&e.button!==1)return;
   canvas.focus();
+  battlefield.cameraTarget=null; // 主画布直接拖动/部署时立即响应，取消平滑目标
   pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
   try{canvas.setPointerCapture(e.pointerId);}catch{}
   if(pointers.size===2){
@@ -284,7 +285,11 @@ canvas.addEventListener('pointerdown',e=>{
   }
 });
 canvas.addEventListener('pointermove',e=>{
-  if(!pointers.has(e.pointerId))return;
+  if(!pointers.has(e.pointerId)){
+    // 鼠标悬停（未按下）时也更新预览位置，让图案预览与提示跟随光标。
+    if(!pointers.size&&!drag&&e.pointerType==='mouse')battlefield.pointer={x:e.clientX,y:e.clientY};
+    return;
+  }
   pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
   if(pointers.size===2){
     const [a,b]=[...pointers.values()];
@@ -331,7 +336,28 @@ canvas.addEventListener('pointercancel',e=>{
 });
 canvas.addEventListener('pointerleave',()=>{if(!drag&&pointers.size===0)battlefield.pointer=null;});
 canvas.addEventListener('wheel',e=>{e.preventDefault();battlefield.zoom(Math.exp(-e.deltaY*.0014),e.clientX,e.clientY);},{passive:false});
-$('#minimap').addEventListener('pointerdown',e=>{const r=e.currentTarget.getBoundingClientRect();battlefield.camera.x=(e.clientX-r.left)/r.width*1000;battlefield.camera.y=(e.clientY-r.top)/r.height*1000;});
+// 战术总览小地图：点击跳转 + 拖动连续移动视角（Pointer Events，支持鼠标与触屏）。
+const minimap=$('#minimap');
+let minimapDrag=null,minimapRect=null;
+minimap.addEventListener('pointerdown',e=>{
+  // 缓存小地图尺寸，拖动过程中复用，避免每次 getBoundingClientRect 强制布局导致卡顿。
+  minimapRect=minimap.getBoundingClientRect();
+  minimapDrag={id:e.pointerId};
+  // 设置平滑目标相机，由渲染循环插值跟随，避免视图生硬跳变。
+  battlefield.cameraTarget={x:Math.max(0,Math.min(1000,(e.clientX-minimapRect.left)/minimapRect.width*1000)),y:Math.max(0,Math.min(1000,(e.clientY-minimapRect.top)/minimapRect.height*1000))};
+  try{minimap.setPointerCapture(e.pointerId);}catch{}
+});
+minimap.addEventListener('pointermove',e=>{
+  if(!minimapDrag||minimapDrag.id!==e.pointerId||!minimapRect)return;
+  battlefield.cameraTarget={x:Math.max(0,Math.min(1000,(e.clientX-minimapRect.left)/minimapRect.width*1000)),y:Math.max(0,Math.min(1000,(e.clientY-minimapRect.top)/minimapRect.height*1000))};
+});
+const endMinimapDrag=e=>{
+  if(!minimapDrag||minimapDrag.id!==e.pointerId)return;
+  minimapDrag=null;
+  try{minimap.releasePointerCapture(e.pointerId);}catch{}
+};
+minimap.addEventListener('pointerup',endMinimapDrag);
+minimap.addEventListener('pointercancel',endMinimapDrag);
 $('#home-camera').onclick=()=>battlefield.focusBase();$('#zoom-in').onclick=()=>battlefield.zoom(1.3);$('#zoom-out').onclick=()=>battlefield.zoom(1/1.3);
 
 // 浮动面板自由拖动：战术总览（小地图）、地图控制条。拖动手柄用 transform 平移，不破坏原有定位。

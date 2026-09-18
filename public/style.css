@@ -1491,7 +1491,8 @@ kbd {
   height: 182px;
   display: block;
   border: 1px solid #2a3d45;
-  cursor: crosshair
+  cursor: crosshair;
+  touch-action: none
 }
 
 .minimap-footer {

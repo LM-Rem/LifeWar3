@@ -18,7 +18,7 @@ export class Battlefield {
   constructor(canvas, minimap, settings) {
     this.canvas = canvas; this.ctx = canvas.getContext('2d', { alpha: false });
     this.minimap = minimap; this.mctx = minimap.getContext('2d');
-    this.settings = settings; this.camera = { x: 180, y: 180, zoom: 3.5 };
+    this.settings = settings; this.camera = { x: 180, y: 180, zoom: 3.5 }; this.cameraTarget = null;
     this.world = document.createElement('canvas'); this.world.width = 1000; this.world.height = 1000;
     this.wctx = this.world.getContext('2d'); this.board = new Uint8Array(1000000);
     this.cells = new Map(); this.effects = []; this.pointer = null; this.pattern = []; this.keys = new Set(); this.active = false;
@@ -31,7 +31,7 @@ export class Battlefield {
     this.dpr = Math.min(devicePixelRatio || 1, 2); this.canvas.width = Math.round(this.width * this.dpr); this.canvas.height = Math.round(this.height * this.dpr);
     this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
   }
-  reset() { this.cells.clear(); this.board.fill(0); this.wctx.clearRect(0,0,1000,1000); this.effects = []; this.state = null; this.territories = []; this.generation = 0; this.keys.clear(); }
+  reset() { this.cells.clear(); this.board.fill(0); this.wctx.clearRect(0,0,1000,1000); this.effects = []; this.state = null; this.territories = []; this.generation = 0; this.keys.clear(); this.cameraTarget = null; }
   setState(state) {
     if (!this.state) this.territories = createTerritories(state.players, state.nodes);
     this.state = state;
@@ -50,10 +50,11 @@ export class Battlefield {
   screen(x, y) { return [(x-this.camera.x)*this.camera.zoom+this.width/2, (y-this.camera.y)*this.camera.zoom+this.height/2]; }
   worldPoint(x, y) { return [(x-this.width/2)/this.camera.zoom+this.camera.x,(y-this.height/2)/this.camera.zoom+this.camera.y]; }
   zoom(factor, x=this.width/2, y=this.height/2) {
+    this.cameraTarget=null;
     const before=this.worldPoint(x,y); this.camera.zoom=clamp(this.camera.zoom*factor,.45,22); const after=this.worldPoint(x,y);
     this.camera.x=clamp(this.camera.x+before[0]-after[0],0,1000); this.camera.y=clamp(this.camera.y+before[1]-after[1],0,1000);
   }
-  focusBase() { const p=this.state?.players.find(p=>p.id===this.me); if(p){this.camera.x=p.x+Math.sign(500-p.x)*35;this.camera.y=p.y+Math.sign(500-p.y)*35;this.camera.zoom=3.5;} }
+  focusBase() { this.cameraTarget=null; const p=this.state?.players.find(p=>p.id===this.me); if(p){this.camera.x=p.x+Math.sign(500-p.x)*35;this.camera.y=p.y+Math.sign(500-p.y)*35;this.camera.zoom=3.5;} }
   placement() {
     if (!this.pointer || !this.pattern.length || !this.state) return null;
     const [wx,wy]=this.worldPoint(this.pointer.x,this.pointer.y), p=this.state.players.find(p=>p.id===this.me);
@@ -77,13 +78,22 @@ export class Battlefield {
     const dt=Math.min(.05,(now-this.lastTime)/1000);this.lastTime=now;
     if(this.active){
       const speed=550*dt/this.camera.zoom;
-      if(this.keys.has('w')||this.keys.has('arrowup'))this.camera.y-=speed;
-      if(this.keys.has('s')||this.keys.has('arrowdown'))this.camera.y+=speed;
-      if(this.keys.has('a')||this.keys.has('arrowleft'))this.camera.x-=speed;
-      if(this.keys.has('d')||this.keys.has('arrowright'))this.camera.x+=speed;
+      if(this.keys.has('w')||this.keys.has('arrowup')){this.cameraTarget=null;this.camera.y-=speed;}
+      if(this.keys.has('s')||this.keys.has('arrowdown')){this.cameraTarget=null;this.camera.y+=speed;}
+      if(this.keys.has('a')||this.keys.has('arrowleft')){this.cameraTarget=null;this.camera.x-=speed;}
+      if(this.keys.has('d')||this.keys.has('arrowright')){this.cameraTarget=null;this.camera.x+=speed;}
+      // 目标相机平滑跟随（帧率无关指数插值）：小地图跳转/拖动时消除生硬跳变。
+      if(this.cameraTarget){
+        const t=1-Math.exp(-dt*20);
+        this.camera.x+=(this.cameraTarget.x-this.camera.x)*t;
+        this.camera.y+=(this.cameraTarget.y-this.camera.y)*t;
+        if(Math.hypot(this.cameraTarget.x-this.camera.x,this.cameraTarget.y-this.camera.y)<.1){
+          this.camera.x=this.cameraTarget.x;this.camera.y=this.cameraTarget.y;this.cameraTarget=null;
+        }
+      }
       this.camera.x=clamp(this.camera.x,0,1000);this.camera.y=clamp(this.camera.y,0,1000);
       this.draw(now);
-      if(now-(this.lastMini||0)>150){this.drawMinimap();this.lastMini=now;this.onCamera?.(this.camera);}
+      if(now-(this.lastMini||0)>33){this.drawMinimap();this.lastMini=now;this.onCamera?.(this.camera);}
     }
     requestAnimationFrame(this.frame);
   }
