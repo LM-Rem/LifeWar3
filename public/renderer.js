@@ -22,7 +22,7 @@ export class Battlefield {
     this.world = document.createElement('canvas'); this.world.width = 1000; this.world.height = 1000;
     this.wctx = this.world.getContext('2d'); this.board = new Uint8Array(1000000);
     this.cells = new Map(); this.effects = []; this.pointer = null; this.pattern = []; this.keys = new Set(); this.active = false;
-    this.state = null; this.territories = []; this.me = 1; this.generation = 0;
+    this.state = null; this.territories = []; this.me = 1; this.generation = 0; this.baseHP = 240; this.playerCells = 6000; this.maxCells = 24000; this.baseHitRadius = BASE_HIT_RADIUS; this.captureTime = 30;
     this.resize(); new ResizeObserver(() => this.resize()).observe(canvas);
     this.lastTime = performance.now(); this.frame = this.frame.bind(this); requestAnimationFrame(this.frame);
   }
@@ -63,7 +63,7 @@ export class Battlefield {
     let reason='';
     if(!p || p.eliminated || this.state.status!=='playing') reason='当前无法部署';
     else if(p.energy<this.pattern.length) reason='能量不足';
-    else if(p.cells+this.pattern.length>6000 || this.cells.size+this.pattern.length>24000) reason='活细胞容量已满';
+    else if(p.cells+this.pattern.length>this.playerCells || this.cells.size+this.pattern.length>this.maxCells) reason='活细胞容量已满';
     else for(const [dx,dy] of this.pattern){
       const cx=x+dx,cy=y+dy;
       if(cx<0||cy<0||cx>=1000||cy>=1000){reason='超出边界';break;}
@@ -175,28 +175,28 @@ export class Battlefield {
     if(x< -30||y< -30||x>this.width+30||y>this.height+30)return;
     const color=n.owner?COLORS[n.owner-1]:'#68828c',r=clamp(z*5,5,14);
     c.save();c.translate(x,y);c.rotate(Math.PI/4);c.fillStyle=n.owner?hexAlpha(color,.12):'#12212a';c.strokeStyle=hexAlpha(color,.8);c.lineWidth=1;c.fillRect(-r/2,-r/2,r,r);c.strokeRect(-r/2,-r/2,r,r);c.fillStyle=color;c.fillRect(-1.5,-1.5,3,3);c.restore();
-    if(n.claimant){c.beginPath();c.arc(x,y,r+7,-Math.PI/2,-Math.PI/2+TAU*n.progress/3);c.strokeStyle=COLORS[n.claimant-1];c.lineWidth=2;c.stroke();}
+    if(n.claimant){c.beginPath();c.arc(x,y,r+7,-Math.PI/2,-Math.PI/2+TAU*Math.min(1,n.progress/this.captureTime));c.strokeStyle=COLORS[n.claimant-1];c.lineWidth=2;c.stroke();}
     if(z>1.3){c.font='8px Consolas, monospace';c.textAlign='center';c.fillStyle=hexAlpha(color,.8);c.fillText(`N-${String(n.id+1).padStart(2,'0')}`,x,y+r+18);}
     if(n.owner&&this.settings.motion){const t=((now/3000+n.id*.13)%1);c.beginPath();c.arc(x,y,r+3+t*12,0,TAU);c.strokeStyle=hexAlpha(color,(1-t)*.12);c.lineWidth=1;c.stroke();}
   }
   drawBase(p,now){
     const c=this.ctx,[x,y]=this.screen(p.x,p.y),z=this.camera.zoom,r=clamp(12*z,10,65),color=p.eliminated?'#40545e':COLORS[p.id-1];
-    const extent=Math.max(r*2,BASE_HIT_RADIUS*z+100);
+    const extent=Math.max(r*2,this.baseHitRadius*z+100);
     if(x< -extent||y< -extent||x>this.width+extent||y>this.height+extent)return;
     c.save();c.translate(x,y);
     if(!p.eliminated){
       // This radius is deliberately not clamped: it is the actual 12-cell hit
       // boundary, independent of the decorative core icon and UI zoom level.
-      const hitRadius=BASE_HIT_RADIUS*z;
+      const hitRadius=this.baseHitRadius*z;
       c.beginPath();c.arc(0,0,hitRadius,0,TAU);c.strokeStyle=hexAlpha(color,.88);c.lineWidth=1.3;c.stroke();
       for(let i=0;i<4;i++){const a=i*Math.PI/2;c.beginPath();c.moveTo(Math.cos(a)*(hitRadius-4),Math.sin(a)*(hitRadius-4));c.lineTo(Math.cos(a)*(hitRadius+4),Math.sin(a)*(hitRadius+4));c.stroke();}
-      if(z>=1.4){c.beginPath();c.moveTo(hitRadius,0);c.lineTo(hitRadius+14,-14);c.lineTo(hitRadius+84,-14);c.strokeStyle=hexAlpha(color,.5);c.lineWidth=.7;c.stroke();c.fillStyle=color;c.font='9px Consolas, Microsoft YaHei, monospace';c.textAlign='left';c.fillText('受击范围 · 12 格',hitRadius+18,-20);}
+      if(z>=1.4){c.beginPath();c.moveTo(hitRadius,0);c.lineTo(hitRadius+14,-14);c.lineTo(hitRadius+84,-14);c.strokeStyle=hexAlpha(color,.5);c.lineWidth=.7;c.stroke();c.fillStyle=color;c.font='9px Consolas, Microsoft YaHei, monospace';c.textAlign='left';c.fillText('受击范围 · '+this.baseHitRadius+' 格',hitRadius+18,-20);}
     }
     c.strokeStyle=hexAlpha(color,.2);c.lineWidth=1;c.beginPath();c.arc(0,0,r+9,0,TAU);c.stroke();
     c.save();c.rotate(this.settings.motion?now/17000:0);c.strokeStyle=hexAlpha(color,.55);c.setLineDash([r*.5,r*.22]);c.beginPath();c.arc(0,0,r+4,0,TAU);c.stroke();c.setLineDash([]);c.restore();
     c.beginPath();for(let i=0;i<6;i++){const a=i*TAU/6-Math.PI/2,xx=Math.cos(a)*r*.76,yy=Math.sin(a)*r*.76;i?c.lineTo(xx,yy):c.moveTo(xx,yy);}c.closePath();c.fillStyle=hexAlpha(color,.08);c.fill();c.strokeStyle=color;c.stroke();
     const s=r*.17;c.fillStyle=color;c.fillRect(-s,-s,2*s,2*s);c.fillStyle=hexAlpha(color,.3);c.fillRect(-s*.6,-s*2.6,s*1.2,s);c.fillRect(-s*.6,s*1.6,s*1.2,s);c.fillRect(-s*2.6,-s*.6,s,s*1.2);c.fillRect(s*1.6,-s*.6,s,s*1.2);
-    if(z>1){c.font='9px Consolas, Microsoft YaHei, monospace';c.textAlign='center';c.fillStyle=color;c.fillText(p.id===this.me?'YOUR CORE':`CORE / ${p.name}`,0,-r-19);c.fillStyle='#24353e';c.fillRect(-25,r+18,50,3);c.fillStyle=color;c.fillRect(-25,r+18,50*p.hp/240,3);c.font='8px Consolas, monospace';c.fillStyle=hexAlpha(color,.6);c.fillText(p.eliminated?'DESTROYED':`${p.hp} / 240`,0,r+34);}
+    if(z>1){c.font='9px Consolas, Microsoft YaHei, monospace';c.textAlign='center';c.fillStyle=color;c.fillText(p.id===this.me?'YOUR CORE':`CORE / ${p.name}`,0,-r-19);c.fillStyle='#24353e';c.fillRect(-25,r+18,50,3);c.fillStyle=color;c.fillRect(-25,r+18,50*p.hp/this.baseHP,3);c.font='8px Consolas, monospace';c.fillStyle=hexAlpha(color,.6);c.fillText(p.eliminated?'DESTROYED':`${p.hp} / ${this.baseHP}`,0,r+34);}
     c.restore();
   }
   drawMinimap(){
