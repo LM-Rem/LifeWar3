@@ -1,5 +1,5 @@
 import http from 'node:http';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import os from 'node:os';
@@ -9,9 +9,17 @@ import { Game, RULES } from './engine.js';
 import { runBots } from './bots.js';
 
 const ROOT = fileURLToPath(new URL('../public/', import.meta.url));
-const TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.svg': 'image/svg+xml', '.ico': 'image/x-icon' };
+const LIBRARY_DIR = fileURLToPath(new URL('../图案集/', import.meta.url));
+const PATTERNS_FILE = fileURLToPath(new URL('../public/patterns.json', import.meta.url));
+const TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.ico': 'image/x-icon' };
 const safeName = name => String(name ?? '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 16) || '匿名指挥官';
 const send = (ws, value) => { if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(value)); };
+const readBody = req => new Promise((resolve, reject) => {
+  let body = '';
+  req.on('data', chunk => { body += chunk; if (body.length > 1e6) { reject(new Error('请求体过大')); req.destroy(); } });
+  req.on('end', () => resolve(body));
+  req.on('error', reject);
+});
 
 export function createServer({ port = Number(process.env.PORT) || 3000, host = '0.0.0.0' } = {}) {
   const rooms = new Map();
@@ -29,6 +37,48 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
         if (publicUrl) payload.publicUrl = publicUrl;
         res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
         return res.end(JSON.stringify(payload));
+      }
+      if (pathname === '/api/library') {
+        const name = new URL(req.url, 'http://localhost').searchParams.get('file');
+        if (!name) {
+          const files = (await readdir(LIBRARY_DIR)).filter(f => f.toLowerCase().endsWith('.cells')).sort((a, b) => a.localeCompare(b, 'zh-CN'));
+          res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+          return res.end(JSON.stringify({ files }));
+        }
+        const safe = path.basename(String(name));
+        if (!safe.toLowerCase().endsWith('.cells') || safe !== String(name)) { res.writeHead(400); return res.end('Invalid file name'); }
+        try {
+          const content = await readFile(path.join(LIBRARY_DIR, safe), 'utf8');
+          res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+          return res.end(JSON.stringify({ name: safe, content }));
+        } catch { res.writeHead(404); return res.end('Not found'); }
+      }
+      if (pathname === '/api/patterns' && req.method === 'POST') {
+        let input;
+        try { input = JSON.parse(await readBody(req)); } catch { res.writeHead(400); return res.end('Invalid JSON'); }
+        const name = String(input.name || '').trim().slice(0, 32);
+        const cells = Array.isArray(input.cells) ? input.cells : null;
+        if (!name || !cells || !cells.length || cells.length > 4096 || !cells.every(c => Array.isArray(c) && c.length === 2 && c.every(n => Number.isInteger(n) && n >= 0 && n < 128))) {
+          res.writeHead(400); return res.end('图案名称或细胞数据无效');
+        }
+        const category = String(input.category || 'other').trim().slice(0, 20) || 'other';
+        const pattern = {
+          id: 'lib-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7),
+          name,
+          en: String(input.en || '').trim().slice(0, 32) || 'LIBRARY DNA',
+          role: String(input.role || '').trim().slice(0, 32) || '图案库 / 导入',
+          desc: String(input.desc || '').trim().slice(0, 200) || `来自图案库 ${name}。`,
+          category,
+          cells,
+        };
+        const data = JSON.parse(await readFile(PATTERNS_FILE, 'utf8'));
+        data.categories ||= [];
+        if (!data.categories.some(c => c.id === category)) data.categories.push({ id: category, name: category });
+        data.patterns ||= [];
+        data.patterns.push(pattern);
+        await writeFile(PATTERNS_FILE, JSON.stringify(data, null, 2) + '\n', 'utf8');
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: true, pattern }));
       }
       const file = path.resolve(ROOT, '.' + (pathname === '/' ? '/index.html' : pathname));
       if (!file.startsWith(ROOT) || pathname.includes('..')) { res.writeHead(403); return res.end('Forbidden'); }

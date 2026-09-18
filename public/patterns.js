@@ -10,15 +10,24 @@ export function transform(cells, rotation = 0, flip = false) {
     return [x, y];
   }));
 }
-export const PATTERNS = [
-  { id: 'glider', name: '滑翔机', en: 'GLIDER', role: '侦察 / 推进', desc: '每 4 代沿对角线移动 1 格。旋转以改变航向。', cells: [[1,0],[2,1],[0,2],[1,2],[2,2]] },
-  { id: 'lwss', name: '轻型飞船', en: 'LIGHTWEIGHT', role: '快速 / 突击', desc: '每 4 代水平移动 2 格。默认向左，适合快速突击。', cells: [[1,0],[4,0],[0,1],[0,2],[4,2],[0,3],[1,3],[2,3],[3,3]] },
-  { id: 'block', name: '锚点', en: 'ANCHOR', role: '稳定 / 驻守', desc: '稳定的 2×2 静物。用于已控制领地的节点驻守，不能直接投放到中立分区。', cells: [[0,0],[1,0],[0,1],[1,1]] },
-  { id: 'blinker', name: '脉冲', en: 'PULSE', role: '震荡 / 防守', desc: '周期为 2 的振荡器。低能耗的节点驻守图案。', cells: [[0,1],[1,1],[2,1]] },
-  { id: 'r', name: '裂变种子', en: 'R-PENTOMINO', role: '扩散 / 干扰', desc: '小规模投入触发长时间复杂演化。部署时远离己方阵列。', cells: [[1,0],[2,0],[0,1],[1,1],[1,2]] },
-  { id: 'pulsar', name: '脉冲星', en: 'PULSAR', role: '震荡 / 阵列', desc: '周期为 3 的对称振荡器，构成大范围防御阵列。', cells: (() => { const a=[]; for(const y of [0,5,7,12]) for(const x of [2,3,4,8,9,10]) a.push([x,y]); for(const x of [0,5,7,12]) for(const y of [2,3,4,8,9,10]) a.push([x,y]); return a; })() },
-  { id: 'squadron', name: '滑翔编队', en: 'SQUADRON', role: '编队 / 压制', desc: '三架平行滑翔机同时推进。通过旋转选择进攻方向。', cells: [[1,0],[2,1],[0,2],[1,2],[2,2],[9,0],[10,1],[8,2],[9,2],[10,2],[17,0],[18,1],[16,2],[17,2],[18,2]] },
-];
+
+// 图案数据统一保存在 patterns.json（分类 + 图案列表）。
+// - Node 端（服务器 / 测试 / 实验脚本）：模块加载时同步读取 JSON，保证 PATTERNS 立即可用。
+// - 浏览器端：由 app.js 通过 fetch 加载 patterns.json 后调用 setPatternData 注入。
+export let PATTERNS = [];
+export let PATTERN_CATEGORIES = [];
+
+export function setPatternData(data) {
+  PATTERN_CATEGORIES = Array.isArray(data?.categories) ? data.categories : [];
+  PATTERNS = Array.isArray(data?.patterns) ? data.patterns : [];
+  return PATTERNS;
+}
+
+if (typeof window === 'undefined') {
+  const { readFileSync } = await import('node:fs');
+  const data = JSON.parse(readFileSync(new URL('./patterns.json', import.meta.url), 'utf8'));
+  setPatternData(data);
+}
 
 export function parseRLE(source) {
   const rule = source.match(/rule\s*=\s*([^\s,]+)/i)?.[1];

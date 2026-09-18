@@ -1,4 +1,4 @@
-import { PATTERNS, transform, normalize, parseRLE, toRLE } from './patterns.js';
+import { PATTERNS, PATTERN_CATEGORIES, setPatternData, transform, normalize, parseRLE, toRLE } from './patterns.js';
 import { Battlefield, Ambient, COLORS, drawPattern } from './renderer.js';
 
 const $ = selector => document.querySelector(selector);
@@ -26,7 +26,7 @@ let page = 'home', room = null, playerId = 1, state = null, socket = null, conne
 let reconnectTimer, retries = 0, latency = 0, pendingAutoJoin = new URLSearchParams(location.search).get('room');
 let session = readStorage('lifewar.session', null, sessionStorage);
 let customPatterns = readStorage('lifewar.patterns', []).filter(p => Array.isArray(p.cells) && p.cells.length > 0 && p.cells.length <= 4096 && p.cells.every(c=>Array.isArray(c)&&c.length===2&&c.every(n=>Number.isInteger(n)&&n>=0&&n<128))).slice(0,30);
-let allPatterns = [...PATTERNS, ...customPatterns], selected = allPatterns[0], rotation = 0, flipped = false, lanAddress = location.origin, resultShown = false;
+let allPatterns = [...PATTERNS, ...customPatterns], selected = allPatterns[0] || null, rotation = 0, flipped = false, lanAddress = location.origin, resultShown = false, currentCategory = 'all';
 let eventIds = new Set(), editorCells = new Set(), editingId = null;
 $('#commander-name').value = readStorage('lifewar.name', '指挥官');
 
@@ -49,6 +49,7 @@ $$('dialog').forEach(dialog => dialog.addEventListener('click', e => { if(e.targ
 $$('[data-action="help"]').forEach(el=>el.onclick=()=>openDialog('#help-dialog'));
 $$('[data-action="settings"]').forEach(el=>el.onclick=()=>openDialog('#settings-dialog'));
 $$('[data-action="home"]').forEach(el=>el.onclick=()=>{if(room){toast('请先离开当前战区');return;}showPage('home');});
+$$('[data-action="library"]').forEach(el=>el.onclick=()=>{location.href='/library.html';});
 $('.brand[href="#"]').onclick=e=>{e.preventDefault();showPage('home');};
 
 let audioContext;
@@ -97,7 +98,7 @@ function onMessage(msg) {
     case 'welcome': playerId=msg.id;session={code:msg.code,token:msg.token};saveStorage('lifewar.session',session,sessionStorage);break;
     case 'room':room=msg;renderRoom();if(msg.status==='lobby')showPage('lobby');break;
     case 'started':
-      playerId=msg.id;battlefield.me=playerId;battlefield.reset();eventIds.clear();resultShown=false;state=null;closeDialogs();showPage('game');renderPatterns();selectPattern(selected);sound('capture');break;
+      playerId=msg.id;battlefield.me=playerId;battlefield.reset();eventIds.clear();resultShown=false;state=null;closeDialogs();showPage('game');renderPatterns();if(selected)selectPattern(selected);sound('capture');break;
     case 'state':{
       const first=!state;state=msg;battlefield.setState(state);
       if(first)battlefield.focusBase();updateGameHUD();break;
@@ -152,9 +153,19 @@ function renderRoom(){
   $('#room-guidance').textContent=host?'等待所有玩家准备就绪。你也可以添加 AI 进行模拟对抗。':'完成准备后，等待房主启动对局。';
 }
 
+function visiblePatterns(){
+  if(currentCategory==='all')return[...PATTERNS,...customPatterns];
+  if(currentCategory==='custom')return customPatterns;
+  return PATTERNS.filter(p=>(p.category||'other')===currentCategory);
+}
+function renderCategoryTags(){
+  const tags=[{id:'all',name:'全部'},...PATTERN_CATEGORIES,{id:'custom',name:'自定义'}];
+  $('#pattern-categories').innerHTML=tags.map(t=>`<button class="category-tag ${t.id===currentCategory?'active':''}" data-category="${escapeHTML(t.id)}">${escapeHTML(t.name)}</button>`).join('');
+  $$('.category-tag').forEach(b=>b.onclick=()=>{currentCategory=b.dataset.category;renderCategoryTags();renderPatterns();sound();});
+}
 function renderPatterns(){
-  allPatterns=[...PATTERNS,...customPatterns];
-  $('#pattern-list').innerHTML=allPatterns.map((p,i)=>`<button class="pattern-card ${p.id===selected.id?'selected':''}" data-pattern="${escapeHTML(p.id)}" title="${escapeHTML(p.desc)}"><span class="shortcut">${i<7?i+1:'C'}</span><canvas width="118" height="94"></canvas><strong>${escapeHTML(p.name)}</strong><span class="pattern-cost">${p.cells.length} EN</span></button>`).join('');
+  allPatterns=visiblePatterns();
+  $('#pattern-list').innerHTML=allPatterns.map((p,i)=>`<button class="pattern-card ${selected&&p.id===selected.id?'selected':''}" data-pattern="${escapeHTML(p.id)}" title="${escapeHTML(p.desc)}"><span class="shortcut">${i<7?i+1:'C'}</span><canvas width="118" height="94"></canvas><strong>${escapeHTML(p.name)}</strong><span class="pattern-cost">${p.cells.length} EN</span></button>`).join('');
   $$('.pattern-card').forEach((b,i)=>{drawPattern(b.querySelector('canvas'),allPatterns[i].cells,COLORS[playerId-1]);b.onclick=()=>{selectPattern(allPatterns[i]);sound();};});
 }
 function selectPattern(pattern,keepTransform=false){
@@ -171,7 +182,17 @@ function selectPattern(pattern,keepTransform=false){
 }
 $('#rotate-pattern').onclick=()=>{rotation=(rotation+1)%4;selectPattern(selected,true);sound();};
 $('#flip-pattern').onclick=()=>{flipped=!flipped;selectPattern(selected,true);sound();};
-renderPatterns();selectPattern(selected);
+async function initPatterns(){
+  try{
+    const data=await fetch('/patterns.json').then(r=>r.json());
+    setPatternData(data);
+  }catch(err){console.error('加载 patterns.json 失败',err);}
+  allPatterns=[...PATTERNS,...customPatterns];
+  selected=allPatterns[0]||null;
+  renderCategoryTags();renderPatterns();
+  if(selected)selectPattern(selected);
+}
+initPatterns();
 
 function formatTime(generation){const seconds=Math.floor(generation/10);return `${String(Math.floor(seconds/60)).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')}`;}
 function updateGameHUD(){

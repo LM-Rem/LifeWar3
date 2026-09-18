@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#080e13">
+  <meta name="description" content="LIFEWAR 图案库 — 浏览、演化并导入图案集中的生命图案，添加到游戏生命图谱。">
+  <title>LIFEWAR — 图案库</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/library.js"></script>
+</head>
+<body>
+  <canvas id="ambient" aria-hidden="true"></canvas>
+  <div class="noise" aria-hidden="true"></div>
+  <header class="site-header">
+    <a class="brand" href="/"><span class="brand-symbol">✣</span><span>LIFEWAR<span class="brand-version"> / PATTERN LIBRARY</span></span></a>
+    <nav><a class="nav-link" href="/">返回战区 <span>↗</span></a></nav>
+  </header>
+  <main class="library-layout">
+    <aside class="library-side panel">
+      <div class="panel-heading"><span>图案集 <span class="micro">/ CELLS FILES</span></span><span class="micro" id="library-count">载入中…</span></div>
+      <div class="library-search"><input id="library-search" type="search" placeholder="搜索图案名称…（如 glider）" autocomplete="off"></div>
+      <div class="library-list" id="library-list"><div class="empty-rooms">正在读取图案集…</div></div>
+      <div class="library-detail" id="library-detail"><div class="empty-rooms">选择左侧图案以预览</div></div>
+    </aside>
+    <section class="library-stage panel">
+      <div class="panel-heading"><span>演化预览 <span class="micro">/ LIFE SIMULATION</span></span><span class="micro"><span id="sim-generation">GEN 0</span> · <span id="sim-population">0</span> CELLS</span></div>
+      <div class="library-canvas-wrap"><canvas id="sim-canvas" width="640" height="640"></canvas></div>
+      <div class="library-controls">
+        <button class="button subtle" id="sim-play">▶ 演化</button>
+        <button class="button subtle" id="sim-step">步进 +1</button>
+        <button class="button subtle" id="sim-reset">重置</button>
+        <button class="button subtle" id="sim-focus">⌂ 居中视图</button>
+        <label class="library-speed">速度 <span id="sim-speed-label">10</span> GEN/S<input id="sim-speed" type="range" min="1" max="60" value="10"></label>
+      </div>
+      <div class="library-actions">
+        <div class="library-categories" id="library-categories"></div>
+        <input id="library-name" maxlength="20" placeholder="输入图案名称" autocomplete="off">
+        <button class="button primary" id="library-add">添加到生命图谱 ↗</button>
+      </div>
+    </section>
+  </main>
+  <div id="toasts" aria-live="polite"></div>
+</body>
+</html>
