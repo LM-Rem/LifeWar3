@@ -1544,6 +1544,31 @@ kbd {
   height: 16px
 }
 
+/* 可浮动面板的拖动手柄（战术总览 / 地图控制） */
+.panel-drag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-right: 4px;
+  color: #6b8b98;
+  font: 9px var(--mono);
+  line-height: 1;
+  cursor: move;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  vertical-align: middle
+}
+.panel-drag:hover {
+  color: #a9cdd8
+}
+.map-controls .panel-drag {
+  min-width: 0;
+  margin-right: 2px
+}
+
 .control-guide {
   position: absolute;
   bottom: 16px;

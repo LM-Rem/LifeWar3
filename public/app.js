@@ -333,6 +333,37 @@ canvas.addEventListener('pointerleave',()=>{if(!drag&&pointers.size===0)battlefi
 canvas.addEventListener('wheel',e=>{e.preventDefault();battlefield.zoom(Math.exp(-e.deltaY*.0014),e.clientX,e.clientY);},{passive:false});
 $('#minimap').addEventListener('pointerdown',e=>{const r=e.currentTarget.getBoundingClientRect();battlefield.camera.x=(e.clientX-r.left)/r.width*1000;battlefield.camera.y=(e.clientY-r.top)/r.height*1000;});
 $('#home-camera').onclick=()=>battlefield.focusBase();$('#zoom-in').onclick=()=>battlefield.zoom(1.3);$('#zoom-out').onclick=()=>battlefield.zoom(1/1.3);
+
+// 浮动面板自由拖动：战术总览（小地图）、地图控制条。拖动手柄用 transform 平移，不破坏原有定位。
+function makePanelDraggable(handle, panel) {
+  let state = null;
+  handle.addEventListener('pointerdown', e => {
+    if (e.button !== 0 && e.pointerType !== 'touch') return;
+    e.stopPropagation();
+    let ox = 0, oy = 0;
+    const m = /translate\((-?[\d.]+)px,\s*(-?[\d.]+)px\)/.exec(panel.style.transform || '');
+    if (m) { ox = parseFloat(m[1]); oy = parseFloat(m[2]); }
+    state = { id: e.pointerId, startX: e.clientX, startY: e.clientY, ox, oy, moved: false };
+    try { handle.setPointerCapture(e.pointerId); } catch {}
+  });
+  handle.addEventListener('pointermove', e => {
+    if (!state || state.id !== e.pointerId) return;
+    const dx = e.clientX - state.startX, dy = e.clientY - state.startY;
+    if (Math.hypot(dx, dy) > 3) state.moved = true;
+    if (state.moved) panel.style.transform = `translate(${state.ox + dx}px, ${state.oy + dy}px)`;
+  });
+  const end = e => {
+    if (!state || state.id !== e.pointerId) return;
+    state = null;
+    try { handle.releasePointerCapture(e.pointerId); } catch {}
+  };
+  handle.addEventListener('pointerup', end);
+  handle.addEventListener('pointercancel', end);
+  // 手柄不参与面板折叠/按钮点击
+  handle.addEventListener('click', e => e.stopPropagation());
+}
+makePanelDraggable($('.minimap-panel .panel-drag'), $('.minimap-panel'));
+makePanelDraggable($('.map-controls .panel-drag'), $('.map-controls'));
 battlefield.onCamera=camera=>{$('#zoom-label').textContent=Math.round(camera.zoom*100)+'%';$('#camera-coordinates').textContent=`X ${String(Math.round(camera.x)).padStart(4,'0')} / Y ${String(Math.round(camera.y)).padStart(4,'0')}`;};
 battlefield.onPreview=(p,pointer)=>{const tip=$('#placement-tooltip');tip.classList.toggle('hidden',!p);if(!p)return;tip.classList.toggle('invalid',!p.valid);tip.textContent=p.valid?`${p.x}, ${p.y}  /  ${selected.cells.length} EN`:p.reason;tip.style.left=Math.min(pointer.x+20,innerWidth-180)+'px';tip.style.top=Math.min(pointer.y+24,innerHeight-32)+'px';};
 function toggleHUD(){const hidden=$('#game-hud').classList.toggle('hidden');$('#restore-hud').classList.toggle('hidden',!hidden);}
