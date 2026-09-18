@@ -52,7 +52,7 @@
   </main>
 
   <main id="game" class="screen">
-    <canvas id="battlefield" aria-label="战术地图，右键拖动移动，滚轮缩放，左键部署图案" tabindex="0"></canvas>
+    <canvas id="battlefield" aria-label="战术地图：左键点击部署图案，左键或右键按住拖动平移视角，右键点击旋转图案，滚轮缩放" tabindex="0"></canvas>
     <div id="game-hud">
       <header class="battle-top panel"><div class="battle-brand"><span class="brand-symbol">✣</span><b>LIFEWAR</b><span class="micro">LIVE OPERATION</span></div><div class="battle-clock"><i class="status-dot"></i><span id="match-time">00:00</span><span class="micro" id="generation">GEN 000000</span></div><div class="battle-tools"><span class="network-stat"><i></i><span id="ping">— ms</span></span><button class="icon-button" id="toggle-sound" aria-label="切换音效" data-icon="volume"></button><button class="icon-button" data-action="help" aria-label="作战手册" data-icon="help"></button><button class="icon-button" data-action="settings" aria-label="设置" data-icon="settings"></button><button class="icon-button" id="exit-game" aria-label="退出对局" data-icon="exit"></button></div></header>
       <section class="panel roster-panel collapsible"><button class="panel-heading collapse-button"><span>战场态势 <span class="micro">/ COMMANDERS</span></span><span class="collapse-mark">−</span></button><div class="panel-body"><div id="battle-players"></div><div class="objective-line"><span class="objective-diamond">◇</span><span>摧毁所有敌方核心<br><small id="territory-summary">随机节点 · 多边形领地</small></span></div></div></section>
@@ -61,7 +61,18 @@
       <section class="panel arsenal-panel collapsible"><button class="panel-heading collapse-button"><span>生命图谱 <span class="micro">/ ARSENAL</span></span><span class="collapse-mark">−</span></button><div class="panel-body"><div class="arsenal-top"><div class="energy-block"><span class="micro">可用能量</span><strong><span id="energy-number">120</span><small> / 180</small></strong><span id="energy-regen">+5.0 / s</span><div class="energy-meter"><i id="energy-meter"></i></div></div><div class="arsenal-tools"><div class="pattern-categories" id="pattern-categories" aria-label="图案分类筛选"></div><button class="button subtle" id="open-editor"><span>＋</span> 自定义图案</button></div></div><div class="pattern-list" id="pattern-list"></div></div><div class="arsenal-resize" id="arsenal-resize" title="拖动调整宽度" aria-hidden="true"></div></section>
       <section class="panel minimap-panel collapsible"><button class="panel-heading collapse-button"><span class="panel-drag" title="拖动面板">⠿</span><span>战术总览</span><span class="collapse-mark">−</span></button><div class="panel-body"><canvas id="minimap" width="180" height="180" aria-label="点击小地图快速移动视角"></canvas><div class="minimap-footer"><span id="camera-coordinates">X 0180 / Y 0180</span><button class="text-button" id="home-camera" title="回到基地（空格）">⌖ 基地</button></div></div></section>
       <div class="map-controls"><span class="panel-drag" title="拖动面板">⠿</span><button class="icon-button" id="zoom-out" aria-label="缩小">−</button><span id="zoom-label">400%</span><button class="icon-button" id="zoom-in" aria-label="放大">＋</button><span class="control-divider"></span><button class="icon-button" id="toggle-hud" title="隐藏界面（Tab）" aria-label="隐藏界面" data-icon="panels"></button></div>
-      <div class="control-guide"><span><kbd>左键</kbd> 部署</span><span><kbd>右键</kbd> 平移</span><span><kbd>滚轮</kbd> 缩放</span><span><kbd>空格</kbd> 基地</span><span><kbd>Tab</kbd> 隐藏界面</span></div>
+      <div class="control-guide">
+        <span class="mouse-hint"><kbd>左键</kbd> 部署 · 拖动平移</span>
+        <span class="mouse-hint"><kbd>右键</kbd> 旋转 · 拖动平移</span>
+        <span class="mouse-hint"><kbd>滚轮</kbd> 缩放</span>
+        <span class="mouse-hint"><kbd>WASD</kbd> 平移</span>
+        <span class="mouse-hint"><kbd>R</kbd> 旋转 · <kbd>E</kbd> 翻转</span>
+        <span class="mouse-hint"><kbd>空格</kbd> 基地</span>
+        <span class="mouse-hint"><kbd>Tab</kbd> 隐藏界面</span>
+        <span class="touch-hint"><kbd>轻点</kbd> 部署</span>
+        <span class="touch-hint"><kbd>单指拖动</kbd> 平移</span>
+        <span class="touch-hint"><kbd>双指</kbd> 缩放</span>
+      </div>
     </div>
     <button id="restore-hud" class="button subtle hidden">显示界面 <kbd>Tab</kbd></button>
     <div id="connection-banner" class="connection-banner hidden">连接中断 · 正在尝试重连，战场仍在演化…</div>

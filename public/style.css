@@ -1580,6 +1580,10 @@ kbd {
   font-size: 9px
 }
 
+.control-guide .touch-hint {
+  display: none
+}
+
 .control-guide kbd {
   font-size: 8px;
   margin-right: 5px
@@ -2752,8 +2756,12 @@ body.no-motion *::after {
     font-size: 7px
   }
 
-  .control-guide span:nth-child(n+4) {
+  .control-guide .mouse-hint {
     display: none
+  }
+
+  .control-guide .touch-hint {
+    display: inline-flex
   }
 
   .control-guide kbd {

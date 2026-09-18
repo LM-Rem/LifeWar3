@@ -307,7 +307,7 @@ canvas.addEventListener('pointermove',e=>{
   if(drag){
     const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
     if(Math.hypot(e.clientX-drag.startX,e.clientY-drag.startY)>4)drag.moved=true;
-    if(drag.button===2||drag.button===1||drag.touch&&drag.moved){battlefield.camera.x-=dx/battlefield.camera.zoom;battlefield.camera.y-=dy/battlefield.camera.zoom;battlefield.pointer=null;}
+    if(drag.moved){battlefield.camera.x-=dx/battlefield.camera.zoom;battlefield.camera.y-=dy/battlefield.camera.zoom;battlefield.pointer=null;}
     else battlefield.pointer={x:e.clientX,y:e.clientY};
     drag.x=e.clientX;drag.y=e.clientY;
   }else battlefield.pointer={x:e.clientX,y:e.clientY};
@@ -320,10 +320,15 @@ canvas.addEventListener('pointerup',e=>{
     drag={x:p.x,y:p.y,startX:p.x,startY:p.y,button:0,moved:multiTouch,touch:true};
     pinch=null;battlefield.pointer=null;
   }else if(pointers.size===0){
-    if(!multiTouch&&drag&&drag.button===0&&!drag.moved){
-      const place=battlefield.placement();
-      if(place?.valid)send({type:'deploy',x:place.x,y:place.y,cells:battlefield.pattern});
-      else if(place)toast(place.reason,true);
+    if(!multiTouch&&drag&&!drag.moved){
+      if(drag.button===0){
+        const place=battlefield.placement();
+        if(place?.valid)send({type:'deploy',x:place.x,y:place.y,cells:battlefield.pattern});
+        else if(place)toast(place.reason,true);
+      }else if(drag.button===2){
+        // 右键点击（未移动即松开）：旋转当前图案。
+        $('#rotate-pattern').click();
+      }
     }
     drag=null;pinch=null;multiTouch=false;canvas.style.cursor='crosshair';
   }
