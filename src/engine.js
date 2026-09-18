@@ -146,7 +146,7 @@ export class Game {
     this.alive = this.alive.filter(key => this.board[key] !== 0);
   }
 
-  event(type, player, text) { this.events.push({ type, player, text, generation: this.generation }); if (this.events.length > 20) this.events.shift(); }
+  event(type, player, text) { this.events.push({ type, player, text, generation: this.generation, time: Date.now() }); if (this.events.length > 20) this.events.shift(); }
 
   eliminate(id) {
     if (this.status !== 'playing') return;

@@ -28,6 +28,9 @@ let session = readStorage('lifewar.session', null, sessionStorage);
 let customPatterns = readStorage('lifewar.patterns', []).filter(p => Array.isArray(p.cells) && p.cells.length > 0 && p.cells.length <= 4096 && p.cells.every(c=>Array.isArray(c)&&c.length===2&&c.every(n=>Number.isInteger(n)&&n>=0&&n<128))).slice(0,30);
 let allPatterns = [...PATTERNS, ...customPatterns], selected = allPatterns[0] || null, rotation = 0, flipped = false, lanAddress = location.origin, resultShown = false, currentCategory = 'all';
 let eventIds = new Set(), editorCells = new Set(), editingId = null;
+const transformState = new Map();
+let gameHz = 10; // 服务器实际演化频率（代/秒），开局时从 rules 获取
+let startedAt = 0; // 对局开始时间（服务器时间戳），用于真实时间计时
 $('#commander-name').value = readStorage('lifewar.name', '指挥官');
 
 function toast(message, error = false) {
@@ -51,6 +54,44 @@ $$('[data-action="settings"]').forEach(el=>el.onclick=()=>openDialog('#settings-
 $$('[data-action="home"]').forEach(el=>el.onclick=()=>{if(room){toast('请先离开当前战区');return;}showPage('home');});
 $$('[data-action="library"]').forEach(el=>el.onclick=()=>{location.href='/library.html';});
 $('.brand[href="#"]').onclick=e=>{e.preventDefault();showPage('home');};
+
+// 生命图谱面板：可拖拽调整宽度（记忆上次宽度）
+const arsenalPanel = document.querySelector('.arsenal-panel');
+const arsenalResize = $('#arsenal-resize');
+if (arsenalPanel && arsenalResize) {
+  const saved = localStorage.getItem('arsenal-width');
+  if (saved) arsenalPanel.style.width = `${Math.min(Math.max(+saved, 600), window.innerWidth - 40)}px`;
+  let resizing = false;
+  arsenalResize.addEventListener('pointerdown', e => {
+    resizing = true;
+    arsenalResize.classList.add('active');
+    arsenalResize.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  });
+  window.addEventListener('pointermove', e => {
+    if (!resizing) return;
+    const w = Math.max(600, Math.min(window.innerWidth - 40, e.clientX - arsenalPanel.getBoundingClientRect().left));
+    arsenalPanel.style.width = `${w}px`;
+  });
+  const stopResize = () => {
+    if (!resizing) return;
+    resizing = false;
+    arsenalResize.classList.remove('active');
+    localStorage.setItem('arsenal-width', parseInt(arsenalPanel.style.width, 10));
+  };
+  window.addEventListener('pointerup', stopResize);
+  window.addEventListener('pointercancel', stopResize);
+}
+
+// 图案列表：光标悬停时，鼠标滚轮横向滚动列表
+const patternListEl = $('#pattern-list');
+if (patternListEl) {
+  patternListEl.addEventListener('wheel', e => {
+    if (!e.deltaY && !e.deltaX) return;
+    e.preventDefault();
+    patternListEl.scrollLeft += e.deltaY + e.deltaX;
+  }, { passive: false });
+}
 
 let audioContext;
 function sound(type='click') {
@@ -98,7 +139,7 @@ function onMessage(msg) {
     case 'welcome': playerId=msg.id;session={code:msg.code,token:msg.token};saveStorage('lifewar.session',session,sessionStorage);break;
     case 'room':room=msg;renderRoom();if(msg.status==='lobby')showPage('lobby');break;
     case 'started':
-      playerId=msg.id;battlefield.me=playerId;battlefield.reset();eventIds.clear();resultShown=false;state=null;closeDialogs();showPage('game');renderPatterns();if(selected)selectPattern(selected);sound('capture');break;
+      playerId=msg.id;if(msg.rules?.hz)gameHz=msg.rules.hz;startedAt=msg.startedAt||Date.now();battlefield.me=playerId;battlefield.reset();eventIds.clear();resultShown=false;state=null;closeDialogs();showPage('game');renderPatterns();if(selected)selectPattern(selected);sound('capture');break;
     case 'state':{
       const first=!state;state=msg;battlefield.setState(state);
       if(first)battlefield.focusBase();updateGameHUD();break;
@@ -114,6 +155,7 @@ function onMessage(msg) {
 async function loadInfo(){try{const info=await fetch('/api/info').then(r=>r.json());lanAddress=info.publicUrl||location.origin;if(!info.publicUrl&&['localhost','127.0.0.1'].includes(location.hostname))lanAddress=info.addresses.find(a=>/\/\/192\.168\./.test(a))||info.addresses.find(a=>/\/\/10\./.test(a))||info.addresses[0]||location.origin;$('#lan-address').textContent=lanAddress;}catch{$('#lan-address').textContent=location.origin;}}
 loadInfo();connect().catch(()=>{});
 setInterval(()=>{if(socket?.readyState===WebSocket.OPEN)socket.send(JSON.stringify({type:'ping',time:Date.now()}));},2500);
+setInterval(()=>{if(page==='game'&&startedAt&&state?.status==='playing')$('#match-time').textContent=formatClock(Date.now()-startedAt);},1000);
 $('#enter-lobby').onclick=()=>{showPage('lobby');send({type:'list'});};
 $('#practice').onclick=()=>{if(room){toast('请先离开现有战区');return;}send({type:'create',name:getName(),practice:true});};
 $('#create-room').onclick=()=>send({type:'create',name:getName()});
@@ -169,7 +211,11 @@ function renderPatterns(){
   $$('.pattern-card').forEach((b,i)=>{drawPattern(b.querySelector('canvas'),allPatterns[i].cells,COLORS[playerId-1]);b.onclick=()=>{selectPattern(allPatterns[i]);sound();};});
 }
 function selectPattern(pattern,keepTransform=false){
-  selected=pattern;if(!keepTransform){rotation=0;flipped=false;}
+  if(selected)transformState.set(selected.id,{rotation,flipped});
+  selected=pattern;
+  const st=transformState.get(pattern.id);
+  rotation=st?st.rotation:0;
+  flipped=st?st.flipped:false;
   battlefield.pattern=transform(selected.cells,rotation,flipped);
   $('#selected-name').textContent=selected.name;$('#selected-en').textContent=selected.en;$('#selected-role').textContent=selected.role;$('#selected-description').textContent=selected.desc;$('#selected-cost').textContent=selected.cells.length;
   $('#transform-label').textContent=`${rotation*90}° / ${flipped?'镜像':'正向'}`;
@@ -194,16 +240,17 @@ async function initPatterns(){
 }
 initPatterns();
 
-function formatTime(generation){const seconds=Math.floor(generation/10);return `${String(Math.floor(seconds/60)).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')}`;}
+function formatTime(generation){const seconds=Math.floor(generation/(gameHz||10));return `${String(Math.floor(seconds/60)).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')}`;}
+function formatClock(ms){const total=Math.max(0,Math.floor(ms/1000));return `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`;}
 function updateGameHUD(){
   const me=state.players.find(p=>p.id===playerId);if(!me)return;
   $('#territory-summary').textContent=`${state.nodes.length} 个中继节点 · ${state.nodes.length+state.players.length} 块领地`;
-  $('#match-time').textContent=formatTime(state.generation);$('#generation').textContent='GEN '+String(state.generation).padStart(6,'0');
+  $('#match-time').textContent=startedAt?formatClock(Date.now()-startedAt):formatTime(state.generation);$('#generation').textContent='GEN '+String(state.generation).padStart(6,'0');
   $('#energy-number').textContent=Math.floor(me.energy);$('#energy-regen').textContent=`+${me.eliminated?0:5+me.nodes}.0 / s`;$('#energy-meter').style.width=(me.energy/180*100)+'%';
   $('#battle-players').innerHTML=state.players.map(p=>`<div class="battle-player ${p.eliminated?'eliminated':''}" style="--player:${COLORS[p.id-1]}"><div class="battle-player-top"><i class="player-dot"></i><span>${escapeHTML(p.name)}</span>${p.id===playerId?'<span class="you-tag">YOU</span>':''}<span>${p.eliminated?'OUT':p.hp+' HP'}</span></div><div class="hp-meter"><i style="width:${p.hp/240*100}%"></i></div><div class="player-metrics"><span>◈ ${p.nodes} NODES</span><span>${p.cells.toLocaleString()} CELLS</span></div></div>`).join('');
   for(const event of state.events){const id=`${event.generation}/${event.type}/${event.player}/${event.text}`;if(eventIds.has(id))continue;eventIds.add(id);
-    if(event.type==='damage'){const p=state.players.find(p=>p.id===event.player);if(p)battlefield.effect(p.x,p.y,'damage',COLORS[1]);if(event.player===playerId&&!(state.generation%10))toast('警报：你的基地正在受到攻击',true);continue;}
-    const div=document.createElement('div');div.className='event-item';div.innerHTML=`<time>${formatTime(event.generation)}</time><span style="color:${COLORS[event.player-1]||'#9ab0ba'}">${escapeHTML(event.text)}</span>`;$('#event-feed').prepend(div);while($('#event-feed').children.length>4)$('#event-feed').lastChild.remove();
+    if(event.type==='damage'){const p=state.players.find(p=>p.id===event.player);if(p)battlefield.effect(p.x,p.y,'damage',COLORS[1]);if(event.player===playerId&&!(state.generation%Math.max(1,Math.round(gameHz))))toast('警报：你的基地正在受到攻击',true);continue;}
+    const div=document.createElement('div');div.className='event-item';div.innerHTML=`<time>${startedAt&&event.time?formatClock(event.time-startedAt):formatTime(event.generation)}</time><span style="color:${COLORS[event.player-1]||'#9ab0ba'}">${escapeHTML(event.text)}</span>`;$('#event-feed').prepend(div);while($('#event-feed').children.length>4)$('#event-feed').lastChild.remove();
     if(event.type==='capture'&&event.player===playerId)sound('capture');
     if(event.type==='eliminated'&&event.player===playerId)toast('你的核心已被摧毁。可继续观察战场。',true);
   }
@@ -211,31 +258,78 @@ function updateGameHUD(){
     resultShown=true;const winner=state.players.find(p=>p.id===state.winner),won=state.winner===playerId;
     $('#result-title').textContent=won?'你定义了生命的终局。':state.winner?'核心已沉寂，演化仍继续。':'最后的生命归于寂静。';
     $('#result-description').textContent=won?'所有敌方核心已被摧毁。这个星域，属于你。':winner?`${winner.name} 成为最后存活的指挥官。`:'所有核心均已被摧毁，本局平局。';
-    $('#result-stats').innerHTML=`<div><strong>${formatTime(state.generation)}</strong><small>对局时长</small></div><div><strong>${state.generation.toLocaleString()}</strong><small>演化代数</small></div><div><strong>${me.nodes}</strong><small>控制节点</small></div>`;
+    $('#result-stats').innerHTML=`<div><strong>${startedAt?formatClock(Date.now()-startedAt):formatTime(state.generation)}</strong><small>对局时长</small></div><div><strong>${state.generation.toLocaleString()}</strong><small>演化代数</small></div><div><strong>${me.nodes}</strong><small>控制节点</small></div>`;
     $('#rematch').classList.toggle('hidden',room?.host!==playerId);closeDialogs();openDialog('#result-dialog');sound('capture');
   }
 }
 
 // Map interactions use exact integer cells; the authoritative server revalidates every deployment.
-const canvas=$('#battlefield');let drag=null;
+// 支持鼠标（滚轮缩放、右键拖动）与触屏（单指拖动、双指捏合缩放/平移）。
+const canvas=$('#battlefield');
+const pointers=new Map(); // 当前按下指针 pointerId -> {x,y}
+let drag=null,pinch=null,multiTouch=false;
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
 canvas.addEventListener('pointerdown',e=>{
   if(e.button!==0&&e.button!==2&&e.button!==1)return;
-  canvas.focus();drag={x:e.clientX,y:e.clientY,startX:e.clientX,startY:e.clientY,button:e.button,moved:false,touch:e.pointerType==='touch'};
-  canvas.setPointerCapture(e.pointerId);battlefield.pointer={x:e.clientX,y:e.clientY};if(e.button!==0)canvas.style.cursor='grabbing';
+  canvas.focus();
+  pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  try{canvas.setPointerCapture(e.pointerId);}catch{}
+  if(pointers.size===2){
+    const [a,b]=[...pointers.values()];
+    pinch={dist:Math.hypot(a.x-b.x,a.y-b.y),midX:(a.x+b.x)/2,midY:(a.y+b.y)/2};
+    drag=null;battlefield.pointer=null;multiTouch=true;
+  }else if(pointers.size===1){
+    drag={x:e.clientX,y:e.clientY,startX:e.clientX,startY:e.clientY,button:e.button,moved:false,touch:e.pointerType==='touch'};
+    battlefield.pointer={x:e.clientX,y:e.clientY};if(e.button!==0)canvas.style.cursor='grabbing';
+  }
 });
 canvas.addEventListener('pointermove',e=>{
-  if(drag){const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.hypot(e.clientX-drag.startX,e.clientY-drag.startY)>4)drag.moved=true;
+  if(!pointers.has(e.pointerId))return;
+  pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pointers.size===2){
+    const [a,b]=[...pointers.values()];
+    const dist=Math.hypot(a.x-b.x,a.y-b.y),midX=(a.x+b.x)/2,midY=(a.y+b.y)/2;
+    if(pinch&&pinch.dist>0){
+      battlefield.zoom(dist/pinch.dist,midX,midY);
+      battlefield.camera.x-= (midX-pinch.midX)/battlefield.camera.zoom;
+      battlefield.camera.y-= (midY-pinch.midY)/battlefield.camera.zoom;
+      battlefield.camera.x=Math.max(0,Math.min(1000,battlefield.camera.x));
+      battlefield.camera.y=Math.max(0,Math.min(1000,battlefield.camera.y));
+    }
+    pinch={dist,midX,midY};drag=null;battlefield.pointer=null;multiTouch=true;
+    return;
+  }
+  if(drag){
+    const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
+    if(Math.hypot(e.clientX-drag.startX,e.clientY-drag.startY)>4)drag.moved=true;
     if(drag.button===2||drag.button===1||drag.touch&&drag.moved){battlefield.camera.x-=dx/battlefield.camera.zoom;battlefield.camera.y-=dy/battlefield.camera.zoom;battlefield.pointer=null;}
-    else battlefield.pointer={x:e.clientX,y:e.clientY};drag.x=e.clientX;drag.y=e.clientY;
+    else battlefield.pointer={x:e.clientX,y:e.clientY};
+    drag.x=e.clientX;drag.y=e.clientY;
   }else battlefield.pointer={x:e.clientX,y:e.clientY};
 });
 canvas.addEventListener('pointerup',e=>{
-  if(drag&&drag.button===0&&!drag.moved){const place=battlefield.placement();if(place?.valid)send({type:'deploy',x:place.x,y:place.y,cells:battlefield.pattern});else if(place)toast(place.reason,true);}
-  drag=null;canvas.style.cursor='crosshair';if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId);
+  pointers.delete(e.pointerId);
+  if(pointers.size===1){
+    // 双指抬起一指：用剩余指针恢复单指拖动，但标记为已移动，避免误触发部署。
+    const [p]=[...pointers.values()];
+    drag={x:p.x,y:p.y,startX:p.x,startY:p.y,button:0,moved:multiTouch,touch:true};
+    pinch=null;battlefield.pointer=null;
+  }else if(pointers.size===0){
+    if(!multiTouch&&drag&&drag.button===0&&!drag.moved){
+      const place=battlefield.placement();
+      if(place?.valid)send({type:'deploy',x:place.x,y:place.y,cells:battlefield.pattern});
+      else if(place)toast(place.reason,true);
+    }
+    drag=null;pinch=null;multiTouch=false;canvas.style.cursor='crosshair';
+  }
+  if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId);
 });
-canvas.addEventListener('pointercancel',()=>{drag=null;canvas.style.cursor='crosshair';});
-canvas.addEventListener('pointerleave',()=>{if(!drag)battlefield.pointer=null;});
+canvas.addEventListener('pointercancel',e=>{
+  pointers.delete(e.pointerId);
+  if(pointers.size===0){drag=null;pinch=null;multiTouch=false;canvas.style.cursor='crosshair';}
+  if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId);
+});
+canvas.addEventListener('pointerleave',()=>{if(!drag&&pointers.size===0)battlefield.pointer=null;});
 canvas.addEventListener('wheel',e=>{e.preventDefault();battlefield.zoom(Math.exp(-e.deltaY*.0014),e.clientX,e.clientY);},{passive:false});
 $('#minimap').addEventListener('pointerdown',e=>{const r=e.currentTarget.getBoundingClientRect();battlefield.camera.x=(e.clientX-r.left)/r.width*1000;battlefield.camera.y=(e.clientY-r.top)/r.height*1000;});
 $('#home-camera').onclick=()=>battlefield.focusBase();$('#zoom-in').onclick=()=>battlefield.zoom(1.3);$('#zoom-out').onclick=()=>battlefield.zoom(1/1.3);
@@ -378,6 +472,6 @@ $('#save-pattern').onclick=()=>{
   const pattern={id:editingId||'custom-'+Date.now(),name:$('#pattern-name').value.trim()||'未命名生命',en:'CUSTOM DNA',role:'自定义 / 战术',desc:'你设计的生命图案。请留意其演化稳定性与运动方向。',custom:true,cells:normalize([...editorCells].map(c=>c.split(',').map(Number)))};
   const updated=editingId?customPatterns.map(p=>p.id===editingId?pattern:p):[...customPatterns,pattern];
   if(!saveStorage('lifewar.patterns',updated))return toast('浏览器存储空间不足，请先导出 RLE 保存',true);
-  customPatterns=updated;selected=pattern;renderPatterns();selectPattern(pattern);$('#editor-dialog').close();toast('图案已保存并装备');
+  customPatterns=updated;renderPatterns();selectPattern(pattern);$('#editor-dialog').close();toast('图案已保存并装备');
 };
-$('#delete-pattern').onclick=()=>{customPatterns=customPatterns.filter(p=>p.id!==editingId);saveStorage('lifewar.patterns',customPatterns);selected=PATTERNS[0];renderPatterns();selectPattern(selected);$('#editor-dialog').close();toast('自定义图案已删除');};
+$('#delete-pattern').onclick=()=>{customPatterns=customPatterns.filter(p=>p.id!==editingId);saveStorage('lifewar.patterns',customPatterns);renderPatterns();selectPattern(PATTERNS[0]);$('#editor-dialog').close();toast('自定义图案已删除');};

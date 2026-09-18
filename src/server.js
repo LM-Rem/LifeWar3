@@ -122,15 +122,15 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
     ws.room = room; ws.member = member; member.ws = ws; member.offlineGen = null;
     send(ws, { type: 'welcome', id: member.id, token: member.token, code: room.code });
     broadcastRoom(room);
-    if (room.game) { send(ws, { type: 'started', id: member.id, rules: RULES }); send(ws, room.game.state()); ws.send(room.game.packet(true)); }
+    if (room.game) { send(ws, { type: 'started', id: member.id, rules: RULES, startedAt: room.startedAt }); send(ws, room.game.state()); ws.send(room.game.packet(true)); }
     updateLists();
   }
   function start(room) {
     const hostMember = room.members.find(m => m.id === room.host);
     room.members.forEach((m, i) => { m.id = i + 1; });
     room.host = hostMember.id;
-    room.game = new Game(room.members); room.startedGen = serverGen; room.lastActiveGen = serverGen; room.finishedBroadcast = false;
-    for (const m of room.members) { send(m.ws, { type: 'started', id: m.id, rules: RULES }); send(m.ws, room.game.state()); if (m.ws?.readyState === WebSocket.OPEN) m.ws.send(room.game.packet(true)); }
+    room.game = new Game(room.members); room.startedGen = serverGen; room.startedAt = Date.now(); room.lastActiveGen = serverGen; room.finishedBroadcast = false;
+    for (const m of room.members) { send(m.ws, { type: 'started', id: m.id, rules: RULES, startedAt: room.startedAt }); send(m.ws, room.game.state()); if (m.ws?.readyState === WebSocket.OPEN) m.ws.send(room.game.packet(true)); }
     broadcastRoom(room); updateLists();
   }
   wss.on('connection', ws => {
