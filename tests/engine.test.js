@@ -43,7 +43,7 @@ test('nodes require 3s contact, unlock deployment and can be contested or stolen
 });
 test('enemy core exclusion and cell contact damage, elimination and victory',()=>{
   const g=game(),p=g.players[1];g.nodes[0]={id:0,x:p.x,y:p.y,owner:1,claimant:0,progress:0};assert.ok(g.deploy(1,p.x,p.y,[[0,0]]).error);
-  p.hp=12;seed(g,[[p.x,p.y],[p.x+1,p.y],[p.x,p.y+1],[p.x+1,p.y+1]],1);seed(g,[[700,700],[701,700],[700,701],[701,701]],2);g.step();
+  p.hp=4;seed(g,[[p.x,p.y],[p.x+1,p.y],[p.x,p.y+1],[p.x+1,p.y+1]],1);seed(g,[[700,700],[701,700],[700,701],[701,701]],2);g.step();
   assert.equal(p.hp,0);assert.equal(p.eliminated,true);assert.equal(g.board[700*1000+700],0);assert.equal(g.winner,1);assert.equal(g.status,'finished');
 });
 test('simultaneous base destruction produces a draw',()=>{

@@ -136,9 +136,9 @@ export class Game {
       if (p.eliminated) continue;
       let hits = 0;
       this.nearby(p.x, p.y, RULES.baseHitRadius, (owner, key) => {
-        if (owner !== p.id && hits < 5) { this.board[key] = 0; this.changes.set(key, 0); this.players[owner - 1].cells--; hits++; }
+        if (owner !== p.id) { this.board[key] = 0; this.changes.set(key, 0); this.players[owner - 1].cells--; hits++; }
       });
-      if (hits) { p.hp = Math.max(0, p.hp - hits * 3); this.event('damage', p.id, `基地受到 ${hits * 3} 点伤害`); }
+      if (hits) { p.hp = Math.max(0, p.hp - hits); this.event('damage', p.id, `基地受到 ${hits} 点伤害`); }
     }
     // Resolve all impact damage before clearing eliminated factions so simultaneous
     // core destruction is fair and may end in a draw.

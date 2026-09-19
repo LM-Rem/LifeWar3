@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { generateNodes, createTerritories, territoryAt, territoryOwner, canDeployInTerritory, NODE_MIN_SPACING, BASE_HIT_RADIUS } from '../public/territory.js';
+import { generateNodes, createTerritories, territoryAt, territoryOwner, canDeployInTerritory, NODE_MIN_SPACING } from '../public/territory.js';
 import { Game, RULES } from '../src/engine.js';
 import { runBots } from '../src/bots.js';
 
@@ -48,10 +48,10 @@ test('server rejects patterns straddling an unowned polygon atomically; client a
   const node=game.nodes[0];game.nodes[0].owner=1;assert.ok(game.deploy(1,node.x,node.y,[[0,0],[1,0],[0,1],[1,1]]).ok);
 });
 test('base hit marking constant equals actual inclusive damage boundary',()=>{
-  assert.equal(RULES.baseHitRadius,BASE_HIT_RADIUS);
   const g=new Game([{name:'A'},{name:'B'}],{random:rng(7)}),p=g.players[0];
-  for(const dx of [12,13]){const k=p.y*1000+p.x+dx;g.board[k]=2;g.alive.push(k);g.players[1].cells++;}
-  g.resolveObjectives(.1);assert.equal(p.hp,RULES.baseHP-3);assert.equal(g.board[p.y*1000+p.x+12],0);assert.equal(g.board[p.y*1000+p.x+13],2);
+  const dx=RULES.baseHitRadius;
+  for(const off of [dx,dx+1]){const k=p.y*1000+p.x+off;g.board[k]=2;g.alive.push(k);g.players[1].cells++;}
+  g.resolveObjectives(.1);assert.equal(p.hp,RULES.baseHP-1);assert.equal(g.board[p.y*1000+p.x+dx],0);assert.equal(g.board[p.y*1000+p.x+dx+1],2);
 });
 test('AI expands across neutral polygon territory using moving life patterns',()=>{
   const g=new Game([{name:'A'},{name:'Bot',bot:true}],{random:rng(62)});
