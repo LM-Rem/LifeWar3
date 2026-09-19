@@ -113,7 +113,8 @@ const sim = new LifeSim($('#sim-canvas'));
 
 // ---------- 全局状态 ----------
 let mode = 'files'; // 'files' | 'game'
-let files = [];
+let currentDir = '';          // 当前目录（相对图案集_128 根，如 '16x16/静物'）
+let currentEntries = { dirs: [], files: [] };
 let gamePatterns = [];
 let selectedFile = null;
 let selectedPattern = null;
@@ -121,28 +122,88 @@ let currentCells = [];
 let currentComments = [];
 let categories = [];
 let selectedCategory = 'other';
+let searchQuery = '';         // 全局搜索关键词（遍历子目录），空表示浏览模式
+let searchTimer = null;       // 搜索防抖计时器
 
 const categoryName = id => categories.find(c => c.id === id)?.name || id || 'other';
+const baseName = p => String(p || '').split('/').pop();
 
-// ---------- 图案集 tab ----------
+// ---------- 图案集 tab（文件管理器式目录浏览） ----------
 async function loadLibrary() {
   try {
-    const data = await fetch('/api/library').then(r => r.json());
-    files = data.files || [];
-    $('#library-count').textContent = `${files.length} FILES`;
+    const data = await fetch('/api/library?dir=' + encodeURIComponent(currentDir)).then(r => r.json());
+    currentEntries = { dirs: data.dirs || [], files: data.files || [] };
+    renderPath();
     renderFileList();
   } catch { $('#library-list').innerHTML = '<div class="empty-rooms">无法读取图案集<br>请确认服务器已启动</div>'; }
 }
 
+function renderPath() {
+  const el = $('#library-path');
+  if (!el) return;
+  el.style.display = mode === 'files' ? 'flex' : 'none';
+  const segments = currentDir ? currentDir.split('/') : [];
+  let acc = '';
+  const crumbs = ['<button class="path-crumb" data-level="">图案集_128</button>'];
+  segments.forEach(seg => {
+    acc = acc ? acc + '/' + seg : seg;
+    crumbs.push(`<span class="path-sep">/</span><button class="path-crumb" data-level="${escapeHTML(acc)}">${escapeHTML(seg)}</button>`);
+  });
+  el.innerHTML = crumbs.join('');
+  $$('.path-crumb').forEach(b => b.onclick = () => { currentDir = b.dataset.level; loadLibrary(); });
+}
+
 function renderFileList() {
   const q = $('#library-search').value.trim().toLowerCase();
-  const matches = q ? files.filter(f => f.toLowerCase().includes(q)) : files;
-  const shown = matches.slice(0, 300);
-  $('#library-count').textContent = `${matches.length} / ${files.length} FILES`;
-  $('#library-list').innerHTML = shown.length
-    ? shown.map(f => `<button class="library-file ${f === selectedFile ? 'selected' : ''}" data-file="${escapeHTML(f)}"><span class="library-file-dot"></span>${escapeHTML(f)}</button>`).join('')
-    : '<div class="empty-rooms">没有匹配的图案</div>';
-  $$('.library-file').forEach(b => b.onclick = () => loadFile(b.dataset.file));
+  const dirs = currentEntries.dirs || [];
+  const files = currentEntries.files || [];
+  const shownDirs = q ? dirs.filter(d => d.toLowerCase().includes(q)) : dirs;
+  const shownFiles = q ? files.filter(f => f.toLowerCase().includes(q)) : files;
+  $('#library-count').textContent = `${shownDirs.length + shownFiles.length} 项`;
+  const parts = [];
+  if (currentDir && !q) {
+    parts.push('<button class="library-file library-up" id="library-up"><span class="library-file-arrow">↰</span><span>返回上级</span></button>');
+  }
+  shownDirs.forEach(d => {
+    const rel = currentDir ? currentDir + '/' + d : d;
+    parts.push(`<button class="library-file library-dir" data-dir="${escapeHTML(rel)}"><span class="library-file-arrow">▸</span><span>${escapeHTML(d)}</span></button>`);
+  });
+  shownFiles.forEach((f, i) => {
+    const rel = currentDir ? currentDir + '/' + f : f;
+    parts.push(`<button class="library-file ${rel === selectedFile ? 'selected' : ''}" data-file="${escapeHTML(rel)}"><span class="library-file-index">${String(i + 1).padStart(2, '0')}</span><span class="library-file-dot"></span><span class="library-file-name">${escapeHTML(f)}</span></button>`);
+  });
+  $('#library-list').innerHTML = parts.length ? parts.join('') : '<div class="empty-rooms">没有匹配的图案</div>';
+  $$('.library-file[data-dir]').forEach(b => b.onclick = () => { currentDir = b.dataset.dir; loadLibrary(); });
+  $$('.library-file[data-file]').forEach(b => b.onclick = () => loadFile(b.dataset.file));
+  const up = $('#library-up');
+  if (up) up.onclick = () => { currentDir = currentDir.split('/').slice(0, -1).join('/'); loadLibrary(); };
+}
+
+// ---------- 遍历子目录搜索 ----------
+async function searchLibrary(q) {
+  searchQuery = q;
+  const pathEl = $('#library-path');
+  if (pathEl) pathEl.style.display = 'none';
+  try {
+    const data = await fetch('/api/library?search=' + encodeURIComponent(q)).then(r => r.json());
+    const results = data.files || [];
+    $('#library-count').textContent = `${results.length} 个结果`;
+    $('#library-list').innerHTML = results.length
+      ? results.map((f, i) => {
+          const dirPart = f.includes('/') ? f.slice(0, f.lastIndexOf('/')) : '';
+          return `<button class="library-file ${f === selectedFile ? 'selected' : ''}" data-file="${escapeHTML(f)}"><span class="library-file-index">${String(i + 1).padStart(2, '0')}</span><span class="library-file-dot"></span><span class="library-file-name">${escapeHTML(baseName(f))}</span>${dirPart ? `<span class="library-file-sub">${escapeHTML(dirPart)}</span>` : ''}</button>`;
+        }).join('')
+      : '<div class="empty-rooms">没有匹配的图案</div>';
+    $$('.library-file[data-file]').forEach(b => b.onclick = () => loadFile(b.dataset.file));
+  } catch { $('#library-list').innerHTML = '<div class="empty-rooms">搜索失败</div>'; }
+}
+
+// 根据当前输入框与模式刷新列表：有搜索词时遍历子目录，否则回到目录浏览
+function refreshList() {
+  if (mode === 'game') return renderGameList();
+  const q = $('#library-search').value.trim().toLowerCase();
+  if (q) searchLibrary(q);
+  else { searchQuery = ''; loadLibrary(); }
 }
 
 async function loadFile(name) {
@@ -151,7 +212,7 @@ async function loadFile(name) {
   $('#library-add').textContent = '添加到生命图谱 ↗';
   $('#library-delete').hidden = true;
   fillEditorForm();
-  renderFileList();
+  refreshList();
   try {
     const data = await fetch('/api/library?file=' + encodeURIComponent(name)).then(r => r.json());
     const text = data.content || '';
@@ -160,7 +221,7 @@ async function loadFile(name) {
     sim.pause(); sim.setCells(currentCells); sim.render();
     renderDetail();
     sim.play();
-  } catch { toast('读取图案失败：' + name, true); }
+  } catch { toast('读取图案失败：' + baseName(name), true); }
 }
 
 // ---------- 生命图谱 tab ----------
@@ -179,7 +240,7 @@ function renderGameList() {
   const shown = matches.slice(0, 300);
   $('#library-count').textContent = `${matches.length} / ${gamePatterns.length} PATTERNS`;
   $('#library-list').innerHTML = shown.length
-    ? shown.map(p => `<button class="library-file ${p.id === selectedPattern?.id ? 'selected' : ''}" data-pattern="${escapeHTML(p.id)}"><span class="library-file-dot"></span>${escapeHTML(p.name || p.en || p.id)}<span class="library-file-meta">${escapeHTML(categoryName(p.category))} · ${p.cells.length} EN</span></button>`).join('')
+    ? shown.map((p, i) => `<button class="library-file ${p.id === selectedPattern?.id ? 'selected' : ''}" data-pattern="${escapeHTML(p.id)}"><span class="library-file-index">${String(i + 1).padStart(2, '0')}</span><span class="library-file-dot"></span>${escapeHTML(p.name || p.en || p.id)}<span class="library-file-meta">${escapeHTML(categoryName(p.category))} · ${p.cells.length} EN</span></button>`).join('')
     : '<div class="empty-rooms">没有匹配的图案</div>';
   $$('.library-file').forEach(b => b.onclick = () => loadGamePattern(b.dataset.pattern));
 }
@@ -258,7 +319,7 @@ function renderCategories() {
 // ---------- 添加到生命图谱 / 保存修改 ----------
 async function addGamePattern() {
   if (!currentCells.length) return toast('请先选择一个图案', true);
-  const baseName = (selectedFile || '').replace(/\.cells$/i, '');
+  const fileBase = baseName(selectedFile).replace(/\.cells$/i, '');
   const customName = $('#library-name').value.trim();
   const en = $('#library-en').value.trim();
   const role = $('#library-role').value.trim();
@@ -269,10 +330,10 @@ async function addGamePattern() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        name: customName.slice(0, 32) || baseName.slice(0, 32) || '未命名图案',
+        name: customName.slice(0, 32) || fileBase.slice(0, 32) || '未命名图案',
         en: en.slice(0, 32) || 'LIBRARY DNA',
         role: role.slice(0, 32) || '图案库 / 导入',
-        desc: desc.slice(0, 200) || `来自图案集 ${selectedFile || '未命名'}，共 ${currentCells.length} 个细胞。`,
+        desc: desc.slice(0, 200) || `来自图案集 ${fileBase || '未命名'}，共 ${currentCells.length} 个细胞。`,
         category,
         cells: currentCells,
       }),
@@ -340,7 +401,7 @@ $('#library-delete').onclick = async () => {
 $$('.library-tab').forEach(b => b.onclick = () => {
   mode = b.dataset.tab;
   $$('.library-tab').forEach(t => { const active = t === b; t.classList.toggle('active', active); t.setAttribute('aria-selected', String(active)); });
-  $('#library-search').placeholder = mode === 'game' ? '搜索生命图谱图案…' : '搜索图案集文件…（如 glider）';
+  $('#library-search').placeholder = mode === 'game' ? '搜索生命图谱图案…' : '搜索当前目录…（如 glider）';
   selectedFile = null; selectedPattern = null; currentCells = []; currentComments = [];
   sim.pause();
   $('#library-add').textContent = '添加到生命图谱 ↗';
@@ -348,10 +409,13 @@ $$('.library-tab').forEach(b => b.onclick = () => {
   fillEditorForm();
   renderDetail();
   if (mode === 'game') loadGamePatterns();
-  else loadLibrary();
+  else refreshList();
 });
 
-$('#library-search').addEventListener('input', () => { if (mode === 'game') renderGameList(); else renderFileList(); });
+$('#library-search').addEventListener('input', () => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => { mode === 'game' ? renderGameList() : refreshList(); }, 250);
+});
 
 // ---------- 模拟控制 ----------
 $('#sim-play').onclick = () => sim.toggle();

@@ -3,4 +3,5 @@ node_modules/
 artifacts/
 *.log
 .DS_Store
-图案集/
+图案集_128/
+*.py

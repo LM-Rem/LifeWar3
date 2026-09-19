@@ -2091,6 +2091,62 @@ body.no-motion *::after {
   border-bottom: 1px solid var(--line)
 }
 
+.library-path {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px 6px;
+  padding: 6px 12px;
+  border-bottom: 1px solid #1c2a31;
+  background: #0a141b88;
+  font: 8px var(--mono);
+  letter-spacing: .5px;
+  color: #5c7480
+}
+
+.path-crumb {
+  background: none;
+  border: 0;
+  padding: 2px 0;
+  font: inherit;
+  color: #7f98a3;
+  cursor: pointer;
+  transition: color .15s
+}
+
+.path-crumb:hover {
+  color: var(--accent)
+}
+
+.path-sep {
+  color: #33474f
+}
+
+.library-file-arrow {
+  width: 16px;
+  flex-shrink: 0;
+  text-align: center;
+  font-size: 10px;
+  color: #67f5d188;
+  transition: color .15s
+}
+
+.library-file.library-dir {
+  color: #9db3bd
+}
+
+.library-file.library-dir:hover .library-file-arrow {
+  color: var(--accent)
+}
+
+.library-file.library-up {
+  color: #7f98a3
+}
+
+.library-file.library-up .library-file-arrow {
+  color: #8aa0aa
+}
+
 .library-search input {
   font: 12px var(--mono);
   letter-spacing: .5px
@@ -2127,6 +2183,19 @@ body.no-motion *::after {
   color: var(--accent)
 }
 
+.library-file-index {
+  width: 24px;
+  flex-shrink: 0;
+  text-align: right;
+  font: 8px var(--mono);
+  letter-spacing: .5px;
+  color: #47626e
+}
+
+.library-file.selected .library-file-index {
+  color: #67f5d199
+}
+
 .library-file-dot {
   width: 5px;
   height: 5px;
@@ -2137,6 +2206,31 @@ body.no-motion *::after {
 
 .library-file.selected .library-file-dot {
   background: var(--accent)
+}
+
+.library-file-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap
+}
+
+.library-file-sub {
+  margin-left: auto;
+  max-width: 55%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+  font: 8px var(--mono);
+  letter-spacing: .5px;
+  color: #47626e;
+  flex-shrink: 0
+}
+
+.library-file.selected .library-file-sub {
+  color: #67f5d199
 }
 
 .library-detail {
@@ -3191,6 +3285,12 @@ body.no-motion *::after {
     font-size: 8px;
     padding: 4px 6px;
     letter-spacing: .5px
+  }
+
+  .library-path {
+    padding: 4px 8px;
+    font-size: 7px;
+    gap: 2px 4px
   }
 
   #library-en,
