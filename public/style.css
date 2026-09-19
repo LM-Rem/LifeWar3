@@ -1086,6 +1086,16 @@ kbd {
   border-bottom: 0
 }
 
+/* 生命图谱：标题栏位于面板底部，折叠时标题栏位置不变 */
+.arsenal-panel .collapse-button {
+  border-bottom: 0;
+  border-top: 1px solid var(--line)
+}
+
+.arsenal-panel.collapsed .panel-heading {
+  border-top: 0
+}
+
 .battle-player {
   padding: 13px 14px;
   border-bottom: 1px solid #24313a88

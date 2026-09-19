@@ -410,7 +410,19 @@ battlefield.onCamera=camera=>{$('#zoom-label').textContent=Math.round(camera.zoo
 battlefield.onPreview=(p,pointer)=>{const tip=$('#placement-tooltip');tip.classList.toggle('hidden',!p);if(!p)return;tip.classList.toggle('invalid',!p.valid);tip.textContent=p.valid?`${p.x}, ${p.y}  /  ${selected.cells.length} EN`:p.reason;tip.style.left=Math.min(pointer.x+20,innerWidth-180)+'px';tip.style.top=Math.min(pointer.y+24,innerHeight-32)+'px';};
 function toggleHUD(){const hidden=$('#game-hud').classList.toggle('hidden');$('#restore-hud').classList.toggle('hidden',!hidden);}
 $('#toggle-hud').onclick=toggleHUD;$('#restore-hud').onclick=toggleHUD;
-$$('.collapse-button').forEach(b=>{b.setAttribute('aria-expanded','true');b.onclick=()=>{const collapsed=b.closest('.collapsible').classList.toggle('collapsed');b.querySelector('.collapse-mark').textContent=collapsed?'+':'−';b.setAttribute('aria-expanded',String(!collapsed));};});
+$$('.collapse-button').forEach(b=>{b.setAttribute('aria-expanded','true');b.onclick=()=>{
+    const panel=b.closest('.collapsible');
+    const before=panel.offsetHeight;
+    const collapsed=panel.classList.toggle('collapsed');
+    const after=panel.offsetHeight;
+    b.querySelector('.collapse-mark').textContent=collapsed?'+':'−';
+    b.setAttribute('aria-expanded',String(!collapsed));
+    // 战术总览使用 bottom 定位，折叠后高度变化会导致标题栏上下跳动；补偿 bottom 使标题栏保持原位。
+    if(panel.classList.contains('minimap-panel')){
+      const bottom=parseFloat(getComputedStyle(panel).bottom)||0;
+      panel.style.bottom=`${bottom+before-after}px`;
+    }
+  };});
 window.addEventListener('keydown',e=>{
   if(page!=='game'||$('dialog[open]')||['INPUT','TEXTAREA'].includes(e.target.tagName)||e.ctrlKey||e.metaKey||e.altKey)return;
   const key=e.key.toLowerCase();
