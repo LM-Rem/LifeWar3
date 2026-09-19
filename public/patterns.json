@@ -160,7 +160,7 @@
       "en": "R-PENTOMINO",
       "role": "扩散 / 干扰",
       "desc": "小规模投入触发长时间复杂演化。部署时远离己方阵列。",
-      "category": "methuselah",
+      "category": "puffer",
       "cells": [
         [
           1,

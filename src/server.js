@@ -56,6 +56,44 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
       if (pathname === '/api/patterns' && req.method === 'POST') {
         let input;
         try { input = JSON.parse(await readBody(req)); } catch { res.writeHead(400); return res.end('Invalid JSON'); }
+        const data = JSON.parse(await readFile(PATTERNS_FILE, 'utf8'));
+        data.categories ||= [];
+        data.patterns ||= [];
+        const action = String(input.action || 'create');
+        if (action === 'delete') {
+          const id = String(input.id || '');
+          const index = data.patterns.findIndex(p => p.id === id);
+          if (index === -1) { res.writeHead(404); return res.end('图案不存在'); }
+          data.patterns.splice(index, 1);
+          await writeFile(PATTERNS_FILE, JSON.stringify(data, null, 2) + '\n', 'utf8');
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ ok: true }));
+        }
+        if (action === 'update') {
+          const id = String(input.id || '');
+          const index = data.patterns.findIndex(p => p.id === id);
+          if (index === -1) { res.writeHead(404); return res.end('图案不存在'); }
+          const cells = Array.isArray(input.cells) ? input.cells : data.patterns[index].cells;
+          if (!cells.length || cells.length > 4096 || !cells.every(c => Array.isArray(c) && c.length === 2 && c.every(n => Number.isInteger(n) && n >= 0 && n < 128))) {
+            res.writeHead(400); return res.end('图案细胞数据无效');
+          }
+          const name = String(input.name || '').trim().slice(0, 32) || data.patterns[index].name;
+          const category = String(input.category || 'other').trim().slice(0, 20) || 'other';
+          const updated = {
+            ...data.patterns[index],
+            name,
+            en: String(input.en || '').trim().slice(0, 32) || data.patterns[index].en || 'LIFE DNA',
+            role: String(input.role || '').trim().slice(0, 32) || data.patterns[index].role || '生命图谱',
+            desc: String(input.desc || '').trim().slice(0, 200) || data.patterns[index].desc || '',
+            category,
+            cells,
+          };
+          data.patterns[index] = updated;
+          if (!data.categories.some(c => c.id === category)) data.categories.push({ id: category, name: category });
+          await writeFile(PATTERNS_FILE, JSON.stringify(data, null, 2) + '\n', 'utf8');
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ ok: true, pattern: updated }));
+        }
         const name = String(input.name || '').trim().slice(0, 32);
         const cells = Array.isArray(input.cells) ? input.cells : null;
         if (!name || !cells || !cells.length || cells.length > 4096 || !cells.every(c => Array.isArray(c) && c.length === 2 && c.every(n => Number.isInteger(n) && n >= 0 && n < 128))) {
@@ -71,11 +109,8 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
           category,
           cells,
         };
-        const data = JSON.parse(await readFile(PATTERNS_FILE, 'utf8'));
-        data.categories ||= [];
-        if (!data.categories.some(c => c.id === category)) data.categories.push({ id: category, name: category });
-        data.patterns ||= [];
         data.patterns.push(pattern);
+        if (!data.categories.some(c => c.id === category)) data.categories.push({ id: category, name: category });
         await writeFile(PATTERNS_FILE, JSON.stringify(data, null, 2) + '\n', 'utf8');
         res.writeHead(200, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify({ ok: true, pattern }));

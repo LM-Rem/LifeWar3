@@ -39,6 +39,8 @@ class LifeSim {
     this.timer = null;
     this.camera = { x: 0, y: 0, scale: 10 };
     this.drag = null;
+    this.leftStart = null;
+    this.leftMoved = false;
   }
   setCells(cells) {
     this.cells = new Map();
@@ -78,7 +80,6 @@ class LifeSim {
     }
     this.cells = next;
     this.generation++;
-    // 视图保持静止，让图案在网格上自然移动，便于观察运动方向。
     this.render();
   }
   play() { this.running = true; this.schedule(); this.updatePlayButton(); }
@@ -110,22 +111,30 @@ class LifeSim {
 
 const sim = new LifeSim($('#sim-canvas'));
 
-// ---------- 图案列表 ----------
+// ---------- 全局状态 ----------
+let mode = 'files'; // 'files' | 'game'
 let files = [];
+let gamePatterns = [];
 let selectedFile = null;
+let selectedPattern = null;
 let currentCells = [];
 let currentComments = [];
+let categories = [];
+let selectedCategory = 'other';
 
+const categoryName = id => categories.find(c => c.id === id)?.name || id || 'other';
+
+// ---------- 图案集 tab ----------
 async function loadLibrary() {
   try {
     const data = await fetch('/api/library').then(r => r.json());
     files = data.files || [];
     $('#library-count').textContent = `${files.length} FILES`;
-    renderList();
+    renderFileList();
   } catch { $('#library-list').innerHTML = '<div class="empty-rooms">无法读取图案集<br>请确认服务器已启动</div>'; }
 }
 
-function renderList() {
+function renderFileList() {
   const q = $('#library-search').value.trim().toLowerCase();
   const matches = q ? files.filter(f => f.toLowerCase().includes(q)) : files;
   const shown = matches.slice(0, 300);
@@ -138,29 +147,101 @@ function renderList() {
 
 async function loadFile(name) {
   selectedFile = name;
-  renderList();
+  selectedPattern = null;
+  $('#library-add').textContent = '添加到生命图谱 ↗';
+  $('#library-delete').hidden = true;
+  fillEditorForm();
+  renderFileList();
   try {
     const data = await fetch('/api/library?file=' + encodeURIComponent(name)).then(r => r.json());
     const text = data.content || '';
     currentComments = text.split(/\r?\n/).filter(l => l.trim().startsWith('!')).map(l => l.replace(/^!\s?/, '').trim());
     currentCells = parseCells(text);
     sim.pause(); sim.setCells(currentCells); sim.render();
-    const xs = currentCells.map(c => c[0]), ys = currentCells.map(c => c[1]);
-    const w = Math.max(...xs) - Math.min(...xs) + 1, h = Math.max(...ys) - Math.min(...ys) + 1;
-    $('#library-detail').innerHTML = `
-      <h3>${escapeHTML(name.replace(/\.cells$/i, ''))}</h3>
-      <p class="library-comments">${currentComments.length ? currentComments.map(escapeHTML).join('<br>') : '<span class="muted">（无说明）</span>'}</p>
-      <div class="library-meta"><span>${currentCells.length} CELLS</span><span>${w} × ${h}</span><span>${currentCells.length} EN</span></div>`;
+    renderDetail();
     sim.play();
   } catch { toast('读取图案失败：' + name, true); }
 }
 
-$('#library-search').addEventListener('input', renderList);
+// ---------- 生命图谱 tab ----------
+async function loadGamePatterns() {
+  try {
+    const data = await fetch('/patterns.json').then(r => r.json());
+    gamePatterns = data.patterns || [];
+    if (!categories.length && Array.isArray(data.categories)) categories = data.categories;
+    renderGameList();
+  } catch { $('#library-list').innerHTML = '<div class="empty-rooms">无法读取生命图谱<br>请确认服务器已启动</div>'; }
+}
+
+function renderGameList() {
+  const q = $('#library-search').value.trim().toLowerCase();
+  const matches = q ? gamePatterns.filter(p => (p.name || '').toLowerCase().includes(q) || (p.en || '').toLowerCase().includes(q)) : gamePatterns;
+  const shown = matches.slice(0, 300);
+  $('#library-count').textContent = `${matches.length} / ${gamePatterns.length} PATTERNS`;
+  $('#library-list').innerHTML = shown.length
+    ? shown.map(p => `<button class="library-file ${p.id === selectedPattern?.id ? 'selected' : ''}" data-pattern="${escapeHTML(p.id)}"><span class="library-file-dot"></span>${escapeHTML(p.name || p.en || p.id)}<span class="library-file-meta">${escapeHTML(categoryName(p.category))} · ${p.cells.length} EN</span></button>`).join('')
+    : '<div class="empty-rooms">没有匹配的图案</div>';
+  $$('.library-file').forEach(b => b.onclick = () => loadGamePattern(b.dataset.pattern));
+}
+
+function loadGamePattern(id) {
+  const pattern = gamePatterns.find(p => p.id === id);
+  if (!pattern) return;
+  selectedPattern = pattern;
+  selectedFile = null;
+  currentComments = (pattern.desc || '').split('\n').filter(Boolean);
+  currentCells = (pattern.cells || []).map(c => [c[0], c[1]]);
+  sim.pause(); sim.setCells(currentCells); sim.render();
+  $('#library-add').textContent = '保存修改';
+  $('#library-delete').hidden = false;
+  fillEditorForm();
+  renderGameList();
+  renderDetail();
+  sim.play();
+}
+
+// ---------- 详情与表单 ----------
+function renderDetail() {
+  if (selectedPattern) {
+    const p = selectedPattern;
+    const xs = currentCells.map(c => c[0]), ys = currentCells.map(c => c[1]);
+    const w = currentCells.length ? Math.max(...xs) - Math.min(...xs) + 1 : 0;
+    const h = currentCells.length ? Math.max(...ys) - Math.min(...ys) + 1 : 0;
+    $('#library-detail').innerHTML = `
+      <h3>${escapeHTML(p.name || p.en || p.id)}</h3>
+      <p class="library-comments">${escapeHTML(p.desc || '（无描述）')}</p>
+      <div class="library-meta"><span>${currentCells.length} CELLS</span><span>${w} × ${h}</span><span>${currentCells.length} EN</span><span>${escapeHTML(categoryName(p.category))}</span></div>`;
+  } else if (selectedFile) {
+    const xs = currentCells.map(c => c[0]), ys = currentCells.map(c => c[1]);
+    const w = currentCells.length ? Math.max(...xs) - Math.min(...xs) + 1 : 0;
+    const h = currentCells.length ? Math.max(...ys) - Math.min(...ys) + 1 : 0;
+    $('#library-detail').innerHTML = `
+      <h3>${escapeHTML(selectedFile.replace(/\.cells$/i, ''))}</h3>
+      <p class="library-comments">${currentComments.length ? currentComments.map(escapeHTML).join('<br>') : '<span class="muted">（无说明）</span>'}</p>
+      <div class="library-meta"><span>${currentCells.length} CELLS</span><span>${w} × ${h}</span><span>${currentCells.length} EN</span></div>`;
+  } else {
+    $('#library-detail').innerHTML = '<div class="empty-rooms">选择左侧图案以预览</div>';
+  }
+}
+
+function fillEditorForm() {
+  if (selectedPattern) {
+    $('#library-name').value = selectedPattern.name || '';
+    $('#library-en').value = selectedPattern.en || '';
+    $('#library-role').value = selectedPattern.role || '';
+    $('#library-desc').value = selectedPattern.desc || '';
+    selectedCategory = categories.some(c => c.id === selectedPattern.category) ? selectedPattern.category : (categories[0]?.id || 'other');
+  } else {
+    $('#library-name').value = '';
+    $('#library-en').value = '';
+    $('#library-role').value = '';
+    $('#library-desc').value = '';
+    if (categories.length) selectedCategory = categories[0].id;
+  }
+  renderCategories();
+}
 
 // ---------- 分类选择 ----------
-let categories = [];
-let selectedCategory = 'other';
-
 async function loadCategories() {
   try {
     const data = await fetch('/patterns.json').then(r => r.json());
@@ -174,11 +255,14 @@ function renderCategories() {
   $$('#library-categories .category-tag').forEach(b => b.onclick = () => { selectedCategory = b.dataset.category; renderCategories(); });
 }
 
-// ---------- 添加到 patterns.json ----------
-$('#library-add').onclick = async () => {
+// ---------- 添加到生命图谱 / 保存修改 ----------
+async function addGamePattern() {
   if (!currentCells.length) return toast('请先选择一个图案', true);
   const baseName = (selectedFile || '').replace(/\.cells$/i, '');
   const customName = $('#library-name').value.trim();
+  const en = $('#library-en').value.trim();
+  const role = $('#library-role').value.trim();
+  const desc = $('#library-desc').value.trim();
   const category = selectedCategory || 'other';
   try {
     const res = await fetch('/api/patterns', {
@@ -186,9 +270,9 @@ $('#library-add').onclick = async () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: customName.slice(0, 32) || baseName.slice(0, 32) || '未命名图案',
-        en: 'LIBRARY DNA',
-        role: '图案库 / 导入',
-        desc: `来自图案集 ${selectedFile || '未命名'}，共 ${currentCells.length} 个细胞。`,
+        en: en.slice(0, 32) || 'LIBRARY DNA',
+        role: role.slice(0, 32) || '图案库 / 导入',
+        desc: desc.slice(0, 200) || `来自图案集 ${selectedFile || '未命名'}，共 ${currentCells.length} 个细胞。`,
         category,
         cells: currentCells,
       }),
@@ -197,7 +281,77 @@ $('#library-add').onclick = async () => {
     if (data.ok) toast(`已添加「${data.pattern.name}」到生命图谱`);
     else toast(typeof data === 'string' ? data : '添加失败，请检查数据', true);
   } catch { toast('添加失败：无法连接服务器', true); }
+}
+
+async function saveGamePattern() {
+  if (!selectedPattern) return;
+  const cells = normalize(currentCells);
+  if (!cells.length) return toast('图案不能为空', true);
+  const name = $('#library-name').value.trim() || selectedPattern.name;
+  const en = $('#library-en').value.trim();
+  const role = $('#library-role').value.trim();
+  const desc = $('#library-desc').value.trim();
+  const category = selectedCategory || 'other';
+  try {
+    const res = await fetch('/api/patterns', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'update', id: selectedPattern.id, name, en, role, desc, category, cells }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      toast(`已保存「${data.pattern?.name || name}」的修改`);
+      await loadGamePatterns();
+      if (data.pattern) loadGamePattern(data.pattern.id);
+    } else toast(typeof data === 'string' ? data : '保存失败，请检查数据', true);
+  } catch { toast('保存失败：无法连接服务器', true); }
+}
+
+$('#library-add').onclick = () => {
+  if (!currentCells.length) return toast('请先选择一个图案', true);
+  if (mode === 'game' && selectedPattern) saveGamePattern();
+  else addGamePattern();
 };
+
+$('#library-delete').onclick = async () => {
+  if (!selectedPattern) return;
+  if (!confirm(`确定删除「${selectedPattern.name || selectedPattern.en}」吗？此操作不可恢复。`)) return;
+  try {
+    const res = await fetch('/api/patterns', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'delete', id: selectedPattern.id }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      toast(`已删除「${selectedPattern.name}」`);
+      selectedPattern = null; currentCells = []; currentComments = [];
+      sim.pause();
+      $('#library-add').textContent = '添加到生命图谱 ↗';
+      $('#library-delete').hidden = true;
+      fillEditorForm();
+      renderDetail();
+      await loadGamePatterns();
+    } else toast(typeof data === 'string' ? data : '删除失败', true);
+  } catch { toast('删除失败：无法连接服务器', true); }
+};
+
+// ---------- 标签页切换 ----------
+$$('.library-tab').forEach(b => b.onclick = () => {
+  mode = b.dataset.tab;
+  $$('.library-tab').forEach(t => { const active = t === b; t.classList.toggle('active', active); t.setAttribute('aria-selected', String(active)); });
+  $('#library-search').placeholder = mode === 'game' ? '搜索生命图谱图案…' : '搜索图案集文件…（如 glider）';
+  selectedFile = null; selectedPattern = null; currentCells = []; currentComments = [];
+  sim.pause();
+  $('#library-add').textContent = '添加到生命图谱 ↗';
+  $('#library-delete').hidden = true;
+  fillEditorForm();
+  renderDetail();
+  if (mode === 'game') loadGamePatterns();
+  else loadLibrary();
+});
+
+$('#library-search').addEventListener('input', () => { if (mode === 'game') renderGameList(); else renderFileList(); });
 
 // ---------- 模拟控制 ----------
 $('#sim-play').onclick = () => sim.toggle();
@@ -206,10 +360,30 @@ $('#sim-reset').onclick = () => { sim.pause(); if (currentCells.length) { sim.se
 $('#sim-focus').onclick = () => { if (currentCells.length) sim.fitView(); };
 $('#sim-speed').oninput = e => { sim.speed = Number(e.target.value); $('#sim-speed-label').textContent = sim.speed; sim.schedule(); };
 
-// 画布：滚轮缩放，右键/中键拖动平移
+// ---------- 画布：左键编辑（生命图谱），右键/中键拖动平移，滚轮缩放 ----------
 const canvas = $('#sim-canvas');
 canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+function toggleCell(e) {
+  sim.pause();
+  const rect = canvas.getBoundingClientRect();
+  const px = (e.clientX - rect.left) / rect.width * canvas.width;
+  const py = (e.clientY - rect.top) / rect.height * canvas.height;
+  const gx = Math.floor(sim.camera.x + (px - canvas.width / 2) / sim.camera.scale);
+  const gy = Math.floor(sim.camera.y + (py - canvas.height / 2) / sim.camera.scale);
+  const key = `${gx},${gy}`;
+  if (sim.cells.has(key)) sim.cells.delete(key);
+  else sim.cells.set(key, [gx, gy]);
+  currentCells = [...sim.cells.values()].map(([x, y]) => [x, y]);
+  sim.render();
+}
+
 canvas.addEventListener('pointerdown', e => {
+  if (e.button === 0) {
+    sim.leftStart = { x: e.clientX, y: e.clientY };
+    sim.leftMoved = false;
+    return;
+  }
   if (e.button === 2 || e.button === 1) {
     const r = canvas.getBoundingClientRect();
     sim.drag = { x: e.clientX, y: e.clientY, camX: sim.camera.x, camY: sim.camera.y };
@@ -218,6 +392,10 @@ canvas.addEventListener('pointerdown', e => {
   }
 });
 canvas.addEventListener('pointermove', e => {
+  if (sim.leftStart) {
+    const dx = e.clientX - sim.leftStart.x, dy = e.clientY - sim.leftStart.y;
+    if (Math.hypot(dx, dy) > 4) sim.leftMoved = true;
+  }
   if (sim.drag) {
     const r = canvas.getBoundingClientRect();
     const dx = (e.clientX - sim.drag.x) / r.width * canvas.width / sim.camera.scale;
@@ -227,7 +405,12 @@ canvas.addEventListener('pointermove', e => {
     sim.render();
   }
 });
-canvas.addEventListener('pointerup', e => { sim.drag = null; if (canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId); });
+canvas.addEventListener('pointerup', e => {
+  if (e.button === 0 && sim.leftStart && !sim.leftMoved && mode === 'game' && selectedPattern) toggleCell(e);
+  sim.leftStart = null; sim.leftMoved = false;
+  sim.drag = null;
+  if (canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
+});
 canvas.addEventListener('wheel', e => {
   e.preventDefault();
   const r = canvas.getBoundingClientRect();

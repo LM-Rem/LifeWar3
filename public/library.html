@@ -19,8 +19,12 @@
   </header>
   <main class="library-layout">
     <aside class="library-side panel">
-      <div class="panel-heading"><span>图案集 <span class="micro">/ CELLS FILES</span></span><span class="micro" id="library-count">载入中…</span></div>
-      <div class="library-search"><input id="library-search" type="search" placeholder="搜索图案名称…（如 glider）" autocomplete="off"></div>
+      <div class="panel-heading"><span>图案集 <span class="micro">/ LIBRARY</span></span><span class="micro" id="library-count">载入中…</span></div>
+      <div class="library-tabs" role="tablist">
+        <button class="library-tab active" data-tab="files" role="tab" aria-selected="true">图案集</button>
+        <button class="library-tab" data-tab="game" role="tab" aria-selected="false">生命图谱</button>
+      </div>
+      <div class="library-search"><input id="library-search" type="search" placeholder="搜索图案集文件…（如 glider）" autocomplete="off"></div>
       <div class="library-list" id="library-list"><div class="empty-rooms">正在读取图案集…</div></div>
       <div class="library-detail" id="library-detail"><div class="empty-rooms">选择左侧图案以预览</div></div>
     </aside>
@@ -36,8 +40,14 @@
       </div>
       <div class="library-actions">
         <div class="library-categories" id="library-categories"></div>
-        <input id="library-name" maxlength="20" placeholder="输入图案名称" autocomplete="off">
-        <button class="button primary" id="library-add">添加到生命图谱 ↗</button>
+        <input id="library-name" maxlength="32" placeholder="图案名称" autocomplete="off">
+        <input id="library-en" maxlength="32" placeholder="英文名（如 GLIDER）" autocomplete="off">
+        <input id="library-role" maxlength="32" placeholder="角色 / 定位" autocomplete="off">
+        <textarea id="library-desc" maxlength="200" rows="2" placeholder="添加文字描述…" autocomplete="off"></textarea>
+        <div class="library-editor-actions">
+          <button class="button primary" id="library-add">添加到生命图谱 ↗</button>
+          <button class="button danger-button" id="library-delete" hidden>删除图案</button>
+        </div>
       </div>
     </section>
   </main>
