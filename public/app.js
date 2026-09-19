@@ -28,6 +28,9 @@ let session = readStorage('lifewar.session', null, sessionStorage);
 let customPatterns = readStorage('lifewar.patterns', []).filter(p => Array.isArray(p.cells) && p.cells.length > 0 && p.cells.length <= 4096 && p.cells.every(c=>Array.isArray(c)&&c.length===2&&c.every(n=>Number.isInteger(n)&&n>=0&&n<128))).slice(0,30);
 let allPatterns = [...PATTERNS, ...customPatterns], selected = allPatterns[0] || null, rotation = 0, flipped = false, lanAddress = location.origin, resultShown = false, currentCategory = 'all';
 let maxHP = 240; // 基地耐久上限，开局时从服务端 rules.baseHP 读取（config.json 可配置）
+let maxEnergy = 180; // 能量上限，开局时从服务端 rules.maxEnergy 读取（config.json 可配置）
+let energyRegen = 0.5; // 每代基础能量回复，开局时从 rules.regen 读取（config.json 可配置）
+let energyNodeRegen = 0.1; // 每占领一个节点每代额外回复，开局时从 rules.nodeRegen 读取（config.json 可配置）
 let eventIds = new Set(), editorCells = new Set(), editingId = null;
 const transformState = new Map();
 let gameHz = 10; // 服务器实际演化频率（代/秒），开局时从 rules 获取
@@ -140,7 +143,7 @@ function onMessage(msg) {
     case 'welcome': playerId=msg.id;session={code:msg.code,token:msg.token};saveStorage('lifewar.session',session,sessionStorage);break;
     case 'room':room=msg;renderRoom();if(msg.status==='lobby')showPage('lobby');break;
     case 'started':
-      playerId=msg.id;if(msg.rules?.hz)gameHz=msg.rules.hz;if(msg.rules?.baseHP){maxHP=msg.rules.baseHP;battlefield.baseHP=maxHP;}if(msg.rules?.playerCells)battlefield.playerCells=msg.rules.playerCells;if(msg.rules?.maxCells)battlefield.maxCells=msg.rules.maxCells;if(msg.rules?.baseHitRadius)battlefield.baseHitRadius=msg.rules.baseHitRadius;if(msg.rules?.captureTime)battlefield.captureTime=msg.rules.captureTime;startedAt=msg.startedAt||Date.now();battlefield.me=playerId;battlefield.reset();eventIds.clear();resultShown=false;state=null;closeDialogs();showPage('game');renderPatterns();if(selected)selectPattern(selected);sound('capture');break;
+      playerId=msg.id;if(msg.rules?.hz)gameHz=msg.rules.hz;if(msg.rules?.baseHP){maxHP=msg.rules.baseHP;battlefield.baseHP=maxHP;}if(msg.rules?.maxEnergy)maxEnergy=msg.rules.maxEnergy;if(msg.rules?.regen)energyRegen=msg.rules.regen;if(msg.rules?.nodeRegen)energyNodeRegen=msg.rules.nodeRegen;if(msg.rules?.playerCells)battlefield.playerCells=msg.rules.playerCells;if(msg.rules?.maxCells)battlefield.maxCells=msg.rules.maxCells;if(msg.rules?.baseHitRadius)battlefield.baseHitRadius=msg.rules.baseHitRadius;if(msg.rules?.captureTime)battlefield.captureTime=msg.rules.captureTime;startedAt=msg.startedAt||Date.now();battlefield.me=playerId;battlefield.reset();eventIds.clear();resultShown=false;state=null;closeDialogs();showPage('game');renderPatterns();if(selected)selectPattern(selected);sound('capture');break;
     case 'state':{
       const first=!state;state=msg;battlefield.setState(state);
       if(first)battlefield.focusBase();updateGameHUD();break;
@@ -247,7 +250,7 @@ function updateGameHUD(){
   const me=state.players.find(p=>p.id===playerId);if(!me)return;
   $('#territory-summary').textContent=`${state.nodes.length} 个中继节点 · ${state.nodes.length+state.players.length} 块领地`;
   $('#match-time').textContent=startedAt?formatClock(Date.now()-startedAt):formatTime(state.generation);$('#generation').textContent='GEN '+String(state.generation).padStart(6,'0');
-  $('#energy-number').textContent=Math.floor(me.energy);$('#energy-regen').textContent=`+${me.eliminated?0:5+me.nodes}.0 / s`;$('#energy-meter').style.width=(me.energy/180*100)+'%';
+  $('#energy-number').textContent=Math.floor(me.energy);$('#energy-max').textContent=maxEnergy;$('#energy-regen').textContent=`+${me.eliminated?0:parseFloat((energyRegen+me.nodes*energyNodeRegen).toFixed(2))} / GEN`;$('#energy-meter').style.width=(me.energy/maxEnergy*100)+'%';
   $('#battle-players').innerHTML=state.players.map(p=>`<div class="battle-player ${p.eliminated?'eliminated':''}" style="--player:${COLORS[p.id-1]}"><div class="battle-player-top"><i class="player-dot"></i><span>${escapeHTML(p.name)}</span>${p.id===playerId?'<span class="you-tag">YOU</span>':''}<span>${p.eliminated?'OUT':p.hp+' HP'}</span></div><div class="hp-meter"><i style="width:${p.hp/maxHP*100}%"></i></div><div class="player-metrics"><span>◈ ${p.nodes} NODES</span><span>${p.cells.toLocaleString()} CELLS</span></div></div>`).join('');
   for(const event of state.events){const id=`${event.generation}/${event.type}/${event.player}/${event.text}`;if(eventIds.has(id))continue;eventIds.add(id);
     if(event.type==='damage'){const p=state.players.find(p=>p.id===event.player);if(p)battlefield.effect(p.x,p.y,'damage',COLORS[1]);if(event.player===playerId&&!(state.generation%Math.max(1,Math.round(gameHz))))toast('警报：你的基地正在受到攻击',true);continue;}

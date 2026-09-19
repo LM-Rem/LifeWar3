@@ -954,7 +954,15 @@ kbd {
   inset: 0;
   overflow: hidden;
   min-height: 0;
-  background: #080e13
+  background: #080e13;
+  user-select: none;
+  -webkit-user-select: none
+}
+
+#game input,
+#game textarea {
+  user-select: text;
+  -webkit-user-select: text
 }
 
 #battlefield {
@@ -3102,6 +3110,19 @@ body.no-motion *::after {
   .map-controls>span {
     min-width: 32px;
     font-size: 8px
+  }
+
+  #game,
+  #game * {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none
+  }
+
+  #game input,
+  #game textarea {
+    -webkit-user-select: text;
+    user-select: text
   }
 }
 
