@@ -1570,6 +1570,15 @@ kbd {
   margin-right: 2px
 }
 
+/* 面板头部整体作为拖动手柄（战术总览 / 地图控制） */
+.minimap-panel .panel-heading,
+.map-controls {
+  cursor: move;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
 .control-guide {
   position: absolute;
   bottom: 16px;

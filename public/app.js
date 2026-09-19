@@ -366,16 +366,19 @@ minimap.addEventListener('pointerup',endMinimapDrag);
 minimap.addEventListener('pointercancel',endMinimapDrag);
 $('#home-camera').onclick=()=>battlefield.focusBase();$('#zoom-in').onclick=()=>battlefield.zoom(1.3);$('#zoom-out').onclick=()=>battlefield.zoom(1/1.3);
 
-// 浮动面板自由拖动：战术总览（小地图）、地图控制条。拖动手柄用 transform 平移，不破坏原有定位。
-function makePanelDraggable(handle, panel) {
+// 浮动面板自由拖动：战术总览（小地图）、地图控制条。按住面板头部任意位置拖动，用 transform 平移，不破坏原有定位。
+function makePanelDraggable(handle, panel, ignore) {
   let state = null;
+  let moved = false;
   handle.addEventListener('pointerdown', e => {
     if (e.button !== 0 && e.pointerType !== 'touch') return;
+    if (ignore && ignore(e)) return;
     e.stopPropagation();
     let ox = 0, oy = 0;
     const m = /translate\((-?[\d.]+)px,\s*(-?[\d.]+)px\)/.exec(panel.style.transform || '');
     if (m) { ox = parseFloat(m[1]); oy = parseFloat(m[2]); }
     state = { id: e.pointerId, startX: e.clientX, startY: e.clientY, ox, oy, moved: false };
+    moved = false;
     try { handle.setPointerCapture(e.pointerId); } catch {}
   });
   handle.addEventListener('pointermove', e => {
@@ -386,16 +389,23 @@ function makePanelDraggable(handle, panel) {
   });
   const end = e => {
     if (!state || state.id !== e.pointerId) return;
+    moved = state.moved;
     state = null;
     try { handle.releasePointerCapture(e.pointerId); } catch {}
   };
   handle.addEventListener('pointerup', end);
   handle.addEventListener('pointercancel', end);
-  // 手柄不参与面板折叠/按钮点击
-  handle.addEventListener('click', e => e.stopPropagation());
+  // 仅在实际拖动后拦截点击，保证头部按钮（折叠/缩放/隐藏界面）仍可正常点击。
+  handle.addEventListener('click', e => {
+    if (moved) {
+      e.stopImmediatePropagation();
+      e.preventDefault();
+      moved = false;
+    }
+  });
 }
-makePanelDraggable($('.minimap-panel .panel-drag'), $('.minimap-panel'));
-makePanelDraggable($('.map-controls .panel-drag'), $('.map-controls'));
+makePanelDraggable($('.minimap-panel .panel-heading'), $('.minimap-panel'));
+makePanelDraggable($('.map-controls'), $('.map-controls'), e => e.target.closest('button, a'));
 battlefield.onCamera=camera=>{$('#zoom-label').textContent=Math.round(camera.zoom*100)+'%';$('#camera-coordinates').textContent=`X ${String(Math.round(camera.x)).padStart(4,'0')} / Y ${String(Math.round(camera.y)).padStart(4,'0')}`;};
 battlefield.onPreview=(p,pointer)=>{const tip=$('#placement-tooltip');tip.classList.toggle('hidden',!p);if(!p)return;tip.classList.toggle('invalid',!p.valid);tip.textContent=p.valid?`${p.x}, ${p.y}  /  ${selected.cells.length} EN`:p.reason;tip.style.left=Math.min(pointer.x+20,innerWidth-180)+'px';tip.style.top=Math.min(pointer.y+24,innerHeight-32)+'px';};
 function toggleHUD(){const hidden=$('#game-hud').classList.toggle('hidden');$('#restore-hud').classList.toggle('hidden',!hidden);}
