@@ -2040,6 +2040,12 @@ body.no-motion *::after {
   text-overflow: ellipsis
 }
 
+.library-side .panel-heading,
+.library-side .library-tabs,
+.library-side .library-search {
+  flex-shrink: 0
+}
+
 .library-tabs {
   display: flex;
   gap: 4px;
