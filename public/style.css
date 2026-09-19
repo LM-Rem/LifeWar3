@@ -2653,10 +2653,7 @@ body.no-motion *::after {
   }
 
   #selected-description {
-    font-size: 9px;
-    min-height: 0;
-    margin: 8px 0;
-    padding-bottom: 8px
+    display: none
   }
 
   .telemetry-panel .panel-body {
@@ -2668,7 +2665,7 @@ body.no-motion *::after {
   }
 
   .deploy-detail {
-    font-size: 9px
+    display: none
   }
 
   .arsenal-panel {
