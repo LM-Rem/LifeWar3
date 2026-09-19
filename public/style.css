@@ -2852,6 +2852,257 @@ body.no-motion *::after {
     width: max-content;
     max-width: 95vw
   }
+
+  /* ── 移动端 HUD 进一步紧凑化 ── */
+  .battle-top {
+    top: 6px;
+    left: 6px;
+    right: 6px;
+    height: 44px;
+    padding: 0 6px
+  }
+
+  .battle-brand b {
+    font-size: 10px
+  }
+
+  .battle-brand .brand-symbol {
+    font-size: 20px
+  }
+
+  .battle-clock {
+    font-size: 10px
+  }
+
+  .battle-tools .icon-button {
+    width: 24px;
+    height: 26px
+  }
+
+  .battle-tools .icon-button svg {
+    width: 14px;
+    height: 14px
+  }
+
+  .roster-panel,
+  .telemetry-panel {
+    top: 60px;
+    width: 154px
+  }
+
+  .roster-panel .panel-heading,
+  .telemetry-panel .panel-heading {
+    height: 30px;
+    padding: 0 9px;
+    font-size: 9px
+  }
+
+  .collapse-mark {
+    font-size: 12px
+  }
+
+  .battle-player {
+    padding: 6px 8px
+  }
+
+  .battle-player-top {
+    font-size: 9px;
+    gap: 5px
+  }
+
+  .player-dot {
+    width: 5px;
+    height: 5px
+  }
+
+  .battle-player-top>span:last-child {
+    font-size: 8px
+  }
+
+  .hp-meter {
+    height: 2px;
+    margin: 5px 0 4px
+  }
+
+  .player-metrics {
+    font-size: 7px
+  }
+
+  .telemetry-panel .panel-body {
+    padding: 7px
+  }
+
+  .selected-header canvas {
+    width: 40px;
+    height: 40px
+  }
+
+  .selected-header {
+    gap: 5px
+  }
+
+  .selected-header .micro {
+    display: block;
+    line-height: 1.2
+  }
+
+  .selected-header h3 {
+    font-size: 12px;
+    line-height: 1.1;
+    margin: 1px 0 0
+  }
+
+  .selected-role {
+    display: block;
+    font-size: 7px;
+    line-height: 1.2;
+    margin-top: 1px
+  }
+
+  .transform-actions {
+    margin-top: 8px;
+    gap: 6px
+  }
+
+  .transform-actions button {
+    font-size: 9px;
+    min-height: 26px;
+    padding: 4px 6px;
+    gap: 4px
+  }
+
+  .range-legend {
+    font-size: 7px;
+    margin-top: 6px;
+    gap: 4px
+  }
+
+  .range-legend i {
+    width: 5px;
+    height: 5px
+  }
+
+  .arsenal-panel {
+    bottom: 32px;
+    left: 6px;
+    width: calc(100% - 12px)
+  }
+
+  .arsenal-panel .panel-body {
+    padding: 6px 7px 7px
+  }
+
+  .arsenal-panel .panel-heading {
+    height: 28px
+  }
+
+  .arsenal-top {
+    margin-bottom: 5px;
+    gap: 4px 8px
+  }
+
+  .energy-block {
+    min-width: 150px;
+    gap: 5px;
+    padding-bottom: 6px
+  }
+
+  .energy-block strong {
+    font-size: 15px
+  }
+
+  .energy-block strong small {
+    font-size: 9px
+  }
+
+  .energy-block .micro {
+    font-size: 6px
+  }
+
+  .energy-block>span:last-of-type {
+    font-size: 8px
+  }
+
+  .energy-meter,
+  .energy-meter i {
+    height: 2px
+  }
+
+  .pattern-list {
+    gap: 5px;
+    padding: 1px 0 3px
+  }
+
+  .pattern-card {
+    flex-basis: 60px;
+    height: 66px;
+    padding: 5px 4px 4px
+  }
+
+  .pattern-card canvas {
+    width: 38px;
+    height: 30px
+  }
+
+  .pattern-card strong {
+    font-size: 7px
+  }
+
+  .pattern-card .pattern-cost {
+    font: 7px var(--mono)
+  }
+
+  .pattern-card .shortcut {
+    font-size: 6px;
+    left: 3px;
+    top: 3px
+  }
+
+  .category-tag {
+    font-size: 7px;
+    padding: 2px 7px;
+    min-height: 18px
+  }
+
+  .arsenal-top .button {
+    font-size: 8px;
+    padding: 4px 6px;
+    min-height: 26px
+  }
+
+  .minimap-panel {
+    right: 6px;
+    width: 104px
+  }
+
+  .minimap-panel .panel-heading {
+    height: 26px;
+    font-size: 7px
+  }
+
+  .minimap-panel .panel-body {
+    padding: 5px
+  }
+
+  .minimap-panel canvas {
+    width: 92px;
+    height: 92px
+  }
+
+  .map-controls {
+    right: 6px
+  }
+
+  .map-controls .icon-button {
+    width: 25px;
+    height: 24px;
+    font-size: 14px
+  }
+
+  .map-controls>span {
+    min-width: 32px;
+    font-size: 8px
+  }
 }
 
 @media(prefers-reduced-motion:reduce) {
