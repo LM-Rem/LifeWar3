@@ -2234,11 +2234,52 @@ body.no-motion *::after {
 }
 
 .library-detail {
-  padding: 14px 16px;
+  padding: 14px 16px 12px;
   border-top: 1px solid var(--line);
   min-height: 120px;
   flex-shrink: 0;
   overflow: visible
+}
+
+.library-detail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 11px;
+  letter-spacing: .5px;
+  color: #8ba2ac;
+  user-select: none;
+  cursor: pointer
+}
+
+.library-detail-toggle {
+  background: none;
+  border: 0;
+  padding: 2px 8px;
+  font: 11px var(--mono);
+  line-height: 1;
+  color: #5f7d86;
+  cursor: pointer;
+  border-radius: 3px
+}
+
+.library-detail-toggle:hover {
+  color: var(--accent);
+  background: #67f5d10a
+}
+
+.library-detail.collapsed {
+  min-height: 0;
+  padding-bottom: 8px
+}
+
+.library-detail.collapsed .library-detail-body {
+  display: none
+}
+
+.library-detail.collapsed .library-detail-head {
+  margin-bottom: 0
 }
 
 .library-detail h3 {

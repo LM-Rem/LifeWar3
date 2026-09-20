@@ -262,13 +262,24 @@ function loadGamePattern(id) {
 }
 
 // ---------- 详情与表单 ----------
+function setDetailCollapsed(collapsed, save = true) {
+  const el = $('#library-detail');
+  if (!el) return;
+  el.classList.toggle('collapsed', collapsed);
+  const btn = $('#library-detail-toggle');
+  if (btn) btn.textContent = collapsed ? '▸' : '▾';
+  if (save) { try { localStorage.setItem('library-detail-collapsed', collapsed ? '1' : '0'); } catch { /* 忽略 */ } }
+}
+
 function renderDetail() {
+  const body = $('#library-detail-body');
+  if (!body) return;
   if (selectedPattern) {
     const p = selectedPattern;
     const xs = currentCells.map(c => c[0]), ys = currentCells.map(c => c[1]);
     const w = currentCells.length ? Math.max(...xs) - Math.min(...xs) + 1 : 0;
     const h = currentCells.length ? Math.max(...ys) - Math.min(...ys) + 1 : 0;
-    $('#library-detail').innerHTML = `
+    body.innerHTML = `
       <h3>${escapeHTML(p.name || p.en || p.id)}</h3>
       <p class="library-comments">${escapeHTML(p.desc || '（无描述）')}</p>
       <div class="library-meta"><span>${currentCells.length} CELLS</span><span>${w} × ${h}</span><span>${currentCells.length} EN</span><span>${escapeHTML(categoryName(p.category))}</span></div>`;
@@ -276,12 +287,12 @@ function renderDetail() {
     const xs = currentCells.map(c => c[0]), ys = currentCells.map(c => c[1]);
     const w = currentCells.length ? Math.max(...xs) - Math.min(...xs) + 1 : 0;
     const h = currentCells.length ? Math.max(...ys) - Math.min(...ys) + 1 : 0;
-    $('#library-detail').innerHTML = `
+    body.innerHTML = `
       <h3>${escapeHTML(selectedFile.replace(/\.cells$/i, ''))}</h3>
       <p class="library-comments">${currentComments.length ? currentComments.map(escapeHTML).join('<br>') : '<span class="muted">（无说明）</span>'}</p>
       <div class="library-meta"><span>${currentCells.length} CELLS</span><span>${w} × ${h}</span><span>${currentCells.length} EN</span></div>`;
   } else {
-    $('#library-detail').innerHTML = '<div class="empty-rooms">选择左侧图案以预览</div>';
+    body.innerHTML = '<div class="empty-rooms">选择左侧图案以预览</div>';
   }
 }
 
@@ -489,6 +500,10 @@ canvas.addEventListener('wheel', e => {
   sim.camera.y = gy - (py - canvas.height / 2) / next;
   sim.render();
 }, { passive: false });
+
+// 详情面板折叠：恢复上次状态；点击整个标题栏任意位置即可折叠/展开
+try { setDetailCollapsed(localStorage.getItem('library-detail-collapsed') === '1', false); } catch { /* 忽略 */ }
+$('.library-detail-head').onclick = () => setDetailCollapsed(!$('#library-detail').classList.contains('collapsed'));
 
 loadLibrary();
 loadCategories();

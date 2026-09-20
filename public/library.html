@@ -27,7 +27,13 @@
       <div class="library-search"><input id="library-search" type="search" placeholder="搜索当前目录…（如 glider）" autocomplete="off"></div>
       <div class="library-path" id="library-path"></div>
       <div class="library-list" id="library-list"><div class="empty-rooms">正在读取图案集…</div></div>
-      <div class="library-detail" id="library-detail"><div class="empty-rooms">选择左侧图案以预览</div></div>
+      <div class="library-detail" id="library-detail">
+        <div class="library-detail-head">
+          <span>详情 <span class="micro">/ DETAIL</span></span>
+          <button class="library-detail-toggle" id="library-detail-toggle" title="折叠/展开详情" aria-label="折叠/展开详情">▾</button>
+        </div>
+        <div class="library-detail-body" id="library-detail-body"><div class="empty-rooms">选择左侧图案以预览</div></div>
+      </div>
     </aside>
     <section class="library-stage panel">
       <div class="panel-heading"><span>演化预览 <span class="micro">/ LIFE SIMULATION</span></span><span class="micro"><span id="sim-generation">GEN 0</span> · <span id="sim-population">0</span> CELLS</span></div>
