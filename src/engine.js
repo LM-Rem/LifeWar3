@@ -20,6 +20,11 @@ export class Game {
     this.dormancy = new RegionalCycleDetector(this.size);
     this.status = 'playing';
     this.winner = null;
+    // 休眠阈值随现实时间衰减：游戏开始后每分钟 dormancyDecayPerMinute 代，下限 minDormancyGenerations。
+    this.startedAt = Date.now();
+    this.baseDormancyGenerations = RULES.dormancyGenerations;
+    this.minDormancyGenerations = RULES.minDormancyGenerations;
+    this.dormancyDecayPerMinute = RULES.dormancyDecayPerMinute;
     this.changes = new Map();
     this.events = [];
     this.players = members.map((m, i) => ({ id: i + 1, name: m.name, bot: !!m.bot, x: SPAWNS[i][0], y: SPAWNS[i][1], hp: RULES.baseHP, energy: 120, cells: 0, nodes: 0, eliminated: false }));
@@ -53,6 +58,11 @@ export class Game {
     for (const key of positions) { this.board[key] = id; this.alive.push(key); this.changes.set(key, id); }
     p.cells += positions.size;
     return { ok: true, cost: positions.size };
+  }
+
+  currentDormancyGenerations() {
+    const elapsedMinutes = Math.floor((Date.now() - this.startedAt) / 60000);
+    return Math.max(this.minDormancyGenerations, this.baseDormancyGenerations - elapsedMinutes * this.dormancyDecayPerMinute);
   }
 
   step(dt = 1 / RULES.hz) {
@@ -99,7 +109,7 @@ export class Game {
     this.board = next; this.next = board; this.alive = nextAlive;
     for (const p of this.players) p.cells = totals[p.id];
     this.resolveObjectives();
-    this.dormancy.update(this, RULES.dormancyGenerations, RULES.dormancyWarning);
+    this.dormancy.update(this, this.currentDormancyGenerations(), RULES.dormancyWarning);
     for (const p of this.players) {
       p.nodes = this.nodes.filter(n => n.owner === p.id).length;
       if (!p.eliminated) p.energy = Math.min(RULES.maxEnergy, p.energy + RULES.regen + p.nodes * RULES.nodeRegen);
@@ -173,5 +183,5 @@ export class Game {
     return result;
   }
 
-  state() { return { type: 'state', generation: this.generation, status: this.status, winner: this.winner, players: this.players, nodes: this.nodes, events: this.events, dormancy: this.dormancy.warnings || [] }; }
+  state() { return { type: 'state', generation: this.generation, status: this.status, winner: this.winner, players: this.players, nodes: this.nodes, events: this.events, dormancy: this.dormancy.warnings || [], dormancyThreshold: this.currentDormancyGenerations() }; }
 }

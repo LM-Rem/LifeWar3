@@ -42,7 +42,7 @@ test('successful deployment resets local aging even if new cells immediately die
 
 test('static debris expires independently even with active adjacent regions',()=>{
   const g=fresh();seed(g,'block',450,450);seed(g,'block',100,400);step(g,590);
-  seed(g,'glider',490,490);step(g,20);
+  seed(g,'glider',550,450);step(g,20);
   assert.equal(g.board[400100],0);assert.equal(g.board[450450],0);assert.equal(g.alive.length,5);
 });
 
@@ -50,4 +50,22 @@ test('age follows generations regardless of dt, finished games do not age',()=>{
   const g=fresh();seed(g,'block',450,450);
   for(let i=0;i<600;i++)g.step(5);assert.equal(g.alive.length,4);g.step(0);assert.equal(g.alive.length,0);
   const finished=fresh();seed(finished,'block',450,450);step(finished,590);finished.status='finished';step(finished,100);assert.equal(finished.alive.length,4);assert.equal(finished.generation,590);
+});
+
+test('dormancy threshold decays per real minute and never below the minimum',()=>{
+  const g=fresh();
+  g.baseDormancyGenerations=600;g.minDormancyGenerations=100;g.dormancyDecayPerMinute=50;
+  g.startedAt=Date.now()-5*60000;assert.equal(g.currentDormancyGenerations(),350);
+  assert.equal(g.state().dormancyThreshold,350);
+  g.startedAt=Date.now()-11*60000;assert.equal(g.currentDormancyGenerations(),100);
+  assert.equal(g.state().dormancyThreshold,100);
+  g.dormancyDecayPerMinute=0;assert.equal(g.currentDormancyGenerations(),600);
+});
+
+test('decayed dormancy threshold clears static debris earlier',()=>{
+  const g=fresh();
+  g.baseDormancyGenerations=30;g.minDormancyGenerations=10;g.dormancyDecayPerMinute=0;
+  seed(g,'block',450,450);
+  step(g,30);assert.equal(g.alive.length,4);
+  g.step();assert.equal(g.alive.length,0);assert.equal(g.players[0].cells,0);
 });

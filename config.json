@@ -1,8 +1,10 @@
 {
   "size": 1000,
   "hz": 20,
-  "dormancyGenerations": 100,
-  "dormancyWarning": 50,
+  "dormancyGenerations": 200,
+  "dormancyWarning": 10,
+  "minDormancyGenerations": 20,
+  "dormancyDecayPerMinute": 20,
   "nodeCountMin": 12,
   "nodeCountMax": 16,
   "baseHitRadius": 32,

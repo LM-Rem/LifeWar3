@@ -143,8 +143,8 @@ export class Battlefield {
     for(const group of this.state?.dormancy||[]){
       let label=null;
       for(const tile of group.tiles){
-        const wx=(tile%32)*32,wy=Math.floor(tile/32)*32;
-        const[x,y]=this.screen(wx,wy),w=Math.min(32,1000-wx)*z,h=Math.min(32,1000-wy)*z;
+        const wx=(tile%20)*50,wy=Math.floor(tile/20)*50;
+        const[x,y]=this.screen(wx,wy),w=Math.min(50,1000-wx)*z,h=Math.min(50,1000-wy)*z;
         if(x+w<0||y+h<0||x>this.width||y>this.height)continue;
         c.fillRect(x,y,w,h);c.strokeRect(x,y,w,h);
         if(!label&&x>=0&&y>=0)label=[x+5,y+13];

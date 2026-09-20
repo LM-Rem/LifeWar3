@@ -12,6 +12,8 @@ const DEFAULTS = Object.freeze({
   hz: 10,
   dormancyGenerations: 600,
   dormancyWarning: 100,
+  minDormancyGenerations: 100,   // 休眠清理阈值下限（随游戏进行衰减后不得低于此值）
+  dormancyDecayPerMinute: 0,     // 游戏开始后，现实时间每分钟减少的休眠清理阈值（代；0 = 不衰减）
   nodeCountMin: 12,
   nodeCountMax: 16,
   baseHitRadius: BASE_HIT_RADIUS,
@@ -34,7 +36,11 @@ const INTEGER_KEYS = new Set([
   'size', 'dormancyGenerations', 'dormancyWarning', 'nodeCountMin', 'nodeCountMax',
   'baseHitRadius', 'captureRadius', 'captureTime', 'maxEnergy', 'baseHP', 'maxCells', 'playerCells',
   'deployCooldown', 'disconnectGenerations', 'roomIdleGenerations',
+  'minDormancyGenerations', 'dormancyDecayPerMinute',
 ]);
+
+// 允许配置为 0 的键（0 有明确语义：衰减速率 0 = 不衰减；最小休眠代数 0 = 无下限）。
+const ALLOW_ZERO_KEYS = new Set(['dormancyDecayPerMinute', 'minDormancyGenerations']);
 
 function sanitize(raw) {
   const result = { ...DEFAULTS };
@@ -43,11 +49,12 @@ function sanitize(raw) {
     const value = raw[key];
     if (value === undefined || value === null || value === '') continue;
     const num = Number(value);
-    if (!Number.isFinite(num) || num <= 0) {
+    const allowZero = ALLOW_ZERO_KEYS.has(key);
+    if (!Number.isFinite(num) || num < 0 || (num === 0 && !allowZero)) {
       console.warn(`[config] 忽略无效配置 ${key}=${JSON.stringify(value)}，使用默认值 ${DEFAULTS[key]}`);
       continue;
     }
-    result[key] = INTEGER_KEYS.has(key) ? Math.max(1, Math.round(num)) : num;
+    result[key] = INTEGER_KEYS.has(key) ? Math.max(allowZero ? 0 : 1, Math.round(num)) : num;
   }
   // 交叉校验：节点数量范围与细胞容量必须自洽，否则整组回退默认。
   if (result.nodeCountMin > result.nodeCountMax) {

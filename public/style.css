@@ -1665,6 +1665,36 @@ kbd {
   z-index: 15
 }
 
+.notice-banner {
+  position: absolute;
+  left: 50%;
+  top: 62px;
+  transform: translateX(-50%);
+  padding: 9px 16px;
+  background: #3d2a12ee;
+  border: 1px solid #f4cc7566;
+  color: #f4cc75;
+  font-size: 12px;
+  border-radius: 4px;
+  z-index: 16;
+  box-shadow: 0 4px 18px #0006;
+  animation: notice-in .3s ease-out
+}
+
+.notice-banner.fade-out {
+  animation: notice-out .3s ease-in forwards
+}
+
+@keyframes notice-in {
+  from { opacity: 0; transform: translate(-50%, -8px) }
+  to   { opacity: 1; transform: translate(-50%, 0) }
+}
+
+@keyframes notice-out {
+  from { opacity: 1; transform: translate(-50%, 0) }
+  to   { opacity: 0; transform: translate(-50%, -8px) }
+}
+
 .placement-tooltip {
   pointer-events: none;
   position: absolute;

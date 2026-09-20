@@ -1,6 +1,6 @@
 export class RegionalCycleDetector {
   constructor(size=1000,maxPeriod=8,halo=10) {
-    this.size=size;this.side=Math.ceil(size/32);this.length=this.side**2;this.maxPeriod=maxPeriod;
+    this.size=size;this.side=Math.ceil(size/50);this.length=this.side**2;this.maxPeriod=maxPeriod;
     this.hash1=new Uint32Array(this.length);this.hash2=new Uint32Array(this.length);this.count=new Uint16Array(this.length);
     this.history1=new Uint32Array(this.length*maxPeriod);this.history2=new Uint32Array(this.length*maxPeriod);this.historyCount=new Uint16Array(this.length*maxPeriod);
     this.period=new Uint8Array(this.length);this.age=new Uint16Array(this.length);
@@ -13,7 +13,7 @@ export class RegionalCycleDetector {
   invalidate(keys) {
     // Include neighbouring observation tiles, even if deployment dies next step.
     for (const key of keys) {
-      const tx=(key%this.size)>>5,ty=Math.floor(key/this.size)>>5;
+      const tx=Math.floor((key%this.size)/50),ty=Math.floor(Math.floor(key/this.size)/50);
       for(let y=Math.max(0,ty-1);y<=Math.min(this.side-1,ty+1);y++)
         for(let x=Math.max(0,tx-1);x<=Math.min(this.side-1,tx+1);x++) {
           const t=y*this.side+x;this.age[t]=0;this.period[t]=0;
@@ -23,9 +23,9 @@ export class RegionalCycleDetector {
   scan(game) {
     this.hash1.fill(0);this.hash2.fill(0);this.count.fill(0);
     for(const key of game.alive){
-      const x=key%this.size,y=Math.floor(key/this.size),tx=x>>5,ty=y>>5;
-      const x0=tx-(x%32<2&&tx>0?1:0),x1=tx+(x%32>=30&&tx+1<this.side?1:0);
-      const y0=ty-(y%32<2&&ty>0?1:0),y1=ty+(y%32>=30&&ty+1<this.side?1:0);
+      const x=key%this.size,y=Math.floor(key/this.size),tx=Math.floor(x/50),ty=Math.floor(y/50);
+      const x0=tx-(x%50<2&&tx>0?1:0),x1=tx+(x%50>=48&&tx+1<this.side?1:0);
+      const y0=ty-(y%50<2&&ty>0?1:0),y1=ty+(y%50>=48&&ty+1<this.side?1:0);
       let h=key+game.board[key]*1000000;
       h=Math.imul(h^(h>>>16),0x45d9f3b);h=Math.imul(h^(h>>>16),0x45d9f3b);h=(h^(h>>>16))>>>0;
       const h2=Math.imul(h^0x9e3779b9,0x85ebca6b)>>>0;
@@ -55,7 +55,7 @@ export class RegionalCycleDetector {
       const past=this.snapshots[(this.tick-1-p)%this.snapshots.length];
       const tx=tile%this.side,ty=Math.floor(tile/this.side);
       let same=true;
-      for(let y=Math.max(0,ty*32-halo);y<Math.min(this.size,ty*32+32+halo)&&same;y++)for(let x=Math.max(0,tx*32-halo);x<Math.min(this.size,tx*32+32+halo);x++)if(game.board[y*this.size+x]!==past[y*this.size+x]){same=false;break;}
+      for(let y=Math.max(0,ty*50-halo);y<Math.min(this.size,ty*50+50+halo)&&same;y++)for(let x=Math.max(0,tx*50-halo);x<Math.min(this.size,tx*50+50+halo);x++)if(game.board[y*this.size+x]!==past[y*this.size+x]){same=false;break;}
       if(same)verified[tile]=1;
     }
     return verified;
@@ -88,7 +88,7 @@ export class RegionalCycleDetector {
     }
     let removed=0;
     for(const key of game.alive) {
-      const tile=(Math.floor(key/this.size)>>5)*this.side+((key%this.size)>>5);
+      const tile=Math.floor(Math.floor(key/this.size)/50)*this.side+Math.floor((key%this.size)/50);
       if(!remove[tile])continue;
       const owner=game.board[key];if(!owner)continue;
       game.players[owner-1].cells--;game.board[key]=0;game.changes.set(key,0);removed++;

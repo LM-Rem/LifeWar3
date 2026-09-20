@@ -35,12 +35,27 @@ let eventIds = new Set(), editorCells = new Set(), editingId = null;
 const transformState = new Map();
 let gameHz = 10; // 服务器实际演化频率（代/秒），开局时从 rules 获取
 let startedAt = 0; // 对局开始时间（服务器时间戳），用于真实时间计时
+let lastDormancyThreshold = null; // 最近一次状态中的休眠清理阈值，用于检测衰减
+let dormancyNoticeTimer = null;   // 休眠阈值衰减提示横幅的显示时长定时器
+let dormancyFadeTimer = null;     // 休眠阈值衰减提示横幅的退场动画定时器
 $('#commander-name').value = readStorage('lifewar.name', '指挥官');
 
 function toast(message, error = false) {
   const el = document.createElement('div'); el.className = 'toast' + (error ? ' error' : ''); el.textContent = message;
   const dialog = $$('dialog[open]').at(-1); (dialog || $('#toasts')).append(el);
   setTimeout(() => { el.classList.add('exiting'); setTimeout(() => el.remove(), 250); }, 3400);
+}
+function showDormancyNotice(from, to) {
+  const el = $('#notice-banner');
+  el.textContent = `休眠清理阈值：${from} → ${to} 代`;
+  el.classList.remove('hidden', 'fade-out');
+  void el.offsetWidth; // 强制重排，确保每次触发都重新播放入场动画
+  clearTimeout(dormancyNoticeTimer);
+  clearTimeout(dormancyFadeTimer);
+  dormancyNoticeTimer = setTimeout(() => {
+    el.classList.add('fade-out'); // 先播放退场动画
+    dormancyFadeTimer = setTimeout(() => el.classList.add('hidden'), 300); // 动画结束后再隐藏
+  }, 3000);
 }
 function showPage(next) {
   page = next; $$('.screen').forEach(el => el.classList.toggle('active', el.id === next));
@@ -145,7 +160,12 @@ function onMessage(msg) {
     case 'started':
       playerId=msg.id;if(msg.rules?.hz)gameHz=msg.rules.hz;if(msg.rules?.baseHP){maxHP=msg.rules.baseHP;battlefield.baseHP=maxHP;}if(msg.rules?.maxEnergy)maxEnergy=msg.rules.maxEnergy;if(msg.rules?.regen)energyRegen=msg.rules.regen;if(msg.rules?.nodeRegen)energyNodeRegen=msg.rules.nodeRegen;if(msg.rules?.playerCells)battlefield.playerCells=msg.rules.playerCells;if(msg.rules?.maxCells)battlefield.maxCells=msg.rules.maxCells;if(msg.rules?.baseHitRadius)battlefield.baseHitRadius=msg.rules.baseHitRadius;if(msg.rules?.captureTime)battlefield.captureTime=msg.rules.captureTime;startedAt=msg.startedAt||Date.now();battlefield.me=playerId;battlefield.reset();eventIds.clear();resultShown=false;state=null;closeDialogs();showPage('game');renderPatterns();if(selected)selectPattern(selected);sound('capture');break;
     case 'state':{
-      const first=!state;state=msg;battlefield.setState(state);
+      const first=!state;
+      if(!first&&typeof msg.dormancyThreshold==='number'&&lastDormancyThreshold!==null&&msg.dormancyThreshold<lastDormancyThreshold){
+        showDormancyNotice(lastDormancyThreshold,msg.dormancyThreshold);
+      }
+      if(typeof msg.dormancyThreshold==='number')lastDormancyThreshold=msg.dormancyThreshold;
+      state=msg;battlefield.setState(state);
       if(first)battlefield.focusBase();updateGameHUD();break;
     }
     case 'deployed':battlefield.effect(msg.x,msg.y);sound('deploy');if(state){const me=state.players.find(p=>p.id===playerId);if(me)me.energy=Math.max(0,me.energy-msg.cost);}break;

@@ -14,6 +14,7 @@ npm start
 也可双击 `start.cmd`。首次运行会安装唯一的运行依赖 `ws`；后续无需外网，无 CDN、远程字体、账号或云服务。
 
 - 本机打开 **http://localhost:3000**。
+- 打开 **http://localhost:3000/library.html** 进入图案库：可像文件管理器一样逐层浏览根目录 `图案集_128/` 中的 `.cells` 图案、跨子目录搜索关键词，并把图案导入游戏的生命图谱；也可管理 `patterns.json` 中的已有图案。
 - 其他玩家连接同一局域网，在浏览器打开启动日志或联机页显示的 LAN 地址，例如 `http://192.168.1.4:3000`。
 - 一人创建战区、分享邀请链接或 6 位房间码；其他人加入并准备，房主启动对局。
 - 可添加 AI 补齐人数，也可在首页点击「模拟训练」直接进入人机对抗。
@@ -90,6 +91,8 @@ npm start
   "hz": 10,
   "dormancyGenerations": 600,
   "dormancyWarning": 100,
+  "minDormancyGenerations": 100,
+  "dormancyDecayPerMinute": 0,
   "nodeCountMin": 12,
   "nodeCountMax": 16,
   "baseHitRadius": 12,
@@ -133,8 +136,9 @@ npm start
 | `roomIdleGenerations` | `900` | 房间无人在线超过多少代后清理（= 90 秒） |
 
 - 只写需要修改的项即可，其余使用内置默认值；删除 `config.json` 即完全恢复默认。
-- `hz`、`regen`、`nodeRegen`、`captureDecay` 允许小数，其余按整数处理。
+- `hz`、`regen`、`nodeRegen`、`captureDecay` 允许小数，其余按整数处理；`minDormancyGenerations` 与 `dormancyDecayPerMinute` 允许为 `0`。
 - 数值自动校验：非法值忽略并回退默认；`nodeCountMin > nodeCountMax` 或 `playerCells > maxCells` 时整组回退默认。
+- 休眠阈值衰减：对局开始（服务器创建对局）时以 `dormancyGenerations` 为初始值，按现实时间每满 1 分钟减少 `dormancyDecayPerMinute` 代，但不低于 `minDormancyGenerations`。例如 `dormancyGenerations: 600`、`dormancyDecayPerMinute: 50`、`minDormancyGenerations: 100` 时，前 10 分钟为 600 代，之后每分钟递减 50 代，18 分钟后稳定在 100 代。`hz` 不影响该衰减节奏（按现实分钟而非代数计）。
 - 修改 `hz` 会等比例改变所有代次驱动规则的**实际时间**（例如 `hz: 20` 时能量回复翻倍为每秒 10、占领 30 代仅需 1.5 秒），网络增量流量也随之成倍增加。
 - `baseHitRadius` 调整后浏览器端基地受击圈仍按代码内常量绘制，建议保持默认。
 - 配置在服务器启动时读取，修改后需**重启服务器**生效。
@@ -184,10 +188,14 @@ public/             无构建步骤的浏览器 ES modules、界面与样式
   app.js            页面、联机客户端、输入、图案实验室
   renderer.js       Canvas 战场、小地图与首页动态球体
   patterns.js       预设、变换和 RLE
+  patterns.json     生命图谱数据（图案库可浏览/新增/编辑/删除）
   territory.js      随机节点、Voronoi 分区与共享归属判定
+  library.html      图案库页面：图案集目录浏览与生命图谱管理
+  library.js        图案库逻辑：逐层目录、遍历子目录搜索、.cells 解析与预览
 src/engine.js       权威模拟与玩法规则
-src/server.js       HTTP / WebSocket、房间、重连
+src/server.js       HTTP / WebSocket、房间、重连；/api/library 图案集浏览与搜索
 src/bots.js         基于领地的 AI 发射与推进
+图案集_128/         .cells 图案源文件库（按 16x16 等尺寸分层存放，供图案库浏览/搜索）
 tests/              规则测试、多人集成测试与性能基准
 docs/plans/         设计与实施记录
 ```

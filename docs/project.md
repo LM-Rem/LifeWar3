@@ -90,7 +90,7 @@ LifeWar3/
 
 - `RULES`（冻结常量）：
   - `size: 1000` 地图边长；`hz: 10` 演化频率
-  - `dormancyGenerations: 600` 休眠清理阈值；`dormancyWarning: 100` 预警窗口
+  - `dormancyGenerations: 600` 休眠清理阈值；`dormancyWarning: 100` 预警窗口；`minDormancyGenerations: 100` 阈值下限；`dormancyDecayPerMinute: 0` 每分钟衰减代数（按现实时间，0 = 不衰减）
   - `nodeCountMin: 12` / `nodeCountMax: 16`
   - `baseHitRadius: 12` 基地受击半径；`captureRadius: 10` 节点占领半径；`captureTime: 30` 代（10Hz 下 3 秒）；`captureDecay: 0.05`（空置每代衰减）
   - `maxEnergy: 180`；`regen: 0.5`（每代基础回复，10Hz 下每秒 5）；`nodeRegen: 0.1`（每代每节点 +1/s）；`baseHP: 240`
@@ -160,7 +160,7 @@ LifeWar3/
 
 - **目标**：清除长期原地重复的局部生命结构（静物/振荡器），回收棋盘空间，防止无限驻守。
 - **算法**：
-  - 32×32 分块 + 2 格观察余量；每代对活细胞所在块累加两个哈希指纹与人口计数；
+  - 50×50 分块 + 2 格观察余量；每代对活细胞所在块累加两个哈希指纹与人口计数；
   - 回溯最近 1-8 代，指纹与人口完全一致则判定周期重复并累计 `age`；
   - 保存 9 份整图快照，候选清理前逐格精确复核；
   - 相邻非空块组成清理组，整组达到 600 代阈值后一次性删除（避免清出残片）；最后 100 代通过 `state().dormancy` 推送预警，前端绘制琥珀色边框。
