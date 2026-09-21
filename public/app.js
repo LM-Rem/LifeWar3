@@ -229,6 +229,12 @@ function renderCategoryTags(){
   $('#pattern-categories').innerHTML=tags.map(t=>`<button class="category-tag ${t.id===currentCategory?'active':''}" data-category="${escapeHTML(t.id)}">${escapeHTML(t.name)}</button>`).join('');
   $$('.category-tag').forEach(b=>b.onclick=()=>{currentCategory=b.dataset.category;renderCategoryTags();renderPatterns();sound();});
 }
+function cycleCategory(delta){
+  const tags=[{id:'all',name:'全部'},...PATTERN_CATEGORIES,{id:'custom',name:'自定义'}];
+  const idx=tags.findIndex(t=>t.id===currentCategory);
+  currentCategory=tags[(idx+delta+tags.length)%tags.length].id;
+  renderCategoryTags();renderPatterns();sound();
+}
 function renderPatterns(){
   allPatterns=visiblePatterns();
   $('#pattern-list').innerHTML=allPatterns.map((p,i)=>`<button class="pattern-card ${selected&&p.id===selected.id?'selected':''}" data-pattern="${escapeHTML(p.id)}" title="${escapeHTML(p.desc)}"><span class="shortcut">${i<7?i+1:'C'}</span><canvas width="118" height="94"></canvas><strong>${escapeHTML(p.name)}</strong><span class="pattern-cost">${p.cells.length} EN</span></button>`).join('');
@@ -452,7 +458,8 @@ window.addEventListener('keydown',e=>{
   if(['tab',' ','arrowup','arrowdown','arrowleft','arrowright'].includes(key))e.preventDefault();
   if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'].includes(key))battlefield.keys.add(key);
   if(e.repeat)return;
-  if(key==='r')$('#rotate-pattern').click();if(key==='e')$('#flip-pattern').click();if(key===' ')battlefield.focusBase();if(key==='tab')toggleHUD();if(key==='h')openDialog('#help-dialog');
+  if(key==='q')cycleCategory(-1);if(key==='e')cycleCategory(1);
+  if(key==='f')$('#flip-pattern').click();if(key==='r')$('#rotate-pattern').click();if(key===' ')battlefield.focusBase();if(key==='tab')toggleHUD();if(key==='h')openDialog('#help-dialog');
   if(/^[1-7]$/.test(key))selectPattern(allPatterns[Number(key)-1]);
 });
 window.addEventListener('keyup',e=>battlefield.keys.delete(e.key.toLowerCase()));
