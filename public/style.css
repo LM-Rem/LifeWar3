@@ -1104,6 +1104,7 @@ kbd {
 }
 
 .card-grid {
+  --card-w: 168px;
   position: relative;
   display: flex;
   align-items: flex-start;
@@ -1118,7 +1119,7 @@ kbd {
   position: relative;
   display: flex;
   flex-direction: column;
-  flex: 0 0 168px;
+  flex: 0 0 var(--card-w);
   aspect-ratio: 5/7;
   padding: 13px 12px 11px;
   overflow: hidden;
@@ -1139,12 +1140,13 @@ kbd {
 
 .card.dragging {
   position: fixed;
-  width: 168px;
+  width: var(--card-w, 168px);
   margin: 0;
   z-index: 1000;
   cursor: grabbing;
   user-select: none;
   transition: none;
+  transform: none; /* 覆盖选中态的上移，拖动时精确跟随指针 */
   opacity: .96;
   pointer-events: auto;
   box-shadow:
@@ -1155,7 +1157,7 @@ kbd {
 }
 
 .card-placeholder {
-  flex: 0 0 168px;
+  flex: 0 0 var(--card-w);
   align-self: flex-start;
   border-radius: 16px;
   border: 2px dashed color-mix(in srgb, var(--card-color, #7fd1ff) 55%, transparent);
@@ -1193,6 +1195,16 @@ kbd {
     0 0 0 1px #000a,
     0 0 20px color-mix(in srgb, var(--card-color) 70%, transparent),
     0 0 54px color-mix(in srgb, var(--card-color) 30%, transparent),
+    inset 0 0 26px color-mix(in srgb, var(--card-color) 24%, transparent)
+}
+
+.card.selected {
+  transform: translateY(-6px);
+  border-color: color-mix(in srgb, var(--card-color) 90%, #fff);
+  box-shadow:
+    0 0 0 2px var(--card-color),
+    0 0 24px color-mix(in srgb, var(--card-color) 90%, transparent),
+    0 0 64px color-mix(in srgb, var(--card-color) 40%, transparent),
     inset 0 0 26px color-mix(in srgb, var(--card-color) 24%, transparent)
 }
 
@@ -2842,6 +2854,44 @@ body.no-motion *::after {
 }
 
 @media(max-width:760px) {
+  .card-grid {
+    --card-w: 118px;
+    gap: 10px
+  }
+
+  .card {
+    padding: 9px 8px 8px
+  }
+
+  .card::before {
+    background-size: cover
+  }
+
+  .card-type {
+    padding: 3px 6px;
+    font-size: 7px;
+    letter-spacing: 1px
+  }
+
+  .card-name {
+    margin-top: 5px;
+    font-size: 11px;
+    letter-spacing: 1px
+  }
+
+  .card-desc {
+    margin: 5px 0 0;
+    padding-top: 5px;
+    font-size: 8px;
+    line-height: 1.5
+  }
+
+  .card-cost {
+    margin-top: 6px;
+    padding-top: 5px;
+    font-size: 8px
+  }
+
   .site-header {
     height: 77px;
     margin: 0 6%
@@ -3637,6 +3687,21 @@ body.no-motion *::after {
   #game textarea {
     -webkit-user-select: text;
     user-select: text
+  }
+}
+
+/* 触摸设备：未选中卡牌与手牌容器允许触摸滚动（列表为横向滚动）；
+   选中/拖动卡牌时禁用手势冲突 */
+@media (pointer: coarse) {
+  .card-container,
+  .card-grid,
+  .card {
+    touch-action: manipulation
+  }
+
+  .card.selected,
+  .card.dragging {
+    touch-action: none
   }
 }
 

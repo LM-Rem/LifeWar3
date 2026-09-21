@@ -120,6 +120,9 @@ document.addEventListener('wheel', e => {
 const cardGridEl = $('.card-grid');
 if (cardGridEl) {
   let dragCard = null, placeholder = null, dragOffsetX = 0, dragOffsetY = 0, dragging = false;
+  let selectedCard = null; // 移动端：当前选中的卡牌（选中的才能拖动）
+  let tapCandidate = null; // 移动端触摸点击候选：{ card, startX, startY, moved }
+  const TAP_SLOP = 8; // 位移超过该阈值视为滚动/拖动，不算点击
   const gridCards = () => [...cardGridEl.querySelectorAll('.card')];
 
   // FLIP 动画：布局改变前记录位置快照，改变后让卡牌从旧位置平滑过渡到新位置
@@ -175,16 +178,68 @@ if (cardGridEl) {
     playFlip(first);
   }
 
+  // 移动端：点击选中卡牌，再次点击取消；选中的卡牌才允许拖动
+  function setSelected(card) {
+    if (selectedCard === card) return;
+    selectedCard?.classList.remove('selected');
+    selectedCard = card;
+    card?.classList.add('selected');
+  }
+
   cardGridEl.addEventListener('pointerdown', e => {
     const card = e.target.closest('.card');
-    if (!card || e.button !== 0 || dragging) return;
-    if (e.target.closest('button, a')) return;
+    if (e.button !== 0 || dragging) return;
+    if (card && e.target.closest('button, a')) return;
+    const touch = e.pointerType === 'touch';
+
+    if (touch) {
+      // 移动端：只记录点击候选，不立即拖动（让浏览器正常滚动列表）
+      tapCandidate = { card, startX: e.clientX, startY: e.clientY, moved: false };
+      return;
+    }
+
+    // 桌面端：保持原有行为，按下即拖动
+    if (card) startDrag(e, card);
+  });
+
+  // 移动端：按住选中的卡牌移动超过阈值即开始拖动；其余滑动交给浏览器滚动列表
+  cardGridEl.addEventListener('pointermove', e => {
+    const t = tapCandidate;
+    if (!t || e.pointerType !== 'touch') return;
+    const dx = e.clientX - t.startX, dy = e.clientY - t.startY;
+    if (Math.hypot(dx, dy) <= TAP_SLOP) return;
+    if (t.card && t.card === selectedCard) {
+      tapCandidate = null;
+      startDrag(e, t.card);
+    } else {
+      t.moved = true; // 未选中卡牌/空白处滑动：视为滚动
+    }
+  });
+
+  cardGridEl.addEventListener('pointerup', e => {
+    const t = tapCandidate;
+    tapCandidate = null;
+    if (!t || e.pointerType !== 'touch' || t.moved) return;
+    if (t.card) {
+      // 点击已选中的卡牌 = 取消选中；点击其他卡牌 = 选中它
+      setSelected(t.card === selectedCard ? null : t.card);
+    } else {
+      setSelected(null); // 点击空白取消选中
+    }
+  });
+
+  cardGridEl.addEventListener('pointercancel', () => { tapCandidate = null; });
+
+  // 开始拖动：记录偏移、创建占位符、把卡牌提升到 body 跟随指针
+  function startDrag(e, card) {
     e.preventDefault();
     const r = card.getBoundingClientRect();
     dragOffsetX = e.clientX - r.left;
     dragOffsetY = e.clientY - r.top;
     dragCard = card;
     dragging = true;
+    // 记录实际宽度（移动端缩小后不是固定 168px），拖动与分解时保持同尺寸
+    card.style.width = `${card.offsetWidth}px`;
 
     // 原位置插入占位符，其余卡牌保持不动、保留间距
     placeholder = createPlaceholder(card);
@@ -200,7 +255,7 @@ if (cardGridEl) {
     document.addEventListener('pointermove', onDragMove);
     document.addEventListener('pointerup', onDragEnd);
     document.addEventListener('pointercancel', onDragCancel);
-  });
+  }
 
   function onDragMove(e) {
     if (!dragCard) return;
@@ -229,6 +284,7 @@ if (cardGridEl) {
     card.classList.remove('dragging');
     card.style.left = '';
     card.style.top = '';
+    card.style.width = ''; // 恢复网格布局的 flex-basis 宽度
     const phIndex = [...cardGridEl.children].indexOf(placeholder);
     if (phIndex >= 0) cardGridEl.insertBefore(card, cardGridEl.children[phIndex]);
     else cardGridEl.appendChild(card);
@@ -256,6 +312,7 @@ if (cardGridEl) {
     card.classList.remove('dragging');
     card.style.left = '';
     card.style.top = '';
+    card.style.width = ''; // 恢复网格布局的 flex-basis 宽度
     const phIndex = [...cardGridEl.children].indexOf(placeholder);
     if (phIndex >= 0) cardGridEl.insertBefore(card, cardGridEl.children[phIndex]);
     else cardGridEl.appendChild(card);
@@ -268,9 +325,10 @@ if (cardGridEl) {
   function useCard(card) {
     const name = card.querySelector('.card-name')?.textContent || '未知卡牌';
     toast(`已使用：${name}`);
+    const cardW = card.offsetWidth; // 当前实际宽度（移动端缩小后保持同尺寸）
     card.classList.remove('dragging');
     card.style.position = 'fixed';
-    card.style.width = '168px';
+    card.style.width = `${cardW}px`;
     card.style.pointerEvents = 'none';
     card.style.zIndex = '1500';
     card.style.transformOrigin = 'center';
@@ -280,12 +338,14 @@ if (cardGridEl) {
     placeholder?.remove();
     placeholder = null;
     dragCard = null; dragging = false;
+    if (selectedCard === card) selectedCard = null;
     sound('capture');
     decomposeCard(card);
   }
 
   // ===== 卡牌分解动画：参考实现移植（源图网格采样 + 粒子化 + 脉冲高光）=====
-  let cells = [], disT = 0, totalDur = 2.2;
+  // 注意：每个分解动画实例的状态（cells / disT / totalDur）都封装在 decomposeCard 的
+  // 局部作用域中，连续使用多张卡牌时动画互不干扰（修复上一张未结束就使用下一张导致的叠加加速）。
   const CELL = 8; // 分解网格大小（逻辑像素）
 
   const clamp = (v, a, b) => v < a ? a : (v > b ? b : v);
@@ -317,7 +377,7 @@ if (cardGridEl) {
   // （在卡牌主色附近随机浮动，模拟源图采样的颜色差异，同时保持整体视觉一致）
   function buildCells(W, H, base) {
     const COLS = Math.ceil(W / CELL), ROWS = Math.ceil(H / CELL);
-    cells = [];
+    const cells = [];
     for (let gy = 0; gy < ROWS; gy++) {
       for (let gx = 0; gx < COLS; gx++) {
         const x0 = gx * CELL, y0 = gy * CELL;
@@ -345,10 +405,11 @@ if (cardGridEl) {
         });
       }
     }
+    return cells;
   }
 
-  // 每次分解重新随机化：激活时机、形态、漂移全部随机
-  function randomizeCells() {
+  // 每次分解重新随机化：激活时机、形态、漂移全部随机，返回本次动画总时长
+  function randomizeCells(cells) {
     const SPREAD = 0.55, JITTER = 0.28, WARMUP = 0.10;
     let maxT = 0;
     for (const c of cells) {
@@ -366,11 +427,11 @@ if (cardGridEl) {
       const end = c.t0 + c.appearDur + c.holdDur + c.fadeDur;
       if (end > maxT) maxT = end;
     }
-    totalDur = maxT + 0.5;
+    return maxT + 0.5;
   }
 
   // 绘制分解过程：只绘制发光方块粒子（颜色、大小各有差异），canvas 其余部分完全透明
-  function drawDisintegrating(g, W, H, ox, oy) {
+  function drawDisintegrating(g, cells, disT, W, H, ox, oy) {
     g.globalCompositeOperation = 'lighter';
     for (const c of cells) {
       const lt = disT - c.t0;
@@ -434,9 +495,11 @@ if (cardGridEl) {
     card.style.visibility = 'visible';
     card.style.opacity = '1';
 
-    buildCells(W, H, base);
-    randomizeCells();
-    disT = 0;
+    // 每张卡牌独立持有动画状态：cells / totalDur / disT 均为本实例的局部变量，
+    // 连续使用多张卡牌时互不影响（不会出现共用全局状态导致的加速或粒子串扰）
+    const cells = buildCells(W, H, base);
+    const totalDur = randomizeCells(cells);
+    let disT = 0;
 
     const start = performance.now();
     let last = start;
@@ -457,7 +520,7 @@ if (cardGridEl) {
       ctx.translate(cx, cy);
       ctx.scale(grow, grow);
       ctx.translate(-cx, -cy);
-      drawDisintegrating(ctx, W, H, ox, oy);
+      drawDisintegrating(ctx, cells, disT, W, H, ox, oy);
       ctx.restore();
 
       // 卡牌本体淡出：粒子约在 1.0s 铺满整张卡牌，此时卡牌必须已完全不可见，
