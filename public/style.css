@@ -1104,6 +1104,7 @@ kbd {
 }
 
 .card-grid {
+  position: relative;
   display: flex;
   align-items: flex-start;
   gap: 18px;
@@ -1132,7 +1133,46 @@ kbd {
     0 0 16px color-mix(in srgb, var(--card-color) 50%, transparent),
     0 0 42px color-mix(in srgb, var(--card-color) 22%, transparent),
     inset 0 0 22px color-mix(in srgb, var(--card-color) 18%, transparent);
-  transition: transform .16s, box-shadow .16s
+  transition: transform .16s, box-shadow .16s;
+  touch-action: none
+}
+
+.card.dragging {
+  position: fixed;
+  width: 168px;
+  margin: 0;
+  z-index: 1000;
+  cursor: grabbing;
+  user-select: none;
+  transition: none;
+  opacity: .96;
+  pointer-events: auto;
+  box-shadow:
+    0 0 0 1px #000a,
+    0 0 26px color-mix(in srgb, var(--card-color) 85%, transparent),
+    0 0 70px color-mix(in srgb, var(--card-color) 45%, transparent),
+    inset 0 0 24px color-mix(in srgb, var(--card-color) 20%, transparent);
+}
+
+.card-placeholder {
+  flex: 0 0 168px;
+  align-self: flex-start;
+  border-radius: 16px;
+  border: 2px dashed color-mix(in srgb, var(--card-color, #7fd1ff) 55%, transparent);
+  background: color-mix(in srgb, var(--card-color, #7fd1ff) 7%, transparent);
+  opacity: .8;
+  transition: border-color .16s, background .16s;
+}
+
+.card.using {
+  animation: card-use .46s ease forwards;
+  pointer-events: none
+}
+
+@keyframes card-use {
+  0% { opacity: 1; transform: scale(1); filter: brightness(1) }
+  35% { opacity: 1; transform: scale(1.13); filter: brightness(1.8) drop-shadow(0 0 18px var(--card-color)) }
+  100% { opacity: 0; transform: scale(.55) translateY(-42px) rotate(4deg); filter: brightness(2.3) drop-shadow(0 0 30px var(--card-color)) }
 }
 
 .card::before {

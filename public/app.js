@@ -116,6 +116,170 @@ document.addEventListener('wheel', e => {
   if (scrollEl.scrollLeft !== before) e.preventDefault();
 }, { passive: false, capture: true });
 
+// ===== 卡牌仓库：占位符式拖动排序，拖出容器使用卡牌 =====
+const cardGridEl = $('.card-grid');
+if (cardGridEl) {
+  let dragCard = null, placeholder = null, dragOffsetX = 0, dragOffsetY = 0, dragging = false;
+  const gridCards = () => [...cardGridEl.querySelectorAll('.card')];
+
+  // FLIP 动画：布局改变前记录位置快照，改变后让卡牌从旧位置平滑过渡到新位置
+  function snapshot() {
+    const first = new Map();
+    for (const card of gridCards()) first.set(card, card.getBoundingClientRect());
+    return first;
+  }
+  function playFlip(first) {
+    void cardGridEl.offsetWidth;
+    for (const [card, old] of first) {
+      const now = card.getBoundingClientRect();
+      const dx = old.left - now.left, dy = old.top - now.top;
+      if (!dx && !dy) continue;
+      card.style.transition = 'none';
+      card.style.transform = `translate(${dx}px, ${dy}px)`;
+      requestAnimationFrame(() => {
+        card.style.transition = '';
+        card.style.transform = '';
+      });
+    }
+  }
+
+  // 创建占位符：与原卡牌同尺寸、同主色调的虚线框
+  function createPlaceholder(card) {
+    const ph = document.createElement('div');
+    ph.className = 'card-placeholder';
+    const r = card.getBoundingClientRect();
+    ph.style.height = `${r.height}px`;
+    const color = getComputedStyle(card).getPropertyValue('--card-color').trim();
+    if (color) ph.style.setProperty('--card-color', color);
+    return ph;
+  }
+
+  // 根据指针水平位置移动占位符到对应卡牌间隙，其余卡牌自动让位
+  function movePlaceholder(clientX, clientY) {
+    const g = cardGridEl.getBoundingClientRect();
+    // 指针纵向远离卡牌行时不移动占位符，避免拖出容器时错位
+    if (clientY < g.top - 90 || clientY > g.bottom + 90) return;
+    const list = gridCards();
+    if (!list.length) return;
+    let targetIndex = 0;
+    for (let i = 0; i < list.length; i++) {
+      const r = list[i].getBoundingClientRect();
+      if (clientX >= r.left + r.width / 2) targetIndex = i + 1;
+      else break;
+    }
+    const phIndex = [...cardGridEl.children].indexOf(placeholder);
+    if (targetIndex === phIndex) return;
+    const first = snapshot();
+    if (targetIndex >= list.length) cardGridEl.appendChild(placeholder);
+    else cardGridEl.insertBefore(placeholder, list[targetIndex]);
+    playFlip(first);
+  }
+
+  cardGridEl.addEventListener('pointerdown', e => {
+    const card = e.target.closest('.card');
+    if (!card || e.button !== 0 || dragging) return;
+    if (e.target.closest('button, a')) return;
+    e.preventDefault();
+    const r = card.getBoundingClientRect();
+    dragOffsetX = e.clientX - r.left;
+    dragOffsetY = e.clientY - r.top;
+    dragCard = card;
+    dragging = true;
+
+    // 原位置插入占位符，其余卡牌保持不动、保留间距
+    placeholder = createPlaceholder(card);
+    cardGridEl.insertBefore(placeholder, card);
+
+    // 将真实卡牌提升到 body，用 fixed 定位跟随指针，彻底摆脱容器裁剪
+    document.body.appendChild(card);
+    card.classList.add('dragging');
+    card.style.left = `${e.clientX - dragOffsetX}px`;
+    card.style.top = `${e.clientY - dragOffsetY}px`;
+
+    try { card.setPointerCapture(e.pointerId); } catch { /* 忽略 */ }
+    document.addEventListener('pointermove', onDragMove);
+    document.addEventListener('pointerup', onDragEnd);
+    document.addEventListener('pointercancel', onDragCancel);
+  });
+
+  function onDragMove(e) {
+    if (!dragCard) return;
+    dragCard.style.left = `${e.clientX - dragOffsetX}px`;
+    dragCard.style.top = `${e.clientY - dragOffsetY}px`;
+    movePlaceholder(e.clientX, e.clientY);
+  }
+
+  function onDragEnd(e) {
+    document.removeEventListener('pointermove', onDragMove);
+    document.removeEventListener('pointerup', onDragEnd);
+    document.removeEventListener('pointercancel', onDragCancel);
+    if (!dragCard) return;
+    const card = dragCard;
+    const container = $('#card-container').getBoundingClientRect();
+    const outside = e.clientX < container.left || e.clientX > container.right ||
+                    e.clientY < container.top || e.clientY > container.bottom;
+
+    if (outside) {
+      useCard(card);
+      return;
+    }
+
+    // 回到容器：插回占位符位置，并播放从当前位置飞回的动画
+    const oldRect = card.getBoundingClientRect();
+    card.classList.remove('dragging');
+    card.style.left = '';
+    card.style.top = '';
+    const phIndex = [...cardGridEl.children].indexOf(placeholder);
+    if (phIndex >= 0) cardGridEl.insertBefore(card, cardGridEl.children[phIndex]);
+    else cardGridEl.appendChild(card);
+    const newRect = card.getBoundingClientRect();
+    const dx = oldRect.left - newRect.left, dy = oldRect.top - newRect.top;
+    if (dx || dy) {
+      card.style.transition = 'none';
+      card.style.transform = `translate(${dx}px, ${dy}px)`;
+      requestAnimationFrame(() => {
+        card.style.transition = '';
+        card.style.transform = '';
+      });
+    }
+    placeholder?.remove();
+    placeholder = null;
+    dragCard = null; dragging = false;
+  }
+
+  function onDragCancel() {
+    document.removeEventListener('pointermove', onDragMove);
+    document.removeEventListener('pointerup', onDragEnd);
+    document.removeEventListener('pointercancel', onDragCancel);
+    if (!dragCard) return;
+    const card = dragCard;
+    card.classList.remove('dragging');
+    card.style.left = '';
+    card.style.top = '';
+    const phIndex = [...cardGridEl.children].indexOf(placeholder);
+    if (phIndex >= 0) cardGridEl.insertBefore(card, cardGridEl.children[phIndex]);
+    else cardGridEl.appendChild(card);
+    placeholder?.remove();
+    placeholder = null;
+    dragCard = null; dragging = false;
+  }
+
+  // 拖出容器：使用卡牌，在当前位置播放消散动画后移除
+  function useCard(card) {
+    const name = card.querySelector('.card-name')?.textContent || '未知卡牌';
+    toast(`已使用：${name}`);
+    card.classList.remove('dragging');
+    card.classList.add('using');
+    card.style.position = 'fixed';
+    card.style.width = '168px';
+    card.style.pointerEvents = 'none';
+    placeholder?.remove();
+    placeholder = null;
+    dragCard = null; dragging = false;
+    setTimeout(() => card.remove(), 480);
+  }
+}
+
 let audioContext;
 function sound(type='click') {
   if(!settings.sound)return;
