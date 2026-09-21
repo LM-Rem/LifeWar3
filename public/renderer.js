@@ -23,6 +23,7 @@ export class Battlefield {
     this.wctx = this.world.getContext('2d'); this.board = new Uint8Array(1000000);
     this.cells = new Map(); this.effects = []; this.pointer = null; this.pattern = []; this.keys = new Set(); this.active = false;
     this.state = null; this.territories = []; this.me = 1; this.generation = 0; this.baseHP = 240; this.playerCells = 6000; this.maxCells = 24000; this.baseHitRadius = BASE_HIT_RADIUS; this.captureTime = 30;
+    this.cardTarget = null; // 道具卡选点模式：{ cardId, radius }
     this.resize(); new ResizeObserver(() => this.resize()).observe(canvas);
     this.lastTime = performance.now(); this.frame = this.frame.bind(this); requestAnimationFrame(this.frame);
   }
@@ -56,6 +57,14 @@ export class Battlefield {
   }
   focusBase() { this.cameraTarget=null; const p=this.state?.players.find(p=>p.id===this.me); if(p){this.camera.x=p.x+Math.sign(500-p.x)*35;this.camera.y=p.y+Math.sign(500-p.y)*35;this.camera.zoom=3.5;} }
   placement() {
+    // 道具卡选点模式：以指针位置为中心返回目标点（不校验领地，服务器权威执行）
+    if (this.cardTarget && this.pointer && this.state) {
+      const [wx, wy] = this.worldPoint(this.pointer.x, this.pointer.y);
+      const p = this.state.players.find(p => p.id === this.me);
+      let reason = '';
+      if (!p || p.eliminated || this.state.status !== 'playing') reason = '当前无法使用卡牌';
+      return { x: Math.floor(wx), y: Math.floor(wy), pw: 1, ph: 1, valid: !reason, reason, isCard: true, radius: this.cardTarget.radius };
+    }
     if (!this.pointer || !this.pattern.length || !this.state) return null;
     const [wx,wy]=this.worldPoint(this.pointer.x,this.pointer.y), p=this.state.players.find(p=>p.id===this.me);
     const pw=Math.max(...this.pattern.map(c=>c[0]))+1, ph=Math.max(...this.pattern.map(c=>c[1]))+1;
@@ -122,9 +131,23 @@ export class Battlefield {
     c.restore();c.strokeStyle='#3f687255';c.lineWidth=1;c.strokeRect(ox,oy,1000*z,1000*z);
     const placement=this.placement();
     if(placement){
-      const color=placement.valid?COLORS[this.me-1]:COLORS[1];c.fillStyle=hexAlpha(color,.7);
-      for(const [dx,dy]of this.pattern){const [x,y]=this.screen(placement.x+dx,placement.y+dy);c.fillRect(x,y,Math.max(1,z-.8),Math.max(1,z-.8));}
-      const [x,y]=this.screen(placement.x,placement.y);c.strokeStyle=color;c.lineWidth=1;c.setLineDash([3,3]);c.strokeRect(x-3,y-3,placement.pw*z+5,placement.ph*z+5);c.setLineDash([]);
+      if(placement.isCard){
+        // 道具卡选点：绘制目标半径圆环与中心标记
+        const [x,y]=this.screen(placement.x,placement.y),r=placement.radius*this.camera.zoom;
+        const color=placement.valid?'#b07cff':'#40545e';
+        c.save();
+        c.beginPath();c.arc(x,y,r,0,TAU);
+        c.fillStyle=hexAlpha(color,.06);c.fill();
+        c.strokeStyle=hexAlpha(color,.9);c.lineWidth=1.4;c.setLineDash([6,4]);c.stroke();c.setLineDash([]);
+        c.beginPath();c.arc(x,y,3,0,TAU);c.fillStyle=color;c.fill();
+        c.font='10px Consolas, Microsoft YaHei, monospace';c.textAlign='center';c.fillStyle=color;
+        c.fillText(`点击施放 · 半径 ${placement.radius} 格`,x,y-r-8);
+        c.restore();
+      }else{
+        const color=placement.valid?COLORS[this.me-1]:COLORS[1];c.fillStyle=hexAlpha(color,.7);
+        for(const [dx,dy]of this.pattern){const [x,y]=this.screen(placement.x+dx,placement.y+dy);c.fillRect(x,y,Math.max(1,z-.8),Math.max(1,z-.8));}
+        const [x,y]=this.screen(placement.x,placement.y);c.strokeStyle=color;c.lineWidth=1;c.setLineDash([3,3]);c.strokeRect(x-3,y-3,placement.pw*z+5,placement.ph*z+5);c.setLineDash([]);
+      }
       this.onPreview?.(placement,this.pointer);
     }else this.onPreview?.(null);
     if(this.settings.motion){

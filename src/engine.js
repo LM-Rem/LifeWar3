@@ -33,6 +33,7 @@ export class Game {
     // 阶段1：卡牌系统核心状态（发卡时间点 / 三选一候选 / 手牌 / 激活效果）
     this.cardDrawTimes = [...cardDrawTimes];
     this.cardDraft = null; // { gen, players:[{playerId, options, picked}] }
+    this.drawCount = 0;    // 已发卡次数，用于按 early/mid/late 卡池抽取
     this.cards = { hand: members.map(() => null), effects: [] };
     // 休眠阈值随现实时间衰减：游戏开始后每分钟 dormancyDecayPerMinute 代，下限 minDormancyGenerations。
     this.startedAt = now();
@@ -201,14 +202,15 @@ export class Game {
     if (survivors.length <= 1) { this.status = 'finished'; this.winner = survivors[0]?.id ?? 0; this.event('victory', this.winner, '对局结束'); }
   }
 
-  // 从卡池中随机抽取 3 张不重复的候选卡（阶段1：固定卡池；后续可按时间/卡池过滤）
-  drawThreeCards(playerId) {
+  // 从指定卡池中随机抽取 3 张不重复的候选卡（early/mid/late，强度递增）
+  drawThreeCards(playerId, pool = 'early') {
+    const poolCards = CARDS.filter(c => c.pool === pool);
     const options = [];
     const seen = new Set();
     let guard = 0;
     while (options.length < 3 && guard++ < 100) {
-      const card = CARDS[Math.floor(this.random() * CARDS.length)];
-      if (seen.has(card.id)) continue;
+      const card = poolCards[Math.floor(this.random() * poolCards.length)];
+      if (!card || seen.has(card.id)) continue;
       seen.add(card.id);
       options.push(card);
     }
@@ -221,16 +223,26 @@ export class Game {
     const elapsed = this.now() - this.startedAt;
     if (!this.cardDraft && this.cardDrawTimes.length && elapsed >= this.cardDrawTimes[0]) {
       this.cardDrawTimes.shift();
-      // 只为人类玩家生成候选：bot 不占位（AI 用卡在后续阶段实现），避免 draft 一直未清空而阻塞后续发卡点
+      // 第 1/2/3 次发卡分别使用 early/mid/late 卡池
+      const pools = ['early', 'mid', 'late'];
+      const pool = pools[Math.min(this.drawCount, pools.length - 1)];
+      this.drawCount++;
       this.cardDraft = {
         gen: this.generation,
-        players: this.players.filter(p => !p.eliminated && !p.bot).map(p => ({
+        players: this.players.filter(p => !p.eliminated).map(p => ({
           playerId: p.id,
-          options: this.drawThreeCards(p.id),
+          options: this.drawThreeCards(p.id, pool),
           picked: false
         }))
       };
       this.event('card', 0, '卡牌发放：请选择一张卡牌');
+      // bot 玩家自动随机选一张（AI 也参与三选一）；若旧手牌未用则直接替换，保证 draft 不被卡住
+      for (const entry of this.cardDraft.players) {
+        const p = this.players[entry.playerId - 1];
+        if (!p?.bot) continue;
+        if (this.cards.hand[p.id - 1]) this.cards.hand[p.id - 1] = null;
+        this.pickCard(p.id, entry.options[Math.floor(this.random() * entry.options.length)].id);
+      }
     }
   }
 

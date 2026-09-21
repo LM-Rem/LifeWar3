@@ -1267,6 +1267,28 @@ kbd {
   --card-color: #b07cff
 }
 
+.card-empty {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 7px;
+  min-width: 260px;
+  align-self: stretch;
+  border: 1px dashed #2a3d47;
+  background: #0a0e13aa;
+  color: #5b7481;
+  font: 10px var(--mono);
+  letter-spacing: 2px;
+  text-align: center;
+  user-select: none
+}
+
+.card-empty small {
+  color: #415763;
+  font-size: 9px
+}
+
 .roster-panel {
   position: absolute;
   top: 94px;
@@ -2034,6 +2056,33 @@ kbd {
 
 .small-modal {
   max-width: 435px
+}
+
+.draft-modal {
+  max-width: 640px;
+  text-align: center
+}
+
+.draft-modal h2 {
+  margin-top: 4px
+}
+
+.draft-note {
+  font-size: 11px;
+  color: #8ca4af;
+  margin: 6px 0 22px;
+  line-height: 1.8
+}
+
+.draft-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  text-align: left
+}
+
+.draft-card {
+  cursor: pointer
 }
 
 .small-modal>p {
@@ -2861,6 +2910,11 @@ body.no-motion *::after {
 }
 
 @media(max-width:760px) {
+  .draft-options {
+    grid-template-columns: 1fr;
+    gap: 12px
+  }
+
   .card-grid {
     --card-w: 118px;
     gap: 10px

@@ -26,9 +26,10 @@ test('card protocol: draft, pick and play over WebSocket',async t=>{
   // 将下一个发卡时间点设为立即触发，等待 state 携带三选一候选
   room.game.cardDrawTimes=[0];
   const draftState=await a.wait('state',s=>s.cardDraft);
-  assert.equal(draftState.cardDraft.players.length,1); // 只有人类玩家参与三选一
+  assert.ok(draftState.cardDraft.players.length>=1); // 玩家与 bot 都有候选，bot 已自动选择
   const entry=draftState.cardDraft.players.find(p=>p.playerId===1);
   assert.equal(entry.options.length,3);
+  assert.equal(entry.picked,false); // 人类候选仍待选择
   // 选卡 → 广播 card_picked → 手牌同步到状态
   const cardId=entry.options[0].id;
   a.send({type:'pick_card',cardId});

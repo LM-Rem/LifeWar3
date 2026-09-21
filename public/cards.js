@@ -42,5 +42,69 @@ export const CARDS = [
     desc: '清除指定位置半径 20 格内的所有活细胞（不分敌我）。',
     pool: 'early',
     effect: { kind: 'purge', radius: 20 }
+  },
+  {
+    id: 'silent_law',
+    type: 'law',
+    name: '寂静法则',
+    desc: '全局规则改为 B3/S：所有活细胞每代消亡，只有新生的细胞闪烁，持续 6 秒。',
+    pool: 'mid',
+    effect: { kind: 'rule', birth: [3], survival: [], duration: 60 }
+  },
+  {
+    id: 'collapse',
+    type: 'law',
+    name: '倒退',
+    desc: '全局规则改为 B/S23：没有新生细胞，世界不可逆地收缩，持续 6 秒。',
+    pool: 'mid',
+    effect: { kind: 'rule', birth: [], survival: [2, 3], duration: 60 }
+  },
+  {
+    id: 'energy_overload',
+    type: 'buff',
+    name: '过载协议',
+    desc: '立即获得 +120 能量（不超过能量上限）。',
+    pool: 'mid',
+    effect: { kind: 'energy', amount: 120 }
+  },
+  {
+    id: 'purge_large',
+    type: 'item',
+    name: '大净化',
+    desc: '清除指定位置半径 30 格内的所有活细胞（不分敌我）。',
+    pool: 'mid',
+    effect: { kind: 'purge', radius: 30 }
+  },
+  {
+    id: 'void',
+    type: 'law',
+    name: '虚空',
+    desc: '全局规则改为 B/S：一切生命瞬间消亡且不再诞生，持续 9 秒。',
+    pool: 'late',
+    effect: { kind: 'rule', birth: [], survival: [], duration: 90 }
+  },
+  {
+    id: 'eternal_flood',
+    type: 'law',
+    name: '永恒洪水',
+    desc: '全局规则改为 B3/S012345678：细胞永生且疯狂增殖，持续 9 秒。',
+    pool: 'late',
+    effect: { kind: 'rule', birth: [0, 1, 2, 3, 4, 5, 6, 7, 8], survival: [0, 1, 2, 3, 4, 5, 6, 7, 8], duration: 90 }
+  },
+  {
+    id: 'energy_full',
+    type: 'buff',
+    name: '能量涌动',
+    desc: '立即回满能量（+180）。',
+    pool: 'late',
+    effect: { kind: 'energy', amount: 180 }
+  },
+  {
+    id: 'purge_huge',
+    type: 'item',
+    name: '湮灭',
+    desc: '清除指定位置半径 40 格内的所有活细胞（不分敌我）。',
+    pool: 'late',
+    effect: { kind: 'purge', radius: 40 }
   }
 ];
