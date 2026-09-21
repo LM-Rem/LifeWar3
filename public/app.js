@@ -264,19 +264,217 @@ if (cardGridEl) {
     dragCard = null; dragging = false;
   }
 
-  // 拖出容器：使用卡牌，在当前位置播放消散动画后移除
+  // 拖出容器：使用卡牌，播放与卡牌本体完全一致的科幻粒子分解动画
   function useCard(card) {
     const name = card.querySelector('.card-name')?.textContent || '未知卡牌';
     toast(`已使用：${name}`);
     card.classList.remove('dragging');
-    card.classList.add('using');
     card.style.position = 'fixed';
     card.style.width = '168px';
     card.style.pointerEvents = 'none';
+    card.style.zIndex = '1500';
+    card.style.transformOrigin = 'center';
+    card.style.transition = 'none';
+    card.style.visibility = 'visible';
+    card.style.opacity = '1';
     placeholder?.remove();
     placeholder = null;
     dragCard = null; dragging = false;
-    setTimeout(() => card.remove(), 480);
+    sound('capture');
+    decomposeCard(card);
+  }
+
+  // ===== 卡牌分解动画：参考实现移植（源图网格采样 + 粒子化 + 脉冲高光）=====
+  let cells = [], disT = 0, totalDur = 2.2;
+  const CELL = 8; // 分解网格大小（逻辑像素）
+
+  const clamp = (v, a, b) => v < a ? a : (v > b ? b : v);
+  const smooth = t => t * t * (3 - 2 * t);
+  const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
+  const rand = (a, b) => a + Math.random() * (b - a);
+
+  function roundRect(g, x, y, w, h, r) {
+    r = Math.min(r, w * 0.5, h * 0.5);
+    g.beginPath();
+    g.moveTo(x + r, y);
+    g.arcTo(x + w, y, x + w, y + h, r);
+    g.arcTo(x + w, y + h, x, y + h, r);
+    g.arcTo(x, y + h, x, y, r);
+    g.arcTo(x, y, x + w, y, r);
+    g.closePath();
+  }
+
+  function hexToRgb(hex) {
+    const m = hex.replace('#', '');
+    const parts = m.length === 3 ? m.split('').map(c => c + c) : m.match(/.{2}/g) || [];
+    return parts.map(s => parseInt(s, 16));
+  }
+  function rgbStr(r, g, b, a = 1) { return `rgba(${Math.round(r)},${Math.round(g)},${Math.round(b)},${a})`; }
+
+  // 卡牌本体 DOM 直接作为动画底图，无需手绘源图（保证形态与细节完全一致）
+
+  // 生成分解网格：每个格子拥有独立的颜色与大小
+  // （在卡牌主色附近随机浮动，模拟源图采样的颜色差异，同时保持整体视觉一致）
+  function buildCells(W, H, base) {
+    const COLS = Math.ceil(W / CELL), ROWS = Math.ceil(H / CELL);
+    cells = [];
+    for (let gy = 0; gy < ROWS; gy++) {
+      for (let gx = 0; gx < COLS; gx++) {
+        const x0 = gx * CELL, y0 = gy * CELL;
+        const cw = Math.min(CELL, W - x0), ch = Math.min(CELL, H - y0);
+        const ex = Math.min(gx, COLS - 1 - gx) / (COLS * 0.5);
+        const ey = Math.min(gy, ROWS - 1 - gy) / (ROWS * 0.5);
+        const edge = clamp(Math.min(ex, ey), 0, 1); // 0=边缘 1=中心
+        const mx = x0 + cw * 0.5 - W * 0.5;
+        const my = y0 + ch * 0.5 - H * 0.5;
+        const baseAng = Math.atan2(my, mx);
+        // 颜色差异：亮度与色温在卡牌主色附近随机浮动
+        const lum = 0.75 + Math.random() * 0.65;
+        const warm = 1 + (Math.random() - 0.5) * 0.22;
+        const r = clamp(base[0] * lum * warm, 0, 255);
+        const gg = clamp(base[1] * lum, 0, 255);
+        const b = clamp(base[2] * lum * (2 - warm), 0, 255);
+        // 核心方块颜色：比外发光更亮、更贴近原卡牌色
+        const cr = clamp(r + 55, 0, 255), cg = clamp(gg + 55, 0, 255), cb = clamp(b + 55, 0, 255);
+        cells.push({
+          x: x0, y: y0, cw, ch, edge, baseAng,
+          t0: 999, appearDur: 0.15, holdDur: 0.2, fadeDur: 0.6,
+          sizeMul: 0.7, boost: 1, vx: 0, vy: 0,
+          glowColor: `rgb(${r | 0},${gg | 0},${b | 0})`,
+          coreColor: `rgb(${cr | 0},${cg | 0},${cb | 0})`
+        });
+      }
+    }
+  }
+
+  // 每次分解重新随机化：激活时机、形态、漂移全部随机
+  function randomizeCells() {
+    const SPREAD = 0.55, JITTER = 0.28, WARMUP = 0.10;
+    let maxT = 0;
+    for (const c of cells) {
+      const ef = Math.pow(c.edge, 1.5);
+      c.t0 = WARMUP + ef * SPREAD + Math.random() * JITTER;
+      c.appearDur = 0.08 + Math.random() * 0.12;
+      c.holdDur = 0.04 + Math.random() * 0.26;
+      c.fadeDur = 0.32 + Math.random() * 0.62;
+      c.sizeMul = 0.50 + Math.random() * 0.45;
+      c.boost = 0.85 + Math.random() * 0.50;
+      const ang = c.baseAng + (Math.random() - 0.5) * 1.9;
+      const spd = 30 + Math.random() * 160;
+      c.vx = Math.cos(ang) * spd;
+      c.vy = Math.sin(ang) * spd;
+      const end = c.t0 + c.appearDur + c.holdDur + c.fadeDur;
+      if (end > maxT) maxT = end;
+    }
+    totalDur = maxT + 0.5;
+  }
+
+  // 绘制分解过程：只绘制发光方块粒子（颜色、大小各有差异），canvas 其余部分完全透明
+  function drawDisintegrating(g, W, H, ox, oy) {
+    g.globalCompositeOperation = 'lighter';
+    for (const c of cells) {
+      const lt = disT - c.t0;
+      if (lt < 0) continue;
+      const apE = lt < c.appearDur ? smooth(lt / c.appearDur) : 1;
+      const afterAppear = lt - c.appearDur - c.holdDur;
+      const fp = afterAppear <= 0 ? 0 : afterAppear / c.fadeDur;
+      if (fp >= 1) continue;
+      const alpha = apE * (1 - fp);
+      if (alpha < 0.004) continue;
+
+      // 漂移（平方加速，飞出卡牌边界后在 canvas 大范围内继续可见）
+      let driftX = 0, driftY = 0;
+      if (fp > 0) {
+        const e = fp * fp;
+        driftX = c.vx * c.fadeDur * e;
+        driftY = c.vy * c.fadeDur * e;
+      }
+      const cx = ox + c.x + c.cw * 0.5 + driftX;
+      const cy = oy + c.y + c.ch * 0.5 + driftY;
+      const s = c.cw * c.sizeMul * (0.30 + 0.70 * apE) * (1 - 0.42 * fp);
+      if (s <= 0.2) continue;
+
+      // 外发光：微弱的光晕，赋予小方块光感，但主体仍是彩色方块
+      g.globalAlpha = Math.min(1, alpha * 0.11 * c.boost);
+      g.fillStyle = c.glowColor;
+      const gs = s * 2.15;
+      g.fillRect(cx - gs * 0.5, cy - gs * 0.5, gs, gs);
+      // 核心小方块：每格颜色、大小各有差异，不再是统一高亮的发光点
+      g.globalAlpha = Math.min(1, alpha * c.boost);
+      g.fillStyle = c.coreColor;
+      g.fillRect(cx - s * 0.5, cy - s * 0.5, s, s);
+    }
+    g.globalAlpha = 1;
+    g.globalCompositeOperation = 'source-over';
+  }
+
+  // 主入口：创建覆盖卡牌及周边大范围的透明 canvas，
+  // 原卡牌 DOM 保留为底图（形态细节与本体完全一致），粒子可扩散到周边不被裁剪
+  function decomposeCard(card) {
+    const rect = card.getBoundingClientRect();
+    const W = Math.max(1, Math.round(rect.width));
+    const H = Math.max(1, Math.round(rect.height));
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const PAD = 220; // 粒子扩散边距：卡牌四周额外可见范围
+    const CW = W + PAD * 2, CH = H + PAD * 2;
+    const ox = PAD, oy = PAD; // 卡牌左上角在 canvas 中的坐标
+    const colorVar = getComputedStyle(card).getPropertyValue('--card-color').trim() || '#7fd1ff';
+    const base = hexToRgb(colorVar);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = CW * dpr;
+    canvas.height = CH * dpr;
+    canvas.style.cssText = `position:fixed;left:${rect.left - PAD}px;top:${rect.top - PAD}px;width:${CW}px;height:${CH}px;z-index:2000;pointer-events:none;`;
+    document.body.appendChild(canvas);
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+
+    // 原卡牌 DOM 保持可见：作为分解的底图，与本体形态细节完全一致
+    card.style.transformOrigin = 'center';
+    card.style.visibility = 'visible';
+    card.style.opacity = '1';
+
+    buildCells(W, H, base);
+    randomizeCells();
+    disT = 0;
+
+    const start = performance.now();
+    let last = start;
+
+    function frame(now) {
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+      disT += dt;
+
+      ctx.clearRect(0, 0, CW, CH);
+
+      // 分解放大：DOM 与粒子层同步围绕卡牌中心缩放
+      const grow = 1 + 0.10 * easeOutCubic(clamp(disT / 0.42, 0, 1));
+      card.style.transform = `scale(${grow})`;
+
+      const cx = ox + W / 2, cy = oy + H / 2;
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.scale(grow, grow);
+      ctx.translate(-cx, -cy);
+      drawDisintegrating(ctx, W, H, ox, oy);
+      ctx.restore();
+
+      // 卡牌本体淡出：粒子约在 1.0s 铺满整张卡牌，此时卡牌必须已完全不可见，
+      // 绝不允许粒子飞散后还残留半透明的卡牌和文字
+      const fadeStart = 0.28, fadeDur = 0.75;
+      card.style.opacity = String(1 - clamp((disT - fadeStart) / fadeDur, 0, 1));
+
+      if (disT < totalDur) requestAnimationFrame(frame);
+      else {
+        // 结束帧强制完全透明后再移除，确保动画结束后无任何卡牌残影
+        card.style.opacity = '0';
+        card.style.visibility = 'hidden';
+        canvas.remove();
+        card.remove();
+      }
+    }
+    requestAnimationFrame(frame);
   }
 }
 

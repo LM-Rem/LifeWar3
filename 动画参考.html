@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>SCI-FI CARD · DISINTEGRATION</title>
+<style>
+  html,body{
+    margin:0;height:100%;overflow:hidden;background:#02040a;
+    -webkit-user-select:none;user-select:none;touch-action:none;
+  }
+  canvas{display:block;position:fixed;inset:0;cursor:grab;}
+  canvas:active{cursor:grabbing;}
+  #hint{
+    position:fixed;left:0;right:0;bottom:5%;text-align:center;
+    color:#5fd8ff;font:400 12px/1.8 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    letter-spacing:.32em;opacity:.55;pointer-events:none;text-transform:uppercase;
+    text-shadow:0 0 10px #0af,0 0 28px #036;
+    transition:opacity .4s;
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hint">拖动卡牌移出容器后松手</div>
+
+<script>
+(function(){
+'use strict';
+
+/* =========================================================
+   工具函数
+   ========================================================= */
+const clamp = (v, a, b) => v < a ? a : (v > b ? b : v);
+const smooth = t => t * t * (3 - 2 * t);
+const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
+const rand = (a, b) => a + Math.random() * (b - a);
+
+function mulberry32(a){
+  return function(){
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+function roundRect(g, x, y, w, h, r){
+  r = Math.min(r, w * 0.5, h * 0.5);
+  g.beginPath();
+  g.moveTo(x + r, y);
+  g.arcTo(x + w, y, x + w, y + h, r);
+  g.arcTo(x + w, y + h, x, y + h, r);
+  g.arcTo(x, y + h, x, y, r);
+  g.arcTo(x, y, x + w, y, r);
+  g.closePath();
+}
+
+/* =========================================================
+   基础设置
+   ========================================================= */
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d', { alpha: false });
+
+const CARD_W = 250;          // 卡牌逻辑宽
+const CARD_H = 350;          // 卡牌逻辑高 (5:7)
+const SS = 2;                // 卡牌源图超采样
+const CELL = 7;              // 分解网格大小（逻辑像素）
+const COLS = Math.ceil(CARD_W / CELL);
+const ROWS = Math.ceil(CARD_H / CELL);
+
+let W = 0, H = 0, DPR = 1;
+let cardScale = 1;
+
+/* =========================================================
+   状态
+   ========================================================= */
+let mode = 'ready';          // ready | drag | dis
+let disT = 0;
+let totalDur = 4;
+let lastTime = 0;
+let tween = null;
+
+const card = { x: 0, y: 0 };
+const home = { x: 0, y: 0 };
+const contRect = { x: 0, y: 0, w: 0, h: 0 };
+
+let drag = false;
+let dragDX = 0, dragDY = 0;
+
+/* =========================================================
+   画布尺寸 & 布局
+   ========================================================= */
+function resize(){
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = window.innerWidth;
+  H = window.innerHeight;
+  canvas.width = Math.round(W * DPR);
+  canvas.height = Math.round(H * DPR);
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  layout();
+}
+
+function layout(){
+  const marginX = Math.min(70, W * 0.12);
+  const marginY = Math.min(90, H * 0.14);
+
+  const availW = W - marginX * 2 - 70;
+  const availH = H - marginY * 2 - 70;
+
+  cardScale = Math.min(availW / CARD_W, availH / CARD_H, 1.2);
+  cardScale = Math.max(0.34, cardScale);
+
+  const cw = CARD_W * cardScale + 70;
+  const ch = CARD_H * cardScale + 70;
+
+  contRect.w = cw;
+  contRect.h = ch;
+  contRect.x = (W - cw) * 0.5;
+  contRect.y = (H - ch) * 0.5;
+
+  home.x = contRect.x + (cw - CARD_W * cardScale) * 0.5;
+  home.y = contRect.y + (ch - CARD_H * cardScale) * 0.5;
+
+  if (mode === 'ready' && !tween && !drag){
+    card.x = home.x;
+    card.y = home.y;
+  }
+}
+
+/* =========================================================
+   卡牌美术：电路纹理
+   ========================================================= */
+function drawCircuits(g, w, h){
+  const r = mulberry32(20240617);
+  g.save();
+  g.lineCap = 'round';
+  g.lineJoin = 'round';
+
+  for (let i = 0; i < 30; i++){
+    let px = r() * w;
+    let py = r() * h;
+    const pts = [[px, py]];
+    const steps = 2 + Math.floor(r() * 4);
+
+    for (let s = 0; s < steps; s++){
+      const horiz = r() < 0.5;
+      const len = (0.05 + r() * 0.18) * (horiz ? w : h);
+      const dir = r() < 0.5 ? -1 : 1;
+      if (horiz) px += len * dir; else py += len * dir;
+      pts.push([px, py]);
+    }
+
+    const alpha = 0.12 + r() * 0.30;
+    g.strokeStyle = 'rgba(90,220,255,' + alpha.toFixed(3) + ')';
+    g.lineWidth = 0.7 + r() * 1.5;
+    g.shadowColor = 'rgba(60,210,255,0.85)';
+    g.shadowBlur = 7;
+
+    g.beginPath();
+    g.moveTo(pts[0][0], pts[0][1]);
+    for (let k = 1; k < pts.length; k++) g.lineTo(pts[k][0], pts[k][1]);
+    g.stroke();
+
+    // 终点节点
+    g.shadowBlur = 11;
+    g.fillStyle = 'rgba(190,250,255,0.9)';
+    g.beginPath();
+    g.arc(px, py, 1 + r() * 1.8, 0, Math.PI * 2);
+    g.fill();
+  }
+  g.restore();
+}
+
+/* =========================================================
+   卡牌美术：中央徽记
+   ========================================================= */
+function drawSigil(g, w, h){
+  const cx = w * 0.5;
+  const cy = h * 0.42;
+  const R = Math.min(w, h) * 0.195;
+
+  g.save();
+  g.translate(cx, cy);
+  g.shadowColor = 'rgba(80,225,255,0.95)';
+  g.shadowBlur = 16;
+
+  // 同心六边形
+  for (let ring = 0; ring < 3; ring++){
+    const rr = R * (1 - ring * 0.28);
+    g.lineWidth = ring === 0 ? 1.9 : 1.1;
+    g.globalAlpha = ring === 0 ? 1 : 0.65;
+    g.strokeStyle = 'rgba(150,245,255,0.85)';
+    g.beginPath();
+    for (let i = 0; i < 6; i++){
+      const a = -Math.PI / 2 + i * Math.PI / 3;
+      const x = Math.cos(a) * rr, y = Math.sin(a) * rr;
+      i ? g.lineTo(x, y) : g.moveTo(x, y);
+    }
+    g.closePath();
+    g.stroke();
+  }
+  g.globalAlpha = 1;
+
+  // 放射线
+  g.lineWidth = 0.9;
+  g.shadowBlur = 8;
+  g.strokeStyle = 'rgba(90,215,255,0.55)';
+  for (let i = 0; i < 12; i++){
+    const a = i * Math.PI / 6;
+    g.beginPath();
+    g.moveTo(Math.cos(a) * R * 0.28, Math.sin(a) * R * 0.28);
+    g.lineTo(Math.cos(a) * R * 1.25, Math.sin(a) * R * 1.25);
+    g.stroke();
+  }
+
+  // 中环
+  g.shadowBlur = 14;
+  g.strokeStyle = 'rgba(140,240,255,0.8)';
+  g.lineWidth = 1.4;
+  g.beginPath();
+  g.arc(0, 0, R * 0.42, 0, Math.PI * 2);
+  g.stroke();
+
+  // 核心
+  g.shadowBlur = 24;
+  g.fillStyle = 'rgba(215,255,255,0.95)';
+  g.beginPath();
+  g.arc(0, 0, R * 0.14, 0, Math.PI * 2);
+  g.fill();
+
+  g.restore();
+}
+
+/* =========================================================
+   卡牌美术：四角装饰
+   ========================================================= */
+function drawCornerBrackets(g, w, h){
+  const m = 17, len = 27;
+  g.save();
+  g.strokeStyle = 'rgba(170,248,255,0.92)';
+  g.lineWidth = 2.4;
+  g.lineCap = 'round';
+  g.shadowColor = 'rgba(60,220,255,0.9)';
+  g.shadowBlur = 12;
+
+  const corners = [
+    [m, m, 1, 1],
+    [w - m, m, -1, 1],
+    [m, h - m, 1, -1],
+    [w - m, h - m, -1, -1]
+  ];
+  for (let i = 0; i < corners.length; i++){
+    const c = corners[i];
+    g.beginPath();
+    g.moveTo(c[0] + c[2] * len, c[1]);
+    g.lineTo(c[0], c[1]);
+    g.lineTo(c[0], c[1] + c[3] * len);
+    g.stroke();
+  }
+  g.restore();
+}
+
+/* =========================================================
+   卡牌美术：整体绘制
+   ========================================================= */
+function drawCardArt(g, w, h){
+  const R = 16;
+
+  g.save();
+  roundRect(g, 0, 0, w, h, R);
+  g.clip();
+
+  // 底色
+  const bg = g.createLinearGradient(0, 0, w, h);
+  bg.addColorStop(0, '#061224');
+  bg.addColorStop(0.45, '#0b2141');
+  bg.addColorStop(1, '#04101f');
+  g.fillStyle = bg;
+  g.fillRect(0, 0, w, h);
+
+  // 中心辉光
+  const rg = g.createRadialGradient(w * 0.5, h * 0.42, 5, w * 0.5, h * 0.42, w * 0.88);
+  rg.addColorStop(0, 'rgba(60,200,255,0.22)');
+  rg.addColorStop(0.45, 'rgba(30,110,200,0.10)');
+  rg.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = rg;
+  g.fillRect(0, 0, w, h);
+
+  // 细网格
+  g.strokeStyle = 'rgba(70,190,255,0.06)';
+  g.lineWidth = 1;
+  g.beginPath();
+  for (let x = 12.5; x < w; x += 12.5){ g.moveTo(x, 0); g.lineTo(x, h); }
+  for (let y = 12.5; y < h; y += 12.5){ g.moveTo(0, y); g.lineTo(w, y); }
+  g.stroke();
+
+  // 电路
+  drawCircuits(g, w, h);
+
+  // 徽记
+  drawSigil(g, w, h);
+
+  // 底部数据条
+  g.save();
+  g.globalAlpha = 0.5;
+  g.shadowColor = 'rgba(60,200,255,0.8)';
+  g.shadowBlur = 8;
+  for (let i = 0; i < 10; i++){
+    const bw = 3 + (i % 3) * 3;
+    g.fillStyle = 'rgba(120,230,255,' + (0.25 + (i % 4) * 0.15).toFixed(2) + ')';
+    g.fillRect(26 + i * 11, h - 34, bw, 3);
+  }
+  g.restore();
+
+  // 顶部标签线
+  g.save();
+  g.globalAlpha = 0.45;
+  g.strokeStyle = 'rgba(110,220,255,0.7)';
+  g.lineWidth = 1;
+  g.shadowColor = 'rgba(60,200,255,0.8)';
+  g.shadowBlur = 6;
+  g.beginPath();
+  g.moveTo(28, 30);
+  g.lineTo(w - 28, 30);
+  g.stroke();
+  g.restore();
+
+  g.restore(); // 结束裁剪
+
+  /* ---------- 边框 ---------- */
+
+  // 外层强发光
+  g.save();
+  g.shadowColor = '#2fd8ff';
+  g.shadowBlur = 26;
+  g.strokeStyle = 'rgba(110,235,255,0.95)';
+  g.lineWidth = 4;
+  roundRect(g, 2, 2, w - 4, h - 4, R);
+  g.stroke();
+  g.stroke();
+  g.restore();
+
+  // 锐利内线
+  g.strokeStyle = 'rgba(215,250,255,0.95)';
+  g.lineWidth = 1.2;
+  roundRect(g, 2, 2, w - 4, h - 4, R);
+  g.stroke();
+
+  // 次级内框
+  g.strokeStyle = 'rgba(50,190,255,0.38)';
+  g.lineWidth = 1;
+  roundRect(g, 10, 10, w - 20, h - 20, R - 7);
+  g.stroke();
+
+  // 四角
+  drawCornerBrackets(g, w, h);
+}
+
+/* =========================================================
+   生成卡牌源图
+   ========================================================= */
+let cardSrc = null;
+
+function createCardSource(){
+  const cv = document.createElement('canvas');
+  cv.width = CARD_W * SS;
+  cv.height = CARD_H * SS;
+  const g = cv.getContext('2d');
+  g.scale(SS, SS);
+  drawCardArt(g, CARD_W, CARD_H);
+  return cv;
+}
+
+/* =========================================================
+   分解网格单元
+   ========================================================= */
+let cells = [];
+
+function buildCells(){
+  cells = [];
+  const srcCtx = cardSrc.getContext('2d');
+  const img = srcCtx.getImageData(0, 0, cardSrc.width, cardSrc.height);
+  const D = img.data;
+  const SW = cardSrc.width;
+
+  for (let gy = 0; gy < ROWS; gy++){
+    for (let gx = 0; gx < COLS; gx++){
+      const x0 = gx * CELL;
+      const y0 = gy * CELL;
+      const x1 = Math.min(CARD_W, x0 + CELL);
+      const y1 = Math.min(CARD_H, y0 + CELL);
+      const cw = x1 - x0;
+      const ch = y1 - y0;
+
+      // 采样颜色
+      const spx = Math.min(SW - 1, Math.floor((x0 + cw * 0.5) * SS));
+      const spy = Math.min(cardSrc.height - 1, Math.floor((y0 + ch * 0.5) * SS));
+      const idx = (spy * SW + spx) * 4;
+
+      let r = D[idx], g = D[idx + 1], b = D[idx + 2];
+
+      // 提亮 → 发光色
+      const gain = 1.35;
+      let r0 = clamp(r * gain + 18, 0, 255);
+      let g0 = clamp(g * gain + 38, 0, 255);
+      let b0 = clamp(b * gain + 62, 0, 255);
+
+      const rc = clamp(r0 + 62, 0, 255);
+      const gc = clamp(g0 + 55, 0, 255);
+      const bc = clamp(b0 + 45, 0, 255);
+
+      // 到边缘的归一化距离（0 = 边缘，1 = 中心）
+      const ex = Math.min(gx, COLS - 1 - gx) / (COLS * 0.5);
+      const ey = Math.min(gy, ROWS - 1 - gy) / (ROWS * 0.5);
+      const edge = clamp(Math.min(ex, ey), 0, 1);
+
+      // 从中心向外方向
+      const mx = x0 + cw * 0.5 - CARD_W * 0.5;
+      const my = y0 + ch * 0.5 - CARD_H * 0.5;
+      const baseAng = Math.atan2(my, mx);
+
+      cells.push({
+        x: x0, y: y0, cw: cw, ch: ch,
+        edge: edge,
+        baseAng: baseAng,
+        glowColor: 'rgb(' + (r0 | 0) + ',' + (g0 | 0) + ',' + (b0 | 0) + ')',
+        coreColor: 'rgb(' + (rc | 0) + ',' + (gc | 0) + ',' + (bc | 0) + ')',
+        t0: 999, appearDur: 0.15, holdDur: 0.2, fadeDur: 0.6,
+        sizeMul: 0.7, boost: 1, vx: 0, vy: 0
+      });
+    }
+  }
+}
+
+/* =========================================================
+   每次分解重新随机化
+   ========================================================= */
+const SPREAD = 0.78;
+const JITTER = 0.42;
+const WARMUP = 0.50;
+
+function randomizeCells(){
+  let maxT = 0;
+  for (let i = 0; i < cells.length; i++){
+    const c = cells[i];
+
+    const ef = Math.pow(c.edge, 1.5);
+    c.t0 = WARMUP + ef * SPREAD + Math.random() * JITTER;
+
+    c.appearDur = 0.085 + Math.random() * 0.13;
+    c.holdDur   = 0.04  + Math.random() * 0.30;
+    c.fadeDur   = 0.42  + Math.random() * 0.85;
+
+    c.sizeMul = 0.50 + Math.random() * 0.45;
+    c.boost   = 0.85 + Math.random() * 0.50;
+
+    const ang = c.baseAng + (Math.random() - 0.5) * 1.9;
+    const spd = 28 + Math.random() * 155;
+    c.vx = Math.cos(ang) * spd;
+    c.vy = Math.sin(ang) * spd;
+
+    const end = c.t0 + c.appearDur + c.holdDur + c.fadeDur;
+    if (end > maxT) maxT = end;
+  }
+  totalDur = maxT + 0.55;
+}
+
+/* =========================================================
+   绘制：背景
+   ========================================================= */
+function drawBackground(t){
+  ctx.fillStyle = '#02040a';
+  ctx.fillRect(0, 0, W, H);
+
+  const cx = W * 0.5, cy = H * 0.45;
+  const rg = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(W, H) * 0.78);
+  rg.addColorStop(0, 'rgba(16,54,100,0.60)');
+  rg.addColorStop(0.45, 'rgba(8,20,44,0.34)');
+  rg.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = rg;
+  ctx.fillRect(0, 0, W, H);
+
+  // 缓慢流动的网格
+  const gs = 52;
+  const offx = (t * 5) % gs;
+  const offy = (t * 3) % gs;
+  ctx.strokeStyle = 'rgba(40,120,200,0.055)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let x = -gs; x < W + gs; x += gs){
+    ctx.moveTo(x + offx, 0);
+    ctx.lineTo(x + offx, H);
+  }
+  for (let y = -gs; y < H + gs; y += gs){
+    ctx.moveTo(0, y + offy);
+    ctx.lineTo(W, y + offy);
+  }
+  ctx.stroke();
+}
+
+/* =========================================================
+   绘制：容器
+   ========================================================= */
+function drawContainer(t){
+  const x = contRect.x, y = contRect.y, w = contRect.w, h = contRect.h;
+
+  ctx.save();
+
+  // 内部
+  const g = ctx.createLinearGradient(x, y, x, y + h);
+  g.addColorStop(0, 'rgba(10,32,64,0.30)');
+  g.addColorStop(0.5, 'rgba(6,18,40,0.16)');
+  g.addColorStop(1, 'rgba(4,12,30,0.42)');
+  ctx.fillStyle = g;
+  roundRect(ctx, x, y, w, h, 18);
+  ctx.fill();
+
+  // 外框
+  ctx.strokeStyle = 'rgba(60,175,255,0.34)';
+  ctx.lineWidth = 1.5;
+  roundRect(ctx, x, y, w, h, 18);
+  ctx.stroke();
+
+  // 虚线内框（流动）
+  ctx.save();
+  ctx.setLineDash([7, 9]);
+  ctx.lineDashOffset = -t * 22;
+  ctx.strokeStyle = 'rgba(80,220,255,0.28)';
+  ctx.lineWidth = 1;
+  roundRect(ctx, x + 9, y + 9, w - 18, h - 18, 12);
+  ctx.stroke();
+  ctx.restore();
+
+  // 角标
+  const m = 10, len = 26;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(120,235,255,0.85)';
+  ctx.lineWidth = 2.4;
+  ctx.lineCap = 'round';
+  ctx.shadowColor = 'rgba(60,210,255,0.9)';
+  ctx.shadowBlur = 12;
+  const corners = [
+    [x + m, y + m, 1, 1],
+    [x + w - m, y + m, -1, 1],
+    [x + m, y + h - m, 1, -1],
+    [x + w - m, y + h - m, -1, -1]
+  ];
+  for (let i = 0; i < 4; i++){
+    const c = corners[i];
+    ctx.beginPath();
+    ctx.moveTo(c[0] + c[2] * len, c[1]);
+    ctx.lineTo(c[0], c[1]);
+    ctx.lineTo(c[0], c[1] + c[3] * len);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  ctx.restore();
+}
+
+/* =========================================================
+   绘制：静止区域（按行合并为连续片段，减少 drawImage 次数）
+   ========================================================= */
+function drawStaticSpans(){
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.globalAlpha = 1;
+
+  for (let gy = 0; gy < ROWS; gy++){
+    let startGx = -1;
+    const rowBase = gy * COLS;
+
+    for (let gx = 0; gx <= COLS; gx++){
+      let isStatic = false;
+      if (gx < COLS){
+        isStatic = disT < cells[rowBase + gx].t0;
+      }
+
+      if (isStatic && startGx < 0){
+        startGx = gx;
+      } else if (!isStatic && startGx >= 0){
+        const x0 = startGx * CELL;
+        const x1 = Math.min(CARD_W, gx * CELL);
+        const y0 = gy * CELL;
+        const y1 = Math.min(CARD_H, y0 + CELL);
+
+        if (x1 > x0 && y1 > y0){
+          ctx.drawImage(
+            cardSrc,
+            x0 * SS, y0 * SS, (x1 - x0) * SS, (y1 - y0) * SS,
+            x0, y0, x1 - x0, y1 - y0
+          );
+        }
+        startGx = -1;
+      }
+    }
+  }
+}
+
+/* =========================================================
+   绘制：分解过程
+   ========================================================= */
+function drawDisintegrating(){
+  /* ---- 1. 尚未开始的格子：原图切片 ---- */
+  drawStaticSpans();
+
+  /* ---- 2. 正在“方块化”的格子：原图淡出 ---- */
+  ctx.globalCompositeOperation = 'source-over';
+  for (let i = 0; i < cells.length; i++){
+    const c = cells[i];
+    const lt = disT - c.t0;
+    if (lt < 0 || lt >= c.appearDur) continue;
+
+    const ap = lt / c.appearDur;
+    const apE = smooth(ap);
+    ctx.globalAlpha = 1 - apE;
+    ctx.drawImage(
+      cardSrc,
+      c.x * SS, c.y * SS, c.cw * SS, c.ch * SS,
+      c.x, c.y, c.cw, c.ch
+    );
+  }
+  ctx.globalAlpha = 1;
+
+  /* ---- 3. 发光方块粒子 ---- */
+  ctx.globalCompositeOperation = 'lighter';
+
+  for (let i = 0; i < cells.length; i++){
+    const c = cells[i];
+    const lt = disT - c.t0;
+    if (lt < 0) continue;
+
+    const ap = lt < c.appearDur ? lt / c.appearDur : 1;
+    const apE = smooth(ap);
+
+    const afterAppear = lt - c.appearDur - c.holdDur;
+    let fp = afterAppear <= 0 ? 0 : afterAppear / c.fadeDur;
+    if (fp >= 1) continue;
+
+    const alpha = apE * (1 - fp);
+    if (alpha < 0.004) continue;
+
+    // 漂移
+    let ox = 0, oy = 0;
+    if (fp > 0){
+      const e = fp * fp;
+      ox = c.vx * c.fadeDur * e;
+      oy = c.vy * c.fadeDur * e;
+    }
+
+    const cx = c.x + c.cw * 0.5 + ox;
+    const cy = c.y + c.ch * 0.5 + oy;
+
+    const s = c.cw * c.sizeMul * (0.30 + 0.70 * apE) * (1 - 0.42 * fp);
+    if (s <= 0.2) continue;
+
+    // 外发光
+    ctx.globalAlpha = Math.min(1, alpha * 0.11 * c.boost);
+    ctx.fillStyle = c.glowColor;
+    const gs = s * 2.15;
+    ctx.fillRect(cx - gs * 0.5, cy - gs * 0.5, gs, gs);
+
+    // 核心
+    ctx.globalAlpha = Math.min(1, alpha * c.boost);
+    ctx.fillStyle = c.coreColor;
+    ctx.fillRect(cx - s * 0.5, cy - s * 0.5, s, s);
+  }
+
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+
+  /* ---- 4. 整体脉冲高光 ---- */
+  let pulse = 0;
+  if (disT < 0.62){
+    pulse = Math.sin(Math.PI * Math.min(1, disT / 0.62)) * 0.46;
+  } else {
+    pulse = 0.30 * Math.exp(-(disT - 0.62) * 2.4);
+  }
+  if (pulse > 0.004){
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = pulse;
+    ctx.drawImage(cardSrc, 0, 0, CARD_W, CARD_H);
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
+  }
+}
+
+/* =========================================================
+   主绘制
+   ========================================================= */
+function draw(t){
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+
+  drawBackground(t);
+  drawContainer(t);
+
+  const cs = cardScale;
+  const centerX = card.x + CARD_W * cs * 0.5;
+  const centerY = card.y + CARD_H * cs * 0.5;
+
+  // 卡牌背后的环境光
+  if (mode === 'dis'){
+    const rad = CARD_W * cs * (0.95 + 0.18 * Math.sin(t * 2.2));
+    const rg = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, rad);
+    rg.addColorStop(0, 'rgba(50,190,255,0.20)');
+    rg.addColorStop(0.55, 'rgba(30,110,220,0.07)');
+    rg.addColorStop(1, 'rgba(20,80,200,0)');
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = rg;
+    ctx.fillRect(centerX - rad, centerY - rad, rad * 2, rad * 2);
+    ctx.globalCompositeOperation = 'source-over';
+  }
+
+  // 放大系数
+  let grow = 1;
+  if (mode === 'dis'){
+    const p = clamp(disT / 0.48, 0, 1);
+    grow = 1 + 0.088 * easeOutCubic(p);
+  }
+
+  ctx.save();
+  ctx.translate(card.x, card.y);
+  ctx.translate(CARD_W * cs * 0.5, CARD_H * cs * 0.5);
+  ctx.scale(grow, grow);
+  ctx.translate(-CARD_W * cs * 0.5, -CARD_H * cs * 0.5);
+  ctx.scale(cs, cs);
+
+  if (mode === 'dis'){
+    drawDisintegrating();
+  } else {
+    ctx.drawImage(cardSrc, 0, 0, CARD_W, CARD_H);
+  }
+
+  ctx.restore();
+}
+
+/* =========================================================
+   更新
+   ========================================================= */
+function update(dt){
+  // 回位补间
+  if (tween){
+    tween.t += dt;
+    const p = Math.min(1, tween.t / tween.dur);
+    const e = easeOutCubic(p);
+    card.x = tween.x0 + (tween.x1 - tween.x0) * e;
+    card.y = tween.y0 + (tween.y1 - tween.y0) * e;
+    if (p >= 1) tween = null;
+  }
+
+  if (mode === 'dis'){
+    disT += dt;
+    if (disT >= totalDur){
+      mode = 'ready';
+      disT = 0;
+      card.x = home.x;
+      card.y = home.y;
+    }
+  }
+}
+
+/* =========================================================
+   主循环
+   ========================================================= */
+function loop(now){
+  requestAnimationFrame(loop);
+
+  if (!lastTime) lastTime = now;
+  let dt = (now - lastTime) / 1000;
+  lastTime = now;
+  if (dt > 0.05) dt = 0.05;
+
+  update(dt);
+  draw(now / 1000);
+}
+
+/* =========================================================
+   交互
+   ========================================================= */
+function cardScreenRect(){
+  return {
+    x: card.x,
+    y: card.y,
+    w: CARD_W * cardScale,
+    h: CARD_H * cardScale
+  };
+}
+
+function pointInRect(px, py, r){
+  return px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h;
+}
+
+function overlapArea(a, b){
+  const x0 = Math.max(a.x, b.x);
+  const y0 = Math.max(a.y, b.y);
+  const x1 = Math.min(a.x + a.w, b.x + b.w);
+  const y1 = Math.min(a.y + a.h, b.y + b.h);
+  if (x1 <= x0 || y1 <= y0) return 0;
+  return (x1 - x0) * (y1 - y0);
+}
+
+function startDisintegration(){
+  mode = 'dis';
+  disT = 0;
+  tween = null;
+  randomizeCells();
+
+  const hint = document.getElementById('hint');
+  if (hint) hint.style.opacity = '0';
+
+  // 淡入提示
+  clearTimeout(startDisintegration._tm);
+  startDisintegration._tm = setTimeout(function(){
+    if (hint) hint.style.opacity = '0.55';
+  }, (totalDur + 0.4) * 1000);
+}
+
+canvas.addEventListener('pointerdown', function(e){
+  if (mode === 'dis') return;
+
+  const px = e.clientX;
+  const py = e.clientY;
+
+  if (pointInRect(px, py, cardScreenRect())){
+    drag = true;
+    mode = 'drag';
+    tween = null;
+    dragDX = px - card.x;
+    dragDY = py - card.y;
+    try { canvas.setPointerCapture(e.pointerId); } catch(err){}
+  }
+});
+
+canvas.addEventListener('pointermove', function(e){
+  if (!drag) return;
+  card.x = e.clientX - dragDX;
+  card.y = e.clientY - dragDY;
+});
+
+function endDrag(e){
+  if (!drag) return;
+  drag = false;
+
+  const cr = cardScreenRect();
+  const ov = overlapArea(cr, contRect);
+  const ratio = ov / Math.max(1, cr.w * cr.h);
+
+  if (ratio < 0.32){
+    startDisintegration();
+  } else {
+    mode = 'ready';
+    tween = {
+      x0: card.x, y0: card.y,
+      x1: home.x, y1: home.y,
+      t: 0, dur: 0.42
+    };
+  }
+}
+
+canvas.addEventListener('pointerup', endDrag);
+canvas.addEventListener('pointercancel', endDrag);
+canvas.addEventListener('lostpointercapture', function(){ if (drag) endDrag(); });
+
+window.addEventListener('resize', resize);
+
+/* =========================================================
+   初始化
+   ========================================================= */
+function init(){
+  resize();
+
+  cardSrc = createCardSource();
+  buildCells();
+
+  card.x = home.x;
+  card.y = home.y;
+
+  randomizeCells();
+  disT = 0;
+
+  requestAnimationFrame(loop);
+}
+
+init();
+
+})();
+</script>
+</body>
+</html>

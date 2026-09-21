@@ -1164,16 +1164,7 @@ kbd {
   transition: border-color .16s, background .16s;
 }
 
-.card.using {
-  animation: card-use .46s ease forwards;
-  pointer-events: none
-}
 
-@keyframes card-use {
-  0% { opacity: 1; transform: scale(1); filter: brightness(1) }
-  35% { opacity: 1; transform: scale(1.13); filter: brightness(1.8) drop-shadow(0 0 18px var(--card-color)) }
-  100% { opacity: 0; transform: scale(.55) translateY(-42px) rotate(4deg); filter: brightness(2.3) drop-shadow(0 0 30px var(--card-color)) }
-}
 
 .card::before {
   content: '';
