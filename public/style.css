@@ -1649,7 +1649,14 @@ kbd {
   display: flex;
   gap: 7px;
   overflow-x: auto;
-  padding: 2px 1px 5px
+  padding: 2px 1px 5px;
+  cursor: grab
+}
+
+.pattern-list.dragging {
+  cursor: grabbing;
+  user-select: none;
+  -webkit-user-select: none
 }
 
 .pattern-card {

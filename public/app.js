@@ -116,6 +116,103 @@ document.addEventListener('wheel', e => {
   if (scrollEl.scrollLeft !== before) e.preventDefault();
 }, { passive: false, capture: true });
 
+// 生命图谱面板：按住图案列表拖动横向滚动（鼠标拖拽）。
+// 触摸设备保持浏览器原生滑动滚动；位移超过阈值才算拖动，避免干扰点击选择图案。
+const patternListEl = $('#pattern-list');
+if (patternListEl) {
+  let scrollDrag = null; // { startX, startLeft, pointerId, moved, history }
+  let inertiaRaf = 0; // 惯性滚动动画帧句柄
+  const SCROLL_DRAG_SLOP = 5; // 超过该位移才进入拖动，普通点击不受影响
+  const INERTIA_DECAY = 0.95; // 每帧（约16.67ms）速度衰减系数
+  const INERTIA_STOP = 0.04; // 速度低于该值（px/ms）时停止惯性
+  const MAX_INERTIA_V = 2.5; // 惯性初速度上限（px/ms），防止甩动过猛
+
+  // 停止正在进行的惯性滚动
+  const cancelInertia = () => {
+    if (inertiaRaf) { cancelAnimationFrame(inertiaRaf); inertiaRaf = 0; }
+  };
+
+  // 以给定速度（scrollLeft 方向，px/ms）启动惯性滚动，逐渐减速直到停止
+  const startInertia = vx => {
+    cancelInertia();
+    const maxScroll = patternListEl.scrollWidth - patternListEl.clientWidth;
+    if (maxScroll <= 0 || Math.abs(vx) < INERTIA_STOP) return;
+    let v = Math.max(-MAX_INERTIA_V, Math.min(MAX_INERTIA_V, vx));
+    let lastT = performance.now();
+    const step = now => {
+      const dt = Math.min(40, now - lastT); // 限制单帧最大时间，避免卡顿后瞬移
+      lastT = now;
+      v *= Math.pow(INERTIA_DECAY, dt / 16.67);
+      const target = patternListEl.scrollLeft + v * dt;
+      if (target <= 0 || target >= maxScroll) {
+        // 到达边界：贴边停止，不反弹
+        patternListEl.scrollLeft = Math.max(0, Math.min(maxScroll, target));
+        inertiaRaf = 0;
+        return;
+      }
+      if (Math.abs(v) < INERTIA_STOP) { inertiaRaf = 0; return; }
+      patternListEl.scrollLeft = target;
+      inertiaRaf = requestAnimationFrame(step);
+    };
+    inertiaRaf = requestAnimationFrame(step);
+  };
+
+  patternListEl.addEventListener('pointerdown', e => {
+    if (e.pointerType !== 'mouse' || e.button !== 0) return;
+    cancelInertia(); // 新的拖动立即打断上次惯性
+    scrollDrag = {
+      startX: e.clientX,
+      startLeft: patternListEl.scrollLeft,
+      pointerId: e.pointerId,
+      moved: false,
+      history: [{ t: e.timeStamp, x: e.clientX }] // 移动历史，用于计算松手速度
+    };
+  });
+
+  patternListEl.addEventListener('pointermove', e => {
+    const sd = scrollDrag;
+    if (!sd || e.pointerId !== sd.pointerId) return;
+    const dx = e.clientX - sd.startX;
+    if (!sd.moved && Math.abs(dx) > SCROLL_DRAG_SLOP) {
+      sd.moved = true;
+      patternListEl.classList.add('dragging');
+      // 进入拖动后捕获指针，移出列表仍能继续滚动
+      try { patternListEl.setPointerCapture(sd.pointerId); } catch { /* 忽略 */ }
+    }
+    if (sd.moved) {
+      patternListEl.scrollLeft = sd.startLeft - dx; // 内容跟随指针移动
+      e.preventDefault(); // 阻止文本选择 / 原生拖拽
+      // 记录移动历史（保留最近约 100ms），用于松手时计算惯性速度
+      const hist = sd.history;
+      hist.push({ t: e.timeStamp, x: e.clientX });
+      while (hist.length > 2 && hist[0].t < hist[hist.length - 1].t - 100) hist.shift();
+    }
+  });
+
+  const endScrollDrag = withInertia => {
+    if (!scrollDrag) return;
+    const sd = scrollDrag;
+    scrollDrag = null;
+    patternListEl.classList.remove('dragging');
+    if (!sd.moved) return;
+    // 拖动结束后抑制随后的 click，避免误选中图案
+    document.addEventListener('click', ev => {
+      ev.preventDefault();
+      ev.stopPropagation();
+    }, { capture: true, once: true });
+    if (!withInertia) return;
+    // 根据最近移动速度启动惯性滚动（scrollLeft 变化方向与指针移动方向相反）
+    const hist = sd.history;
+    if (hist.length >= 2) {
+      const first = hist[0], last = hist[hist.length - 1];
+      const dtMs = last.t - first.t;
+      if (dtMs > 0) startInertia(-(last.x - first.x) / dtMs);
+    }
+  };
+  patternListEl.addEventListener('pointerup', () => endScrollDrag(true));
+  patternListEl.addEventListener('pointercancel', () => endScrollDrag(false));
+}
+
 // ===== 卡牌仓库：占位符式拖动排序，拖出容器使用卡牌 =====
 const cardGridEl = $('.card-grid');
 if (cardGridEl) {
