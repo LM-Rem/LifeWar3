@@ -11,7 +11,7 @@ const dist2 = (a, b, x, y) => (a - x) ** 2 + (b - y) ** 2;
 export class Game {
   // cardDrawTimes：发卡时间点（毫秒，从游戏开始起算），默认第 3/5/7 分钟。
   // now：时间源，默认 Date.now；测试可注入假时钟模拟真实时间推进。
-  constructor(members, { random = Math.random, cardDrawTimes = [180000, 300000, 420000], now = Date.now } = {}) {
+  constructor(members, { random = Math.random, cardDrawTimes = [1000, 300000, 420000], now = Date.now } = {}) {
     this.size = RULES.size;
     this.board = new Uint8Array(this.size * this.size);
     this.next = new Uint8Array(this.board.length);

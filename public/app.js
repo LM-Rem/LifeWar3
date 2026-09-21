@@ -709,9 +709,10 @@ function onMessage(msg) {
       }
       if(typeof msg.dormancyThreshold==='number')lastDormancyThreshold=msg.dormancyThreshold;
       state=msg;battlefield.setState(state);
-      renderCards();if(msg.cardDraft)showCardDraft(msg.cardDraft);
+      renderCards();if(msg.cardDraft)showCardDraft(msg.cardDraft);else $('#open-draft').classList.add('hidden');
       if(first)battlefield.focusBase();updateGameHUD();break;
     }
+    case 'card_picked': if (msg.playerId === playerId) $('#open-draft').classList.add('hidden'); break;
     case 'card_played': if (msg.playerId === playerId) { battlefield.cardTarget = null; } break;
     case 'deployed':battlefield.effect(msg.x,msg.y);sound('deploy');if(state){const me=state.players.find(p=>p.id===playerId);if(me)me.energy=Math.max(0,me.energy-msg.cost);}break;
     case 'error':toast(msg.message,true);break;
@@ -835,11 +836,14 @@ function renderCards() {
   cardGridEl.appendChild(el);
 }
 
-let shownDraftGen = 0; // 已展示的三选一代数，防止重复弹出同一个候选
-function showCardDraft(draft) {
+let shownDraftGen = 0; // 已展示的三选一代数，防止自动推送时重复弹出同一个候选
+function showCardDraft(draft, { force = false } = {}) {
+  const draftButton = $('#open-draft');
   const entry = draft.players.find(p => p.playerId === playerId);
-  if (!entry || entry.picked) return;
-  if (draft.gen === shownDraftGen) return;
+  // 没有候选或自己已选完：隐藏按钮，不再打开弹窗
+  if (!entry || entry.picked) { draftButton.classList.add('hidden'); return; }
+  // 按钮手动打开（force）时忽略 shownDraftGen；自动推送同一代候选不重复弹窗
+  if (draft.gen === shownDraftGen && !force) return;
   shownDraftGen = draft.gen;
   const box = $('#card-draft-options');
   box.innerHTML = '';
@@ -854,8 +858,11 @@ function showCardDraft(draft) {
     });
     box.appendChild(el);
   }
+  // 弹窗可能被点击空白/ESC 关闭，按钮常驻标题栏供随时重新打开
+  draftButton.classList.remove('hidden');
   openDialog('#card-draft-dialog');
 }
+$('#open-draft').onclick = () => { if (state?.cardDraft) showCardDraft(state.cardDraft, { force: true }); };
 
 function formatTime(generation){const seconds=Math.floor(generation/(gameHz||10));return `${String(Math.floor(seconds/60)).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')}`;}
 function formatClock(ms){const total=Math.max(0,Math.floor(ms/1000));return `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`;}

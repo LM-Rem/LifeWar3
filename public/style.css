@@ -1056,6 +1056,53 @@ kbd {
   gap: 4px
 }
 
+.draft-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  margin-left: 12px;
+  padding: 0 10px;
+  background: rgba(13, 24, 30, .8);
+  border: 1px solid #2a3d47;
+  border-radius: 2px;
+  color: #7fd1ff;
+  font: 9px var(--mono);
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: border-color .15s, color .15s, box-shadow .15s
+}
+
+.draft-button:hover {
+  border-color: #7fd1ff;
+  color: #bdeaff;
+  box-shadow: 0 0 10px #7fd1ff33
+}
+
+.draft-button.hidden {
+  display: none
+}
+
+.draft-button .draft-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #7fd1ff;
+  box-shadow: 0 0 6px #7fd1ff;
+  animation: draft-pulse 1.2s ease-in-out infinite
+}
+
+@keyframes draft-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1)
+  }
+  50% {
+    opacity: .35;
+    transform: scale(.7)
+  }
+}
+
 .network-stat {
   display: flex;
   align-items: center;
@@ -3191,6 +3238,12 @@ body.no-motion *::after {
 
   .battle-clock .micro {
     display: none
+  }
+
+  .draft-button {
+    margin-left: 6px;
+    padding: 0 7px;
+    font-size: 8px
   }
 
   .battle-tools {
