@@ -204,7 +204,7 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
     const hostMember = room.members.find(m => m.id === room.host);
     room.members.forEach((m, i) => { m.id = i + 1; });
     room.host = hostMember.id;
-    room.game = new Game(room.members); room.startedGen = serverGen; room.startedAt = Date.now(); room.lastActiveGen = serverGen; room.finishedBroadcast = false;
+    room.game = new Game(room.members); room.startedGen = serverGen; room.startedAt = room.game.startedAt; room.lastActiveGen = serverGen; room.finishedBroadcast = false;
     for (const m of room.members) { send(m.ws, { type: 'started', id: m.id, rules: RULES, startedAt: room.startedAt }); send(m.ws, room.game.state()); if (m.ws?.readyState === WebSocket.OPEN) m.ws.send(room.game.packet(true)); }
     broadcastRoom(room); updateLists();
   }
@@ -276,6 +276,20 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
           const result = room.game.deploy(member.id, msg.x, msg.y, msg.cells);
           if (result.error) return fail(result.error);
           member.lastDeployGen = room.game.generation; send(ws, { type: 'deployed', x: msg.x, y: msg.y, cost: result.cost }); return;
+        }
+        case 'pick_card': {
+          if (!room?.game || !member) return fail('尚未进入对局');
+          const result = room.game.pickCard(member.id, String(msg.cardId || ''));
+          if (result.error) return fail(result.error);
+          for (const m of room.members) send(m.ws, { type: 'card_picked', playerId: member.id, cardId: result.card.id });
+          return;
+        }
+        case 'play_card': {
+          if (!room?.game || !member) return fail('尚未进入对局');
+          const result = room.game.playCard(member.id, String(msg.cardId || ''), Number.isInteger(msg.x) ? msg.x : undefined, Number.isInteger(msg.y) ? msg.y : undefined);
+          if (result.error) return fail(result.error);
+          for (const m of room.members) send(m.ws, { type: 'card_played', playerId: member.id, cardId: String(msg.cardId || ''), x: msg.x, y: msg.y });
+          return;
         }
       }
     });

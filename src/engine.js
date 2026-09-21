@@ -1,13 +1,17 @@
 import { generateNodes, createTerritories, canDeployInTerritory } from '../public/territory.js';
+import { CARDS } from '../public/cards.js';
 import { RegionalCycleDetector } from './dormancy.js';
 import { RULES } from './config.js';
 export { RULES };
+export { CARDS };
 export const COLORS = ['#67f5d1', '#ff796c', '#ac98ff', '#f4cc75'];
 const SPAWNS = [[180, 180], [820, 820], [820, 180], [180, 820]];
 const dist2 = (a, b, x, y) => (a - x) ** 2 + (b - y) ** 2;
 
 export class Game {
-  constructor(members, { random = Math.random } = {}) {
+  // cardDrawTimes：发卡时间点（毫秒，从游戏开始起算），默认第 3/5/7 分钟。
+  // now：时间源，默认 Date.now；测试可注入假时钟模拟真实时间推进。
+  constructor(members, { random = Math.random, cardDrawTimes = [180000, 300000, 420000], now = Date.now } = {}) {
     this.size = RULES.size;
     this.board = new Uint8Array(this.size * this.size);
     this.next = new Uint8Array(this.board.length);
@@ -20,8 +24,18 @@ export class Game {
     this.dormancy = new RegionalCycleDetector(this.size);
     this.status = 'playing';
     this.winner = null;
+    // 阶段1：生命规则参数化（默认 B3/S23，可被法则卡临时覆盖）
+    this.random = random;
+    this.now = now;
+    this.birthRule = new Set([3]);
+    this.survivalRule = new Set([2, 3]);
+    this.ruleOverride = null; // { birth:Set, survival:Set, endsAt } 法则卡激活时设置
+    // 阶段1：卡牌系统核心状态（发卡时间点 / 三选一候选 / 手牌 / 激活效果）
+    this.cardDrawTimes = [...cardDrawTimes];
+    this.cardDraft = null; // { gen, players:[{playerId, options, picked}] }
+    this.cards = { hand: members.map(() => null), effects: [] };
     // 休眠阈值随现实时间衰减：游戏开始后每分钟 dormancyDecayPerMinute 代，下限 minDormancyGenerations。
-    this.startedAt = Date.now();
+    this.startedAt = now();
     this.baseDormancyGenerations = RULES.dormancyGenerations;
     this.minDormancyGenerations = RULES.minDormancyGenerations;
     this.dormancyDecayPerMinute = RULES.dormancyDecayPerMinute;
@@ -61,7 +75,7 @@ export class Game {
   }
 
   currentDormancyGenerations() {
-    const elapsedMinutes = Math.floor((Date.now() - this.startedAt) / 60000);
+    const elapsedMinutes = Math.floor((this.now() - this.startedAt) / 60000);
     return Math.max(this.minDormancyGenerations, this.baseDormancyGenerations - elapsedMinutes * this.dormancyDecayPerMinute);
   }
 
@@ -86,12 +100,23 @@ export class Game {
         }
       }
     }
+    // 当前生效的生命规则：默认 B3/S23，法则卡激活期间读取 ruleOverride
+    let birthSet = this.birthRule, survivalSet = this.survivalRule;
+    if (this.ruleOverride) {
+      if (this.generation < this.ruleOverride.endsAt) {
+        birthSet = this.ruleOverride.birth;
+        survivalSet = this.ruleOverride.survival;
+      } else {
+        this.ruleOverride = null; // 法则持续时间结束，恢复默认规则
+      }
+    }
     next.fill(0);
     const nextAlive = [], totals = [0, 0, 0, 0, 0];
     for (let i = 0; i < length; i++) {
       const key = candidates[i], count = counts[key];
       let owner = board[key];
-      if (count !== 3 && !(owner && count === 2)) continue;
+      if (!owner && !birthSet.has(count)) continue; // 出生规则
+      if (owner && !survivalSet.has(count)) continue; // 存活规则
       if (!owner) {
         let max = 0;
         for (let t = 0; t < 4; t++) {
@@ -115,6 +140,7 @@ export class Game {
       if (!p.eliminated) p.energy = Math.min(RULES.maxEnergy, p.energy + RULES.regen + p.nodes * RULES.nodeRegen);
     }
     this.checkVictory();
+    this.checkCardDraw();
   }
 
   nearby(x, y, radius, callback) {
@@ -175,6 +201,108 @@ export class Game {
     if (survivors.length <= 1) { this.status = 'finished'; this.winner = survivors[0]?.id ?? 0; this.event('victory', this.winner, '对局结束'); }
   }
 
+  // 从卡池中随机抽取 3 张不重复的候选卡（阶段1：固定卡池；后续可按时间/卡池过滤）
+  drawThreeCards(playerId) {
+    const options = [];
+    const seen = new Set();
+    let guard = 0;
+    while (options.length < 3 && guard++ < 100) {
+      const card = CARDS[Math.floor(this.random() * CARDS.length)];
+      if (seen.has(card.id)) continue;
+      seen.add(card.id);
+      options.push(card);
+    }
+    return options;
+  }
+
+  // 到达发卡时间点（按真实时间，毫秒）：为每名存活玩家生成三选一候选（每个时间点只发一次）
+  checkCardDraw() {
+    if (this.status !== 'playing') return;
+    const elapsed = this.now() - this.startedAt;
+    if (!this.cardDraft && this.cardDrawTimes.length && elapsed >= this.cardDrawTimes[0]) {
+      this.cardDrawTimes.shift();
+      // 只为人类玩家生成候选：bot 不占位（AI 用卡在后续阶段实现），避免 draft 一直未清空而阻塞后续发卡点
+      this.cardDraft = {
+        gen: this.generation,
+        players: this.players.filter(p => !p.eliminated && !p.bot).map(p => ({
+          playerId: p.id,
+          options: this.drawThreeCards(p.id),
+          picked: false
+        }))
+      };
+      this.event('card', 0, '卡牌发放：请选择一张卡牌');
+    }
+  }
+
+  // 三选一：选择一张候选卡加入手牌（手牌上限 1 张，必须先使用才能获得新卡）
+  pickCard(playerId, cardId) {
+    if (this.status !== 'playing') return { error: '对局已结束' };
+    if (!this.cardDraft) return { error: '当前没有可选的卡牌' };
+    const entry = this.cardDraft.players.find(d => d.playerId === playerId);
+    if (!entry) return { error: '本次发卡不包含你' };
+    if (entry.picked) return { error: '已经选择过卡牌' };
+    const card = entry.options.find(c => c.id === cardId);
+    if (!card) return { error: '无效卡牌' };
+    if (this.cards.hand[playerId - 1]) return { error: '手牌已满，请先使用当前卡牌' };
+    entry.picked = true;
+    this.cards.hand[playerId - 1] = card;
+    if (this.cardDraft.players.every(d => d.picked)) this.cardDraft = null;
+    return { ok: true, card };
+  }
+
+  // 使用手牌：在引擎内权威执行卡牌效果（服务器验证，客户端只发意图）
+  playCard(playerId, cardId, x, y) {
+    if (this.status !== 'playing') return { error: '对局已结束' };
+    const p = this.players.find(p => p.id === playerId);
+    if (!p || p.eliminated) return { error: '无法使用卡牌' };
+    const hand = this.cards.hand[playerId - 1];
+    if (!hand || hand.id !== cardId) return { error: '手牌中没有这张卡' };
+    const card = CARDS.find(c => c.id === cardId);
+    if (!card) return { error: '无效卡牌' };
+    const eff = card.effect;
+    switch (eff.kind) {
+      case 'rule': {
+        this.ruleOverride = {
+          birth: new Set(eff.birth),
+          survival: new Set(eff.survival),
+          endsAt: this.generation + eff.duration
+        };
+        this.event('card', playerId, `法则变更：${card.name}（${eff.duration / RULES.hz} 秒）`);
+        break;
+      }
+      case 'energy': {
+        p.energy = Math.min(RULES.maxEnergy, p.energy + eff.amount);
+        this.event('card', playerId, `${card.name}：+${eff.amount} 能量`);
+        break;
+      }
+      case 'purge': {
+        if (!Number.isInteger(x) || !Number.isInteger(y)) return { error: '道具卡需要指定目标位置' };
+        const r = eff.radius;
+        const removed = [];
+        for (const key of this.alive) {
+          const cx = key % this.size, cy = Math.floor(key / this.size);
+          if ((cx - x) ** 2 + (cy - y) ** 2 <= r * r) removed.push(key);
+        }
+        for (const key of removed) {
+          const owner = this.board[key];
+          if (owner) {
+            this.board[key] = 0;
+            this.changes.set(key, 0);
+            this.players[owner - 1].cells--;
+          }
+        }
+        this.alive = this.alive.filter(key => this.board[key]);
+        this.dormancy.invalidate(new Set(removed)); // 同步失效休眠检测，避免残留警告
+        this.event('card', playerId, `${card.name}：清除了 ${removed.length} 个细胞`);
+        break;
+      }
+      default:
+        return { error: '该卡牌效果尚未实现' };
+    }
+    this.cards.hand[playerId - 1] = null; // 卡牌使用后消耗
+    return { ok: true };
+  }
+
   packet(snapshot = false) {
     const entries = snapshot ? this.alive.map(k => [k, this.board[k]]) : [...this.changes];
     const result = new ArrayBuffer(8 + entries.length * 4), view = new DataView(result);
@@ -183,5 +311,19 @@ export class Game {
     return result;
   }
 
-  state() { return { type: 'state', generation: this.generation, status: this.status, winner: this.winner, players: this.players, nodes: this.nodes, events: this.events, dormancy: this.dormancy.warnings || [], dormancyThreshold: this.currentDormancyGenerations() }; }
+  state() {
+    return {
+      type: 'state',
+      generation: this.generation,
+      status: this.status,
+      winner: this.winner,
+      players: this.players,
+      nodes: this.nodes,
+      events: this.events,
+      dormancy: this.dormancy.warnings || [],
+      dormancyThreshold: this.currentDormancyGenerations(),
+      cardDraft: this.cardDraft, // 三选一候选（等待人类玩家选择）
+      cards: this.cards          // 手牌与激活效果，随 5Hz 状态同步，刷新重连可恢复
+    };
+  }
 }
