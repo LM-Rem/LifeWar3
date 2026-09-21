@@ -102,15 +102,19 @@ if (arsenalPanel && arsenalResize) {
   window.addEventListener('pointercancel', stopResize);
 }
 
-// 图案列表：光标悬停时，鼠标滚轮横向滚动列表
-const patternListEl = $('#pattern-list');
-if (patternListEl) {
-  patternListEl.addEventListener('wheel', e => {
-    if (!e.deltaY && !e.deltaX) return;
-    e.preventDefault();
-    patternListEl.scrollLeft += e.deltaY + e.deltaX;
-  }, { passive: false });
-}
+// 横向滚动：鼠标滚轮悬停在可水平滚动的列表（图案列表 / 卡牌仓库）上时，转换为横向滚动。
+// 使用捕获阶段事件委托，即使列表内部 DOM 被动态重建也能可靠生效；
+// 并改为「实际滚动成功后才阻止默认行为」，避免可滚动判断误判导致滚轮无效。
+document.addEventListener('wheel', e => {
+  if (!(e.target instanceof Element)) return;
+  const scrollEl = e.target.closest('#pattern-list, #card-container');
+  if (!scrollEl) return;
+  if (!e.deltaY && !e.deltaX) return;
+  const before = scrollEl.scrollLeft;
+  scrollEl.scrollLeft += e.deltaY + e.deltaX;
+  // 仅当内容确实可水平滚动时拦截默认行为，否则放行页面垂直滚动
+  if (scrollEl.scrollLeft !== before) e.preventDefault();
+}, { passive: false, capture: true });
 
 let audioContext;
 function sound(type='click') {
@@ -452,6 +456,11 @@ $$('.collapse-button').forEach(b=>{b.setAttribute('aria-expanded','true');b.oncl
       panel.style.bottom=`${bottom+before-after}px`;
     }
   };});
+$('#battle-top').querySelector('.battle-top-bar').addEventListener('click',e=>{
+  if(e.target.closest('button,a,input,select,textarea,.panel-drag'))return;
+  const expanded=$('#battle-top').classList.toggle('expanded');
+  $('#battle-top').setAttribute('aria-expanded',String(expanded));
+});
 window.addEventListener('keydown',e=>{
   if(page!=='game'||$('dialog[open]')||['INPUT','TEXTAREA'].includes(e.target.tagName)||e.ctrlKey||e.metaKey||e.altKey)return;
   const key=e.key.toLowerCase();

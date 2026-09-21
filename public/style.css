@@ -992,12 +992,30 @@ kbd {
   top: 18px;
   left: 20px;
   right: 20px;
+  height: auto;
+  max-height: 59px;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+  box-shadow: 0 0 25px #0005;
+  transition: max-height .32s cubic-bezier(.4,0,.2,1);
+  z-index: 30
+}
+
+.battle-top-bar {
   height: 59px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 17px;
-  box-shadow: 0 0 25px #0005
+  flex-shrink: 0;
+  cursor: pointer;
+  user-select: none
+}
+
+.battle-top.expanded {
+  max-height: 560px
 }
 
 .battle-brand {
@@ -1056,6 +1074,154 @@ kbd {
 
 .network-stat span {
   margin-left: 8px
+}
+
+.card-toggle-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 26px;
+  margin-left: 6px;
+  color: #6b858f;
+  font-size: 12px;
+  transition: transform .3s cubic-bezier(.4,0,.2,1)
+}
+
+.battle-top.expanded .card-toggle-arrow {
+  transform: rotate(180deg)
+}
+
+.card-container {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 14px 17px 18px;
+  border-top: 1px solid #ffffff14;
+  background: #0a0e13e0
+}
+
+.card-grid {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  margin: 0 auto;
+  padding: 6px 2px 10px;
+  flex-shrink: 0
+}
+
+.card {
+  --card-color: #67f5d1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 168px;
+  aspect-ratio: 5/7;
+  padding: 13px 12px 11px;
+  overflow: hidden;
+  background:
+    radial-gradient(130% 70% at 50% 0%, color-mix(in srgb, var(--card-color) 16%, transparent), transparent 62%),
+    linear-gradient(165deg, #111a24 0%, #0a0f16 55%, #070b10 100%);
+  border: 2px solid var(--card-color);
+  border-radius: 0;
+  cursor: pointer;
+  box-shadow:
+    0 0 0 1px #000a,
+    0 0 16px color-mix(in srgb, var(--card-color) 50%, transparent),
+    0 0 42px color-mix(in srgb, var(--card-color) 22%, transparent),
+    inset 0 0 22px color-mix(in srgb, var(--card-color) 18%, transparent);
+  transition: transform .16s, box-shadow .16s
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='168' height='235' viewBox='0 0 168 235'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='1' opacity='0.14'%3E%3Cpath d='M10 28 H70 V54 H132 V80'/%3E%3Cpath d='M10 108 H52 V128 H118 V156 H158'/%3E%3Cpath d='M10 190 H52 V212 H120'/%3E%3Cpath d='M122 16 V34 H168'/%3E%3Cpath d='M0 88 H10'/%3E%3Cpath d='M158 156 V176 H168'/%3E%3Cpath d='M0 224 H40'/%3E%3C/g%3E%3Cg fill='%23ffffff' opacity='0.3'%3E%3Ccircle cx='132' cy='80' r='3'/%3E%3Ccircle cx='158' cy='156' r='3'/%3E%3Ccircle cx='52' cy='212' r='3'/%3E%3Ccircle cx='168' cy='34' r='3'/%3E%3Ccircle cx='118' cy='128' r='2'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 168px 235px;
+  background-position: center;
+  mix-blend-mode: screen;
+  opacity: .85
+}
+
+.card::after {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border: 1px solid color-mix(in srgb, var(--card-color) 40%, transparent);
+  pointer-events: none;
+  z-index: 2
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 0 0 1px #000a,
+    0 0 20px color-mix(in srgb, var(--card-color) 70%, transparent),
+    0 0 54px color-mix(in srgb, var(--card-color) 30%, transparent),
+    inset 0 0 26px color-mix(in srgb, var(--card-color) 24%, transparent)
+}
+
+.card-type {
+  align-self: flex-start;
+  position: relative;
+  z-index: 3;
+  padding: 4px 9px;
+  border: 1px solid color-mix(in srgb, var(--card-color) 70%, transparent);
+  border-radius: 0;
+  font: 8px var(--mono);
+  letter-spacing: 2px;
+  background: color-mix(in srgb, var(--card-color) 14%, #0a0e14);
+  color: var(--card-color);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--card-color) 40%, transparent)
+}
+
+.card-name {
+  position: relative;
+  z-index: 3;
+  margin-top: 8px;
+  font-size: 13px;
+  letter-spacing: 2px;
+  color: #f2f7fa;
+  text-shadow: 0 0 10px color-mix(in srgb, var(--card-color) 55%, transparent)
+}
+
+.card-desc {
+  position: relative;
+  z-index: 3;
+  flex: 1;
+  margin: 8px 0 0;
+  padding-top: 8px;
+  border-top: 1px dashed color-mix(in srgb, var(--card-color) 26%, transparent);
+  font-size: 10px;
+  line-height: 1.65;
+  color: #8fa4ad
+}
+
+.card-cost {
+  position: relative;
+  z-index: 3;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid color-mix(in srgb, var(--card-color) 30%, transparent);
+  font: 9px var(--mono);
+  letter-spacing: 1px;
+  color: color-mix(in srgb, var(--card-color) 85%, #fff)
+}
+
+.card.law {
+  --card-color: #ff5a4d
+}
+
+.card.buff {
+  --card-color: #f4cc75
+}
+
+.card.item {
+  --card-color: #b07cff
 }
 
 .roster-panel {
@@ -2853,8 +3019,14 @@ body.no-motion *::after {
     top: 8px;
     left: 8px;
     right: 8px;
-    padding: 0 8px;
-    height: 48px
+    height: auto;
+    max-height: 48px;
+    padding: 0
+  }
+
+  .battle-top-bar {
+    height: 48px;
+    padding: 0 8px
   }
 
   .battle-brand b {
@@ -3130,6 +3302,12 @@ body.no-motion *::after {
     top: 6px;
     left: 6px;
     right: 6px;
+    height: auto;
+    max-height: 44px;
+    padding: 0
+  }
+
+  .battle-top-bar {
     height: 44px;
     padding: 0 6px
   }
