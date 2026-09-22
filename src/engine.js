@@ -1,5 +1,5 @@
-import { generateNodes, createTerritories, canDeployInTerritory } from '../public/territory.js';
-import { CARDS } from '../public/cards.js';
+import { generateNodes, createTerritories, canDeployInTerritory, territoryAt, adjacentNeutralTerritories } from '../public/territory.js';
+import { CARDS, CARD_CONFIG, isTargetedCard } from '../public/cards.js';
 import { RegionalCycleDetector } from './dormancy.js';
 import { RULES } from './config.js';
 export { RULES };
@@ -11,7 +11,7 @@ const dist2 = (a, b, x, y) => (a - x) ** 2 + (b - y) ** 2;
 export class Game {
   // cardDrawTimes：发卡时间点（毫秒，从游戏开始起算），默认第 3/5/7 分钟。
   // now：时间源，默认 Date.now；测试可注入假时钟模拟真实时间推进。
-  constructor(members, { random = Math.random, cardDrawTimes = [1000, 300000, 420000], now = Date.now } = {}) {
+  constructor(members, { random = Math.random, cardDrawTimes = CARD_CONFIG.drawSeconds.map(s => s * 1000), now = Date.now } = {}) {
     this.size = RULES.size;
     this.board = new Uint8Array(this.size * this.size);
     this.next = new Uint8Array(this.board.length);
@@ -30,6 +30,8 @@ export class Game {
     this.birthRule = new Set([3]);
     this.survivalRule = new Set([2, 3]);
     this.ruleOverride = null; // { birth:Set, survival:Set, endsAt } 法则卡激活时设置
+    this.pendingRule = null;
+    this.localRules = [];
     // 阶段1：卡牌系统核心状态（发卡时间点 / 三选一候选 / 手牌 / 激活效果）
     this.cardDrawTimes = [...cardDrawTimes];
     this.cardDraft = null; // { gen, players:[{playerId, options, picked}] }
@@ -55,24 +57,35 @@ export class Game {
     const p = this.players.find(p => p.id === id);
     if (this.status !== 'playing' || !p || p.eliminated) return { error: '当前无法部署' };
     if (!Number.isInteger(x) || !Number.isInteger(y) || !Array.isArray(cells) || !cells.length || cells.length > 4096) return { error: '无效图案：需要 1–4096 个细胞' };
+    const free = this.buff(id, 'freeDeploy'), neutral = this.buff(id, 'neutralDeploy');
+    if (!free && p.lastDeployGen !== undefined && this.generation - p.lastDeployGen < RULES.deployCooldown) return { error: '部署冷却中' };
+    const extraLand = neutral ? adjacentNeutralTerritories(this.territories, this.players, this.nodes, id) : [];
+    let usedNeutral = false;
     const positions = new Set();
     for (const cell of cells) {
       if (!Array.isArray(cell) || cell.length !== 2 || !cell.every(v => Number.isInteger(v) && v >= 0 && v < 128)) return { error: '图案尺寸不得超过 128×128' };
       const cx = x + cell[0], cy = y + cell[1];
       if (cx < 0 || cy < 0 || cx >= this.size || cy >= this.size) return { error: '图案超出地图边界' };
-      if (!this.inRange(p, cx, cy)) return { error: '图案必须完整位于己方已控制的多边形领地内' };
+      if (!this.inRange(p, cx, cy)) {
+        if (!extraLand.includes(territoryAt(this.territories, cx, cy, this.size))) return { error: '图案必须位于己方领地或获准的相邻中立分区' };
+        usedNeutral = true;
+      }
       if (this.players.some(e => !e.eliminated && e.id !== id && dist2(e.x, e.y, cx, cy) < 28 ** 2)) return { error: '敌方基地周围 28 格内禁止直接部署' };
       const key = cy * this.size + cx;
       if (this.board[key]) return { error: '部署位置存在活细胞' };
       positions.add(key);
     }
-    if (p.energy < positions.size) return { error: '能量不足，等待回复后重试' };
-    if (p.cells + positions.size > RULES.playerCells || this.alive.length + positions.size > RULES.maxCells) return { error: '已达到活细胞容量上限' };
-    p.energy -= positions.size;
+    const cost = free ? 0 : Math.ceil(positions.size * (this.buff(id, 'deployCost')?.multiplier ?? 1));
+    if (p.energy < cost) return { error: '能量不足，等待回复后重试' };
+    if (p.cells + positions.size > this.playerCapacity(id) || this.alive.length + positions.size > RULES.maxCells) return { error: '已达到活细胞容量上限' };
+    p.energy -= cost;
     this.dormancy.invalidate(positions);
     for (const key of positions) { this.board[key] = id; this.alive.push(key); this.changes.set(key, id); }
     p.cells += positions.size;
-    return { ok: true, cost: positions.size };
+    p.lastDeployGen = this.generation;
+    if (free) this.cards.effects = this.cards.effects.filter(e => e !== free);
+    if (usedNeutral) this.cards.effects = this.cards.effects.filter(e => e !== neutral);
+    return { ok: true, cost };
   }
 
   currentDormancyGenerations() {
@@ -82,6 +95,7 @@ export class Game {
 
   step(dt = 1 / RULES.hz) {
     if (this.status !== 'playing') return;
+    this.expireCardEffects();
     this.generation++;
     const { board, next, counts, votes, marks, candidates, size } = this;
     let length = 0;
@@ -103,21 +117,17 @@ export class Game {
     }
     // 当前生效的生命规则：默认 B3/S23，法则卡激活期间读取 ruleOverride
     let birthSet = this.birthRule, survivalSet = this.survivalRule;
-    if (this.ruleOverride) {
-      if (this.generation < this.ruleOverride.endsAt) {
-        birthSet = this.ruleOverride.birth;
-        survivalSet = this.ruleOverride.survival;
-      } else {
-        this.ruleOverride = null; // 法则持续时间结束，恢复默认规则
-      }
-    }
+    if (this.ruleOverride) { birthSet = this.ruleOverride.birth; survivalSet = this.ruleOverride.survival; }
     next.fill(0);
     const nextAlive = [], totals = [0, 0, 0, 0, 0];
+    const births = [];
+    const capacities = this.players.map(p => this.playerCapacity(p.id));
     for (let i = 0; i < length; i++) {
       const key = candidates[i], count = counts[key];
       let owner = board[key];
-      if (!owner && !birthSet.has(count)) continue; // 出生规则
-      if (owner && !survivalSet.has(count)) continue; // 存活规则
+      const local = this.localRules.findLast(r => dist2(r.x, r.y, key % size, Math.floor(key / size)) <= r.radius ** 2);
+      if (!owner && !(local?.birth ?? birthSet).has(count)) continue;
+      if (owner && !(local?.survival ?? survivalSet).has(count)) continue;
       if (!owner) {
         let max = 0;
         for (let t = 0; t < 4; t++) {
@@ -125,7 +135,13 @@ export class Game {
           if (n > max) { max = n; owner = team; }
         }
       }
-      if (totals[owner] >= RULES.playerCells || nextAlive.length >= RULES.maxCells) continue;
+      if (!board[key]) { if (owner) births.push([key, owner]); continue; }
+      next[key] = owner; nextAlive.push(key); totals[owner]++;
+    }
+    // Preserve survivors when a temporary capacity boost expires. Only births
+    // and deployments are limited; array traversal order must not kill armies.
+    for (const [key, owner] of births) {
+      if (totals[owner] >= capacities[owner - 1] || nextAlive.length >= RULES.maxCells) continue;
       next[key] = owner; nextAlive.push(key); totals[owner]++;
     }
     for (let i = 0; i < length; i++) {
@@ -138,7 +154,7 @@ export class Game {
     this.dormancy.update(this, this.currentDormancyGenerations(), RULES.dormancyWarning);
     for (const p of this.players) {
       p.nodes = this.nodes.filter(n => n.owner === p.id).length;
-      if (!p.eliminated) p.energy = Math.min(RULES.maxEnergy, p.energy + RULES.regen + p.nodes * RULES.nodeRegen);
+      if (!p.eliminated) p.energy = Math.min(this.energyCap(p.id), p.energy + (RULES.regen + p.nodes * RULES.nodeRegen) * (this.buff(p.id, 'regen')?.multiplier ?? 1));
     }
     this.checkVictory();
     this.checkCardDraw();
@@ -158,11 +174,12 @@ export class Game {
     for (const n of this.nodes) {
       let mask = 0;
       this.nearby(n.x, n.y, RULES.captureRadius, owner => { mask |= 1 << owner; });
-      if (mask && (mask & (mask - 1)) === 0) {
-        const owner = Math.log2(mask);
+      const contestedClaim = n.claimant && (mask & (1 << n.claimant)) && this.buff(n.claimant, 'contest');
+      if (mask && ((mask & (mask - 1)) === 0 || contestedClaim)) {
+        const owner = (mask & (mask - 1)) === 0 ? Math.log2(mask) : n.claimant;
         if (owner === n.owner) { n.progress = Math.max(0, n.progress - 1); if (!n.progress) n.claimant = 0; continue; }
         if (n.claimant !== owner) { n.claimant = owner; n.progress = 0; }
-        n.progress += 1;
+        n.progress += this.buff(owner, 'capture')?.multiplier ?? 1;
         if (n.progress + 1e-9 >= RULES.captureTime) {
           n.owner = owner; n.claimant = 0; n.progress = 0;
           this.event('capture', owner, `占领中继节点 N-${String(n.id + 1).padStart(2, '0')}`);
@@ -175,7 +192,7 @@ export class Game {
       this.nearby(p.x, p.y, RULES.baseHitRadius, (owner, key) => {
         if (owner !== p.id) { this.board[key] = 0; this.changes.set(key, 0); this.players[owner - 1].cells--; hits++; }
       });
-      if (hits) { p.hp = Math.max(0, p.hp - hits); this.event('damage', p.id, `基地受到 ${hits} 点伤害`); }
+      if (hits && !this.buff(p.id, 'shield')) { p.hp = Math.max(0, p.hp - hits); this.event('damage', p.id, `基地受到 ${hits} 点伤害`); }
     }
     // Resolve all impact damage before clearing eliminated factions so simultaneous
     // core destruction is fair and may end in a draw.
@@ -190,6 +207,12 @@ export class Game {
     const p = this.players.find(p => p.id === id);
     if (!p || p.eliminated) return;
     p.eliminated = true; p.hp = 0; p.cells = 0;
+    this.cards.hand[id - 1] = null;
+    this.cards.effects = this.cards.effects.filter(e => e.playerId !== id);
+    if (this.cardDraft) {
+      this.cardDraft.players = this.cardDraft.players.filter(e => e.playerId !== id);
+      if (this.cardDraft.players.every(e => e.picked)) this.cardDraft = null;
+    }
     for (const key of this.alive) if (this.board[key] === id) { this.board[key] = 0; this.changes.set(key, 0); }
     this.alive = this.alive.filter(key => this.board[key]);
     for (const n of this.nodes) { if (n.owner === id) n.owner = 0; if (n.claimant === id) { n.claimant = 0; n.progress = 0; } }
@@ -202,67 +225,95 @@ export class Game {
     if (survivors.length <= 1) { this.status = 'finished'; this.winner = survivors[0]?.id ?? 0; this.event('victory', this.winner, '对局结束'); }
   }
 
-  // 从指定卡池中随机抽取 3 张不重复的候选卡（early/mid/late，强度递增）
-  drawThreeCards(playerId, pool = 'early') {
-    const poolCards = CARDS.filter(c => c.pool === pool);
-    const options = [];
-    const seen = new Set();
-    let guard = 0;
-    while (options.length < 3 && guard++ < 100) {
-      const card = poolCards[Math.floor(this.random() * poolCards.length)];
-      if (!card || seen.has(card.id)) continue;
-      seen.add(card.id);
-      options.push(card);
+  buff(id, stat) {
+    return this.cards.effects.find(e => e.playerId === id && e.stat === stat && e.endsAt > this.now());
+  }
+  energyCap(id) { return RULES.maxEnergy + (this.buff(id, 'maxEnergy')?.amount ?? 0); }
+  playerCapacity(id) { return Math.min(RULES.maxCells, RULES.playerCells + (this.buff(id, 'capacity')?.amount ?? 0)); }
+
+  expireCardEffects() {
+    const now = this.now();
+    this.cards.effects = this.cards.effects.filter(e => e.endsAt > now);
+    this.localRules = this.localRules.filter(e => e.endsAt > now);
+    if (this.ruleOverride?.endsAt <= now) this.ruleOverride = null;
+    if (this.pendingRule && this.pendingRule.startsAt <= now) {
+      const rule = this.pendingRule;
+      this.ruleOverride = { ...rule, endsAt: now + rule.seconds * 1000 };
+      this.pendingRule = null;
+      this.event('card', rule.playerId, `法则生效：${rule.name}`);
     }
-    return options;
+    for (const p of this.players) p.energy = Math.min(p.energy, this.energyCap(p.id));
   }
 
-  // 到达发卡时间点（按真实时间，毫秒）：为每名存活玩家生成三选一候选（每个时间点只发一次）
+  drawThreeCards(playerId, pool = 'early') {
+    // One choice per dimension, without rejection sampling or RNG-dependent short hands.
+    return ['law', 'buff', 'item'].map(type => {
+      const choices = CARDS.filter(c => c.pool === pool && c.type === type);
+      return choices[Math.min(choices.length - 1, Math.floor(this.random() * choices.length))];
+    });
+  }
+
+  finishDraft() {
+    if (!this.cardDraft) return;
+    for (const entry of this.cardDraft.players) {
+      if (!entry.picked && !this.players[entry.playerId - 1].eliminated && !this.cards.hand[entry.playerId - 1]) {
+        this.cards.hand[entry.playerId - 1] = entry.options.find(c => c.type === 'buff') || entry.options[0];
+      }
+    }
+    this.cardDraft = null;
+  }
+
   checkCardDraw() {
     if (this.status !== 'playing') return;
-    const elapsed = this.now() - this.startedAt;
-    if (!this.cardDraft && this.cardDrawTimes.length && elapsed >= this.cardDrawTimes[0]) {
+    const now = this.now();
+    if (this.cardDraft && now >= this.cardDraft.deadlineAt) this.finishDraft();
+    if (this.cardDrawTimes.length && now - this.startedAt >= this.cardDrawTimes[0]) {
+      this.finishDraft(); // A disconnected player can never block the next round.
       this.cardDrawTimes.shift();
-      // 第 1/2/3 次发卡分别使用 early/mid/late 卡池
-      const pools = ['early', 'mid', 'late'];
-      const pool = pools[Math.min(this.drawCount, pools.length - 1)];
-      this.drawCount++;
-      this.cardDraft = {
-        gen: this.generation,
-        players: this.players.filter(p => !p.eliminated).map(p => ({
-          playerId: p.id,
-          options: this.drawThreeCards(p.id, pool),
-          picked: false
-        }))
+      const pool = ['early', 'mid', 'late'][Math.min(this.drawCount++, 2)];
+      const draft = this.cardDraft = {
+        gen: this.generation, round: this.drawCount, deadlineAt: now + CARD_CONFIG.draftSeconds * 1000,
+        players: this.players.filter(p => !p.eliminated).map(p => ({ playerId: p.id, options: this.drawThreeCards(p.id, pool), picked: false }))
       };
-      this.event('card', 0, '卡牌发放：请选择一张卡牌');
-      // bot 玩家自动随机选一张（AI 也参与三选一）；若旧手牌未用则直接替换，保证 draft 不被卡住
-      for (const entry of this.cardDraft.players) {
-        const p = this.players[entry.playerId - 1];
-        if (!p?.bot) continue;
-        if (this.cards.hand[p.id - 1]) this.cards.hand[p.id - 1] = null;
-        this.pickCard(p.id, entry.options[Math.floor(this.random() * entry.options.length)].id);
+      this.event('card', 0, `第 ${this.drawCount} 轮卡牌征召：法则 / 增益 / 道具三选一`);
+      for (const entry of draft.players) if (this.players[entry.playerId - 1].bot) {
+        this.pickCard(entry.playerId, entry.options[Math.floor(this.random() * entry.options.length)].id);
       }
     }
   }
 
-  // 三选一：选择一张候选卡加入手牌（手牌上限 1 张，必须先使用才能获得新卡）
   pickCard(playerId, cardId) {
-    if (this.status !== 'playing') return { error: '对局已结束' };
-    if (!this.cardDraft) return { error: '当前没有可选的卡牌' };
-    const entry = this.cardDraft.players.find(d => d.playerId === playerId);
-    if (!entry) return { error: '本次发卡不包含你' };
-    if (entry.picked) return { error: '已经选择过卡牌' };
+    const p = this.players[playerId - 1];
+    if (this.status !== 'playing' || !p || p.eliminated) return { error: '当前无法选卡' };
+    if (this.cardDraft && this.now() >= this.cardDraft.deadlineAt) this.finishDraft();
+    const entry = this.cardDraft?.players.find(d => d.playerId === playerId);
+    if (!entry || entry.picked) return { error: '当前没有待选择的卡牌' };
     const card = entry.options.find(c => c.id === cardId);
     if (!card) return { error: '无效卡牌' };
-    if (this.cards.hand[playerId - 1]) return { error: '手牌已满，请先使用当前卡牌' };
+    // Single-card hand: an explicit selection replaces the old card; timeout keeps it.
     entry.picked = true;
     this.cards.hand[playerId - 1] = card;
     if (this.cardDraft.players.every(d => d.picked)) this.cardDraft = null;
     return { ok: true, card };
   }
 
-  // 使用手牌：在引擎内权威执行卡牌效果（服务器验证，客户端只发意图）
+  addCardCells(playerId, positions) {
+    const p = this.players[playerId - 1], keys = new Set();
+    for (const [x, y] of positions) {
+      if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0 || x >= this.size || y >= this.size) return { error: '播种区域超出地图' };
+      if (this.players.some(e => e.id !== playerId && !e.eliminated && dist2(e.x, e.y, x, y) <= Math.max(28, RULES.baseHitRadius) ** 2)) return { error: '不能向敌方核心保护区播种' };
+      const key = y * this.size + x;
+      if (this.board[key]) return { error: '播种位置存在活细胞' };
+      keys.add(key);
+    }
+    if (!keys.size) return { error: '目标区域没有可播种的空格' };
+    if (p.cells + keys.size > this.playerCapacity(playerId) || this.alive.length + keys.size > RULES.maxCells) return { error: '播种超过活细胞容量' };
+    this.dormancy.invalidate(keys);
+    for (const key of keys) { this.board[key] = playerId; this.alive.push(key); this.changes.set(key, playerId); }
+    p.cells += keys.size;
+    return { ok: true };
+  }
+
   playCard(playerId, cardId, x, y) {
     if (this.status !== 'playing') return { error: '对局已结束' };
     const p = this.players.find(p => p.id === playerId);
@@ -271,49 +322,65 @@ export class Game {
     if (!hand || hand.id !== cardId) return { error: '手牌中没有这张卡' };
     const card = CARDS.find(c => c.id === cardId);
     if (!card) return { error: '无效卡牌' };
-    const eff = card.effect;
+    const eff = card.effect, now = this.now();
+    if (isTargetedCard(card) && (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0 || x >= this.size || y >= this.size)) return { error: '请选择地图内的目标位置' };
+    this.expireCardEffects();
     switch (eff.kind) {
       case 'rule': {
-        this.ruleOverride = {
-          birth: new Set(eff.birth),
-          survival: new Set(eff.survival),
-          endsAt: this.generation + eff.duration
-        };
-        this.event('card', playerId, `法则变更：${card.name}（${eff.duration / RULES.hz} 秒）`);
+        this.pendingRule = { cardId, name: card.name, playerId, seconds: eff.seconds, birth: new Set(eff.birth), survival: new Set(eff.survival), startsAt: now + CARD_CONFIG.lawWarningSeconds * 1000 };
         break;
       }
-      case 'energy': {
-        p.energy = Math.min(RULES.maxEnergy, p.energy + eff.amount);
-        this.event('card', playerId, `${card.name}：+${eff.amount} 能量`);
+      case 'buff': {
+        this.cards.effects = this.cards.effects.filter(e => e.playerId !== playerId || e.stat !== eff.stat);
+        this.cards.effects.push({ ...eff, cardId, name: card.name, playerId, endsAt: now + eff.seconds * 1000 });
+        if (eff.refill) p.energy = this.energyCap(playerId);
+        break;
+      }
+      case 'energy': p.energy = eff.full ? this.energyCap(playerId) : Math.min(this.energyCap(playerId), p.energy + eff.amount); break;
+      case 'repair': p.hp = Math.min(RULES.baseHP, p.hp + eff.amount); break;
+      case 'localRule': {
+        if (this.localRules.length >= 8) return { error: '局部法则数量已达上限' };
+        this.localRules.push({ cardId, name: card.name, playerId, x, y, radius: eff.radius, birth: new Set(eff.birth), survival: new Set(eff.survival), endsAt: now + eff.seconds * 1000 });
         break;
       }
       case 'purge': {
-        if (!Number.isInteger(x) || !Number.isInteger(y)) return { error: '道具卡需要指定目标位置' };
-        const r = eff.radius;
-        const removed = [];
-        for (const key of this.alive) {
-          const cx = key % this.size, cy = Math.floor(key / this.size);
-          if ((cx - x) ** 2 + (cy - y) ** 2 <= r * r) removed.push(key);
-        }
-        for (const key of removed) {
-          const owner = this.board[key];
-          if (owner) {
-            this.board[key] = 0;
-            this.changes.set(key, 0);
-            this.players[owner - 1].cells--;
-          }
-        }
+        const removed = new Set();
+        this.nearby(x, y, eff.radius, (owner, key) => {
+          this.board[key] = 0; this.changes.set(key, 0); this.players[owner - 1].cells--; removed.add(key);
+        });
         this.alive = this.alive.filter(key => this.board[key]);
-        this.dormancy.invalidate(new Set(removed)); // 同步失效休眠检测，避免残留警告
-        this.event('card', playerId, `${card.name}：清除了 ${removed.length} 个细胞`);
+        this.dormancy.invalidate(removed);
         break;
       }
-      default:
-        return { error: '该卡牌效果尚未实现' };
+      case 'seed': {
+        const ox = x - Math.floor(Math.max(...eff.pattern.map(c => c[0])) / 2);
+        const oy = y - Math.floor(Math.max(...eff.pattern.map(c => c[1])) / 2);
+        const result = this.addCardCells(playerId, eff.pattern.map(([dx, dy]) => [ox + dx, oy + dy]));
+        if (result.error) return result;
+        break;
+      }
+      case 'nebula': {
+        // Validate the full footprint before sampling, so RNG cannot bypass core protection.
+        if (x - eff.radius < 0 || y - eff.radius < 0 || x + eff.radius >= this.size || y + eff.radius >= this.size) return { error: '星云圆域必须完整位于地图内' };
+        if (this.players.some(e => e.id !== playerId && !e.eliminated && Math.hypot(e.x - x, e.y - y) <= Math.max(28, RULES.baseHitRadius) + eff.radius)) return { error: '星云不能接触敌方核心保护区' };
+        const empty = [], cells = [];
+        for (let yy = y - eff.radius; yy <= y + eff.radius; yy++) for (let xx = x - eff.radius; xx <= x + eff.radius; xx++) {
+          if (dist2(x, y, xx, yy) > eff.radius ** 2 || this.board[yy * this.size + xx]) continue;
+          empty.push([xx, yy]);
+          if (this.random() < eff.density) cells.push([xx, yy]);
+        }
+        if (!cells.length && empty.length) cells.push(empty[0]);
+        const result = this.addCardCells(playerId, cells);
+        if (result.error) return result;
+        break;
+      }
+      default: return { error: '该卡牌效果尚未实现' };
     }
-    this.cards.hand[playerId - 1] = null; // 卡牌使用后消耗
+    this.cards.hand[playerId - 1] = null;
+    this.event('card', playerId, `${eff.kind === 'rule' ? '法则预告' : '使用卡牌'}：${card.name}`);
     return { ok: true };
   }
+
 
   packet(snapshot = false) {
     const entries = snapshot ? this.alive.map(k => [k, this.board[k]]) : [...this.changes];
@@ -323,19 +390,27 @@ export class Game {
     return result;
   }
 
-  state() {
+  state(viewerId = null) {
+    const now = this.now();
+    const serializeRule = rule => rule ? { ...rule, birth: [...rule.birth], survival: [...rule.survival] } : null;
+    const draft = this.cardDraft ? { ...this.cardDraft, players: this.cardDraft.players.filter(e => viewerId === null || e.playerId === viewerId) } : null;
     return {
       type: 'state',
+      serverTime: now,
       generation: this.generation,
       status: this.status,
       winner: this.winner,
-      players: this.players,
+      players: this.players.map(p => ({ ...p, energyCap: this.energyCap(p.id), capacity: this.playerCapacity(p.id), regenMultiplier: this.buff(p.id, 'regen')?.multiplier ?? 1, deployMultiplier: this.buff(p.id, 'freeDeploy') ? 0 : this.buff(p.id, 'deployCost')?.multiplier ?? 1, neutralDeploy: !!this.buff(p.id, 'neutralDeploy') })),
       nodes: this.nodes,
       events: this.events,
       dormancy: this.dormancy.warnings || [],
       dormancyThreshold: this.currentDormancyGenerations(),
-      cardDraft: this.cardDraft, // 三选一候选（等待人类玩家选择）
-      cards: this.cards          // 手牌与激活效果，随 5Hz 状态同步，刷新重连可恢复
+      cardDraft: draft,
+      nextCardAt: this.cardDrawTimes.length ? this.startedAt + this.cardDrawTimes[0] : null,
+      ruleOverride: serializeRule(this.ruleOverride),
+      pendingRule: serializeRule(this.pendingRule),
+      localRules: this.localRules.map(serializeRule),
+      cards: { hand: this.cards.hand.map((c, i) => viewerId === null || i + 1 === viewerId ? c : null), effects: this.cards.effects.filter(e => e.endsAt > now) }
     };
   }
 }

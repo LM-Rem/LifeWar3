@@ -90,7 +90,7 @@ export class RegionalCycleDetector {
     for(const key of game.alive) {
       const tile=Math.floor(Math.floor(key/this.size)/50)*this.side+Math.floor((key%this.size)/50);
       if(!remove[tile])continue;
-      const owner=game.board[key];if(!owner)continue;
+      const owner=game.board[key];if(!owner || game.buff?.(owner, 'dormancy'))continue;
       game.players[owner-1].cells--;game.board[key]=0;game.changes.set(key,0);removed++;
     }
     if(removed) {

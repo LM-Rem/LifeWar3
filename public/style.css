@@ -3866,3 +3866,23 @@ body.no-motion *::after {
     padding: 10px 13px
   }
 }
+
+/* Card effects remain legible without reopening the hand panel. */
+.card-status { position:absolute; top:92px; left:50%; transform:translateX(-50%); width:min(510px,42vw); display:grid; gap:5px; pointer-events:none; font:11px var(--mono); color:#a1babf; z-index:5 }
+.card-status > div { padding:8px 12px; background:#08151aee; border:1px solid #36525c; line-height:1.5 }
+#law-status { color:#ffbc9e; border-color:#c8724b; box-shadow:0 0 16px #da74441a }
+#card-effects { color:#7fe8cd }
+#card-schedule { text-align:center; text-shadow:0 1px 4px #000 }
+#card-target-status { display:flex; align-items:center; justify-content:space-between; gap:8px; color:#c7adff }
+#cancel-card-target { pointer-events:auto; padding:5px 9px; border:1px solid #9370d4; background:#231c35; color:#ece1ff; cursor:pointer; white-space:nowrap }
+.draft-options { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px }
+.draft-options .draft-card { width:100%; min-width:0; min-height:220px; aspect-ratio:auto; cursor:pointer }
+@media(max-width:700px) {
+  .card-status { top:69px; width:calc(100% - 28px); font-size:9px }
+  .card-status > div { padding:5px 8px }
+  #card-effects { white-space:nowrap; overflow-x:auto; pointer-events:auto }
+  .draft-options { grid-template-columns:1fr; gap:10px }
+  .draft-options .draft-card { min-height:136px; padding:12px }
+  .draft-options .card-cost { margin-top:12px }
+  .draft-modal { max-height:88dvh; overflow-y:auto }
+}

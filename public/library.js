@@ -237,7 +237,7 @@ async function loadGamePatterns() {
 function renderGameList() {
   const q = $('#library-search').value.trim().toLowerCase();
   const matches = q ? gamePatterns.filter(p => (p.name || '').toLowerCase().includes(q) || (p.en || '').toLowerCase().includes(q)) : gamePatterns;
-  const shown = matches.slice(0, 300);
+  const shown = matches; // 不限制数量，全部条目展示
   $('#library-count').textContent = `${matches.length} / ${gamePatterns.length} PATTERNS`;
   $('#library-list').innerHTML = shown.length
     ? shown.map((p, i) => `<button class="library-file ${p.id === selectedPattern?.id ? 'selected' : ''}" data-pattern="${escapeHTML(p.id)}"><span class="library-file-index">${String(i + 1).padStart(2, '0')}</span><span class="library-file-dot"></span>${escapeHTML(p.name || p.en || p.id)}<span class="library-file-meta">${escapeHTML(categoryName(p.category))} · ${p.cells.length} EN</span></button>`).join('')

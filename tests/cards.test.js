@@ -14,19 +14,23 @@ function seed(g, cells, owner = 1) {
 const card = id => CARDS.find(c => c.id === id);
 
 test('法则卡：临时覆盖全局规则，到期后恢复默认 B3/S23', () => {
-  const g = game();
-  seed(g, [[400, 400], [401, 400], [400, 401], [401, 401]]); // block
+  let now = 0;
+  const g = new Game([{name:'A'},{name:'B'}], { now: () => now });
+  seed(g, [[400, 400]]);
   g.cards.hand[0] = card('great_flood');
   assert.ok(g.playCard(1, 'great_flood').ok);
-  assert.ok(g.ruleOverride);
+  assert.ok(g.pendingRule);
+  assert.equal(g.ruleOverride, null);
+  now = g.pendingRule.startsAt;
   g.step();
-  // 大爆发（S 全含）：活细胞永生，原 block 细胞保留且向外扩散
+  // B3/S-all retains even an isolated cell, without inventing B0/B1 births.
   assert.equal(g.board[400 * 1000 + 400], 1);
-  assert.ok(g.alive.length > 4);
+  assert.equal(g.alive.length, 1);
   // 法则到期后恢复默认规则
-  g.ruleOverride.endsAt = g.generation;
+  now = g.ruleOverride.endsAt;
   g.step();
   assert.equal(g.ruleOverride, null);
+  assert.equal(g.alive.length, 0);
 });
 
 test('发卡时间点：按真实时间到达后为所有存活玩家生成三选一', () => {
@@ -63,7 +67,7 @@ test('三选一：选卡加入手牌、重复选被拒、全员选完清除候�
   assert.equal(g.cardDraft, null); // 全员选完
 });
 
-test('手牌上限：已持有一张时无法再选新卡', () => {
+test('手牌上限：主动选择新卡会替换旧卡', () => {
   let s = 21, t = 0;
   const rng = () => (s = (s * 16807) % 2147483647) / 2147483647;
   const g = new Game([{ name: 'A' }, { name: 'B' }], { cardDrawTimes: [3000, 6000], random: rng, now: () => t });
@@ -76,7 +80,8 @@ test('手牌上限：已持有一张时无法再选新卡', () => {
   for (let i = 0; i < 3; i++) { t += 1000; g.step(); }
   assert.ok(g.cardDraft);
   const np1 = g.cardDraft.players.find(d => d.playerId === 1);
-  assert.ok(g.pickCard(1, np1.options[0].id).error); // 手牌已满，必须先使用
+  assert.ok(g.pickCard(1, np1.options[0].id).ok);
+  assert.equal(g.cards.hand[0].id, np1.options[0].id);
 });
 
 test('增益卡：能量爆发增加能量且不超过上限，使用后消耗手牌', () => {

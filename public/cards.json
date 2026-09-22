@@ -1,0 +1,433 @@
+{
+  "drawSeconds": [
+    180,
+    300,
+    420
+  ],
+  "draftSeconds": 30,
+  "lawWarningSeconds": 1,
+  "cards": [
+    {
+      "id": "great_flood",
+      "type": "law",
+      "name": "大爆发",
+      "pool": "early",
+      "desc": "B3/S012345678：已有细胞永生，仅三邻居位置出生。4 秒。",
+      "effect": {
+        "kind": "rule",
+        "birth": [
+          3
+        ],
+        "survival": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "seconds": 4
+      }
+    },
+    {
+      "id": "great_death",
+      "type": "law",
+      "name": "孤岛法则",
+      "pool": "early",
+      "desc": "B3/S0：只有零邻居活细胞存活，三邻居空格出生。4 秒。",
+      "effect": {
+        "kind": "rule",
+        "birth": [
+          3
+        ],
+        "survival": [
+          0
+        ],
+        "seconds": 4
+      }
+    },
+    {
+      "id": "chaos_epoch",
+      "type": "law",
+      "name": "混沌纪元",
+      "pool": "early",
+      "desc": "B36/S23：增加六邻居出生，改变高密度结构的演化。4 秒。",
+      "effect": {
+        "kind": "rule",
+        "birth": [
+          3,
+          6
+        ],
+        "survival": [
+          2,
+          3
+        ],
+        "seconds": 4
+      }
+    },
+    {
+      "id": "silent_law",
+      "type": "law",
+      "name": "寂静法则",
+      "pool": "mid",
+      "desc": "B3/S：所有旧细胞死亡，仅三邻居空格出生。6 秒。",
+      "effect": {
+        "kind": "rule",
+        "birth": [
+          3
+        ],
+        "survival": [],
+        "seconds": 6
+      }
+    },
+    {
+      "id": "collapse",
+      "type": "law",
+      "name": "倒退",
+      "pool": "mid",
+      "desc": "B/S23：没有新生，只有两或三邻居的细胞存活。6 秒。",
+      "effect": {
+        "kind": "rule",
+        "birth": [],
+        "survival": [
+          2,
+          3
+        ],
+        "seconds": 6
+      }
+    },
+    {
+      "id": "void",
+      "type": "law",
+      "name": "虚空",
+      "pool": "late",
+      "desc": "B/S：全场细胞消亡且无法繁殖，基地和领地保留。6 秒。",
+      "effect": {
+        "kind": "rule",
+        "birth": [],
+        "survival": [],
+        "seconds": 6
+      }
+    },
+    {
+      "id": "eternal_flood",
+      "type": "law",
+      "name": "永恒洪水",
+      "pool": "late",
+      "desc": "B12345678/S012345678：有邻居就出生，旧细胞永生，仍受容量限制。8 秒。",
+      "effect": {
+        "kind": "rule",
+        "birth": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "survival": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "seconds": 8
+      }
+    },
+    {
+      "id": "energy_burst",
+      "type": "buff",
+      "name": "能量爆发",
+      "pool": "early",
+      "desc": "立即获得 60 能量，不超过当前上限。",
+      "effect": {
+        "kind": "energy",
+        "amount": 60
+      }
+    },
+    {
+      "id": "energy_full",
+      "type": "buff",
+      "name": "能量涌动",
+      "pool": "late",
+      "desc": "立即回复至当前实际能量上限。",
+      "effect": {
+        "kind": "energy",
+        "full": true
+      }
+    },
+    {
+      "id": "energy_overload",
+      "type": "buff",
+      "name": "过载协议",
+      "pool": "mid",
+      "desc": "能量上限增加 60 并回满，持续 20 秒。到期超额能量回落。",
+      "effect": {
+        "kind": "buff",
+        "stat": "maxEnergy",
+        "amount": 60,
+        "seconds": 20,
+        "refill": true
+      }
+    },
+    {
+      "id": "overclock",
+      "type": "buff",
+      "name": "超频",
+      "pool": "early",
+      "desc": "基础与节点能量回复翻倍，持续 20 秒。",
+      "effect": {
+        "kind": "buff",
+        "stat": "regen",
+        "multiplier": 2,
+        "seconds": 20
+      }
+    },
+    {
+      "id": "flash_deploy",
+      "type": "buff",
+      "name": "闪电部署",
+      "pool": "early",
+      "desc": "30 秒内下一次成功部署免费、无视冷却；仍受领地、碰撞与容量限制。",
+      "effect": {
+        "kind": "buff",
+        "stat": "freeDeploy",
+        "seconds": 30,
+        "charges": 1
+      }
+    },
+    {
+      "id": "engineering",
+      "type": "buff",
+      "name": "工程展开",
+      "pool": "mid",
+      "desc": "15 秒内部署费用减半，按整个图案向上取整。",
+      "effect": {
+        "kind": "buff",
+        "stat": "deployCost",
+        "multiplier": 0.5,
+        "seconds": 15
+      }
+    },
+    {
+      "id": "border_drop",
+      "type": "buff",
+      "name": "越界投放",
+      "pool": "mid",
+      "desc": "30 秒内一次部署可跨入与己方领地共享边的中立节点分区；消耗正常能量。",
+      "effect": {
+        "kind": "buff",
+        "stat": "neutralDeploy",
+        "seconds": 30,
+        "charges": 1
+      }
+    },
+    {
+      "id": "rapid_capture",
+      "type": "buff",
+      "name": "快速占领",
+      "pool": "early",
+      "desc": "占领进度推进速度翻倍，持续 30 秒。",
+      "effect": {
+        "kind": "buff",
+        "stat": "capture",
+        "multiplier": 2,
+        "seconds": 30
+      }
+    },
+    {
+      "id": "fortify",
+      "type": "buff",
+      "name": "领地固化",
+      "pool": "mid",
+      "desc": "20 秒内，己方已开始的占领在争夺时仍推进；必须持续有己方细胞接触。",
+      "effect": {
+        "kind": "buff",
+        "stat": "contest",
+        "seconds": 20
+      }
+    },
+    {
+      "id": "shield",
+      "type": "buff",
+      "name": "核心护盾",
+      "pool": "mid",
+      "desc": "基地免疫细胞接触伤害 8 秒，接触的敌细胞仍被消耗。",
+      "effect": {
+        "kind": "buff",
+        "stat": "shield",
+        "seconds": 8
+      }
+    },
+    {
+      "id": "repair",
+      "type": "buff",
+      "name": "核心修复",
+      "pool": "early",
+      "desc": "立即恢复 60 核心耐久，不超过配置上限，不能复活。",
+      "effect": {
+        "kind": "repair",
+        "amount": 60
+      }
+    },
+    {
+      "id": "growth",
+      "type": "buff",
+      "name": "增殖协议",
+      "pool": "late",
+      "desc": "个人活细胞容量增加 1500，持续 45 秒；全场容量不变，到期不强删存量。",
+      "effect": {
+        "kind": "buff",
+        "stat": "capacity",
+        "amount": 1500,
+        "seconds": 45
+      }
+    },
+    {
+      "id": "entropy",
+      "type": "buff",
+      "name": "熵减",
+      "pool": "late",
+      "desc": "己方细胞免疫休眠清理 30 秒；仍正常演化、受伤和被净化。",
+      "effect": {
+        "kind": "buff",
+        "stat": "dormancy",
+        "seconds": 30
+      }
+    },
+    {
+      "id": "purge",
+      "type": "item",
+      "name": "净化",
+      "pool": "early",
+      "desc": "清除指定位置半径 20 格的全部细胞，不分敌我。",
+      "effect": {
+        "kind": "purge",
+        "radius": 20
+      }
+    },
+    {
+      "id": "purge_large",
+      "type": "item",
+      "name": "大净化",
+      "pool": "mid",
+      "desc": "清除指定位置半径 30 格的全部细胞，不分敌我。",
+      "effect": {
+        "kind": "purge",
+        "radius": 30
+      }
+    },
+    {
+      "id": "purge_huge",
+      "type": "item",
+      "name": "湮灭",
+      "pool": "late",
+      "desc": "清除指定位置半径 40 格的全部细胞，不分敌我。",
+      "effect": {
+        "kind": "purge",
+        "radius": 40
+      }
+    },
+    {
+      "id": "seed",
+      "type": "item",
+      "name": "播种",
+      "pool": "mid",
+      "desc": "以选点为中心免费部署一艘重型飞船，可越界；不能覆盖细胞、越出地图或进入敌核心保护区。",
+      "effect": {
+        "kind": "seed",
+        "pattern": [
+          [
+            3,
+            0
+          ],
+          [
+            4,
+            0
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            6,
+            1
+          ],
+          [
+            0,
+            2
+          ],
+          [
+            0,
+            3
+          ],
+          [
+            6,
+            3
+          ],
+          [
+            0,
+            4
+          ],
+          [
+            1,
+            4
+          ],
+          [
+            2,
+            4
+          ],
+          [
+            3,
+            4
+          ],
+          [
+            4,
+            4
+          ],
+          [
+            5,
+            4
+          ]
+        ],
+        "radius": 4
+      }
+    },
+    {
+      "id": "nebula",
+      "type": "item",
+      "name": "星云",
+      "pool": "early",
+      "desc": "在指定圆域的空格随机播种己方细胞（25% 密度），可越界；整圈避开敌核心保护区。",
+      "effect": {
+        "kind": "nebula",
+        "radius": 12,
+        "density": 0.25
+      }
+    },
+    {
+      "id": "corrosion",
+      "type": "item",
+      "name": "腐蚀",
+      "pool": "late",
+      "desc": "指定圆域 B/S，5 秒内双方细胞都无法存活或出生。局部法则优先于全局法则。",
+      "effect": {
+        "kind": "localRule",
+        "birth": [],
+        "survival": [],
+        "radius": 24,
+        "seconds": 5
+      }
+    }
+  ]
+}

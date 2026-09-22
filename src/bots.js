@@ -1,5 +1,5 @@
 import { PATTERNS, transform } from '../public/patterns.js';
-import { CARDS } from '../public/cards.js';
+import { CARDS, isTargetedCard } from '../public/cards.js';
 
 const GLIDER_DIRECTIONS = [[1,1],[-1,1],[-1,-1],[1,-1]];
 const SHIP_DIRECTIONS = [[-1,0],[0,-1],[1,0],[0,1]];
@@ -16,10 +16,13 @@ export function runBots(game) {
     if (hand) {
       const card = CARDS.find(c => c.id === hand.id);
       const enemies = game.players.filter(p => p.id !== player.id && !p.eliminated);
-      if (card?.effect?.kind === 'rule' || card?.effect?.kind === 'energy') {
+      if (card && !isTargetedCard(card)) {
         game.playCard(player.id, hand.id);
-      } else if (card?.effect?.kind === 'purge' && enemies.length) {
-        game.playCard(player.id, hand.id, Math.round(enemies[0].x), Math.round(enemies[0].y));
+      } else if (card && enemies.length) {
+        const creates = ['seed','nebula'].includes(card.effect.kind);
+        const targets = creates ? game.nodes.filter(n=>n.owner!==player.id) : game.alive.filter(k=>game.board[k]!==player.id).slice(0,64).map(k=>({x:k%game.size,y:Math.floor(k/game.size)}));
+        if (!targets.length) targets.push(creates ? {x:player.x+50,y:player.y} : enemies[0]);
+        for (const target of targets) if (game.playCard(player.id, hand.id, Math.round(target.x), Math.round(target.y)).ok) break;
       }
     }
     if (player.energy < 9) continue;

@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "test": "node --test tests/*.test.js",
+    "test": "node --import ./tests/setup.js --test tests/*.test.js",
     "benchmark": "node tests/benchmark.js"
   },
   "dependencies": { "ws": "^8.18.0" }

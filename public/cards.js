@@ -1,110 +1,45 @@
-// 卡牌模板：服务器（引擎）与浏览器共享的定义。
-// effect 是引擎执行的参数化效果描述（服务器权威执行），浏览器仅用于显示名称/描述/费用。
-// 后续扩展新卡牌只需在此追加模板，并在引擎 playCard 的 switch 中实现对应 effect.kind。
+// One validated data source for the server and browser. Edit cards.json to balance cards.
+const pools = ['early', 'mid', 'late'];
+const kinds = { rule: 'law', energy: 'buff', repair: 'buff', buff: 'buff', purge: 'item', seed: 'item', nebula: 'item', localRule: 'item' };
+const stats = ['maxEnergy', 'regen', 'freeDeploy', 'deployCost', 'neutralDeploy', 'capture', 'contest', 'shield', 'capacity', 'dormancy'];
+export const isTargetedCard = card => ['purge', 'seed', 'nebula', 'localRule'].includes(card?.effect?.kind);
+export const ruleLabel = effect => `B${effect.birth.join('')}/S${effect.survival.join('')}`;
 
-export const CARDS = [
-  {
-    id: 'great_flood',
-    type: 'law',
-    name: '大爆发',
-    desc: '全局规则改为 B3/S012345678：活细胞永生、死细胞疯狂重生，持续 6 秒。',
-    pool: 'early',
-    effect: { kind: 'rule', birth: [0, 1, 2, 3, 4, 5, 6, 7, 8], survival: [0, 1, 2, 3, 4, 5, 6, 7, 8], duration: 60 }
-  },
-  {
-    id: 'great_death',
-    type: 'law',
-    name: '大灭绝',
-    desc: '全局规则改为 B3/S0：所有活细胞每代必死，只剩新出生的，持续 6 秒。',
-    pool: 'early',
-    effect: { kind: 'rule', birth: [3], survival: [0], duration: 60 }
-  },
-  {
-    id: 'chaos_epoch',
-    type: 'law',
-    name: '混沌纪元',
-    desc: '全局规则改为 B36/S23：高密度结构变得不稳定，持续 6 秒。',
-    pool: 'early',
-    effect: { kind: 'rule', birth: [3, 6], survival: [2, 3], duration: 60 }
-  },
-  {
-    id: 'energy_burst',
-    type: 'buff',
-    name: '能量爆发',
-    desc: '立即获得 +60 能量（不超过能量上限）。',
-    pool: 'early',
-    effect: { kind: 'energy', amount: 60 }
-  },
-  {
-    id: 'purge',
-    type: 'item',
-    name: '净化',
-    desc: '清除指定位置半径 20 格内的所有活细胞（不分敌我）。',
-    pool: 'early',
-    effect: { kind: 'purge', radius: 20 }
-  },
-  {
-    id: 'silent_law',
-    type: 'law',
-    name: '寂静法则',
-    desc: '全局规则改为 B3/S：所有活细胞每代消亡，只有新生的细胞闪烁，持续 6 秒。',
-    pool: 'mid',
-    effect: { kind: 'rule', birth: [3], survival: [], duration: 60 }
-  },
-  {
-    id: 'collapse',
-    type: 'law',
-    name: '倒退',
-    desc: '全局规则改为 B/S23：没有新生细胞，世界不可逆地收缩，持续 6 秒。',
-    pool: 'mid',
-    effect: { kind: 'rule', birth: [], survival: [2, 3], duration: 60 }
-  },
-  {
-    id: 'energy_overload',
-    type: 'buff',
-    name: '过载协议',
-    desc: '立即获得 +120 能量（不超过能量上限）。',
-    pool: 'mid',
-    effect: { kind: 'energy', amount: 120 }
-  },
-  {
-    id: 'purge_large',
-    type: 'item',
-    name: '大净化',
-    desc: '清除指定位置半径 30 格内的所有活细胞（不分敌我）。',
-    pool: 'mid',
-    effect: { kind: 'purge', radius: 30 }
-  },
-  {
-    id: 'void',
-    type: 'law',
-    name: '虚空',
-    desc: '全局规则改为 B/S：一切生命瞬间消亡且不再诞生，持续 9 秒。',
-    pool: 'late',
-    effect: { kind: 'rule', birth: [], survival: [], duration: 90 }
-  },
-  {
-    id: 'eternal_flood',
-    type: 'law',
-    name: '永恒洪水',
-    desc: '全局规则改为 B3/S012345678：细胞永生且疯狂增殖，持续 9 秒。',
-    pool: 'late',
-    effect: { kind: 'rule', birth: [0, 1, 2, 3, 4, 5, 6, 7, 8], survival: [0, 1, 2, 3, 4, 5, 6, 7, 8], duration: 90 }
-  },
-  {
-    id: 'energy_full',
-    type: 'buff',
-    name: '能量涌动',
-    desc: '立即回满能量（+180）。',
-    pool: 'late',
-    effect: { kind: 'energy', amount: 180 }
-  },
-  {
-    id: 'purge_huge',
-    type: 'item',
-    name: '湮灭',
-    desc: '清除指定位置半径 40 格内的所有活细胞（不分敌我）。',
-    pool: 'late',
-    effect: { kind: 'purge', radius: 40 }
+export function validateCardConfig(data) {
+  const require = (valid, message) => { if (!valid) throw new Error(`卡牌配置：${message}`); };
+  const positive = (n, max = 3600) => typeof n === 'number' && Number.isFinite(n) && n > 0 && n <= max;
+  require(Array.isArray(data.drawSeconds) && data.drawSeconds.length === 3 && data.drawSeconds.every((n, i, a) => positive(n) && (!i || n > a[i - 1])), '需要三个递增发卡时间（秒）');
+  require(positive(data.draftSeconds, 120) && positive(data.lawWarningSeconds, 10), '选卡与法则预告时间无效');
+  require(Array.isArray(data.cards), 'cards 必须为数组');
+  const ids = new Set();
+  for (const card of data.cards) {
+    const e = card.effect;
+    require(typeof card.id === 'string' && /^[a-z][a-z0-9_]*$/.test(card.id) && !ids.has(card.id), '卡牌 ID 无效或重复');
+    ids.add(card.id);
+    require(typeof card.name === 'string' && card.name.length > 0 && typeof card.desc === 'string', `${card.id} 缺少名称/说明`);
+    require(pools.includes(card.pool) && e && Object.hasOwn(kinds, e.kind) && card.type === kinds[e.kind], `${card.id} 类型/卡池无效`);
+    if (['rule', 'localRule', 'buff'].includes(e.kind)) require(positive(e.seconds, 120), `${card.id} 持续时间无效`);
+    if (['rule', 'localRule'].includes(e.kind)) {
+      for (const key of ['birth', 'survival']) require(Array.isArray(e[key]) && new Set(e[key]).size === e[key].length && e[key].every(n => Number.isInteger(n) && n >= (key === 'birth' ? 1 : 0) && n <= 8), `${card.id} B/S 无效（不支持无邻居出生 B0）`);
+    }
+    if (isTargetedCard(card)) require(Number.isInteger(e.radius) && positive(e.radius, 80), `${card.id} 半径无效`);
+    if (e.kind === 'energy') require(e.full === true || positive(e.amount, 10000), `${card.id} 能量无效`);
+    if (e.kind === 'repair') require(positive(e.amount, 10000), `${card.id} 修复量无效`);
+    if (e.kind === 'buff') {
+      require(stats.includes(e.stat), `${card.id} 增益类型无效`);
+      if (['maxEnergy', 'capacity'].includes(e.stat)) require(Number.isInteger(e.amount) && positive(e.amount, 6000), `${card.id} 增益量无效`);
+      if (['regen', 'capture', 'deployCost'].includes(e.stat)) require(positive(e.multiplier, 4), `${card.id} 倍率无效`);
+      if (['freeDeploy', 'neutralDeploy'].includes(e.stat)) require(e.charges === 1, `${card.id} 一次性部署必须为一次`);
+    }
+    if (e.kind === 'nebula') require(positive(e.density, 1), `${card.id} 密度无效`);
+    if (e.kind === 'seed') require(Array.isArray(e.pattern) && e.pattern.length > 0 && e.pattern.length <= 256 && e.pattern.every(c => Array.isArray(c) && c.length === 2 && c.every(n => Number.isInteger(n) && n >= 0 && n < 32)), `${card.id} 播种图案无效`);
   }
-];
+  for (const pool of pools) for (const type of ['law', 'buff', 'item']) require(data.cards.some(c => c.pool === pool && c.type === type), `${pool} 缺少 ${type} 卡`);
+  return data;
+}
+
+const data = typeof window === 'undefined'
+  ? JSON.parse((await import('node:fs')).readFileSync(new URL('./cards.json', import.meta.url), 'utf8'))
+  : await fetch(new URL('./cards.json', import.meta.url)).then(r => { if (!r.ok) throw new Error('无法加载卡牌配置'); return r.json(); });
+export const CARD_CONFIG = validateCardConfig(data);
+export const CARDS = CARD_CONFIG.cards;

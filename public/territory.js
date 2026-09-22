@@ -86,3 +86,12 @@ export function territoryOwner(site, players, nodes) {
 export function canDeployInTerritory(territories, players, nodes, id, x, y, size = 1000) {
   return territoryOwner(territoryAt(territories, x, y, size), players, nodes) === id;
 }
+
+// Adjacent means a shared edge, not just a shared vertex. Used by border-drop
+// on both the authoritative server and deployment preview.
+export function adjacentNeutralTerritories(territories, players, nodes, id) {
+  const owned = territories.filter(t => territoryOwner(t, players, nodes) === id);
+  return territories.filter(t => t.kind === 'node' && !territoryOwner(t, players, nodes) && owned.some(o =>
+    t.polygon.filter(a => o.polygon.some(b => Math.hypot(a[0] - b[0], a[1] - b[1]) < 1e-5)).length >= 2
+  ));
+}

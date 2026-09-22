@@ -1,4 +1,4 @@
-import { BASE_HIT_RADIUS, createTerritories, territoryOwner, canDeployInTerritory } from './territory.js';
+import { BASE_HIT_RADIUS, createTerritories, territoryOwner, canDeployInTerritory, territoryAt, adjacentNeutralTerritories } from './territory.js';
 export const COLORS = ['#67f5d1', '#ff796c', '#ac98ff', '#f4cc75'];
 const TAU = Math.PI * 2;
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
@@ -36,6 +36,7 @@ export class Battlefield {
   setState(state) {
     if (!this.state) this.territories = createTerritories(state.players, state.nodes);
     this.state = state;
+    this.extraLand = state.players.find(p => p.id === this.me)?.neutralDeploy ? adjacentNeutralTerritories(this.territories, state.players, state.nodes, this.me) : [];
   }
   updatePacket(buffer) {
     const view = new DataView(buffer);
@@ -63,7 +64,23 @@ export class Battlefield {
       const p = this.state.players.find(p => p.id === this.me);
       let reason = '';
       if (!p || p.eliminated || this.state.status !== 'playing') reason = '当前无法使用卡牌';
-      return { x: Math.floor(wx), y: Math.floor(wy), pw: 1, ph: 1, valid: !reason, reason, isCard: true, radius: this.cardTarget.radius };
+      const x = Math.floor(wx), y = Math.floor(wy), target = this.cardTarget;
+      if (x < 0 || y < 0 || x >= 1000 || y >= 1000) reason = '请选择地图内的目标';
+      let cells = [];
+      const protectedCore = (cx, cy, margin = 0) => this.state.players.some(e => !e.eliminated && e.id !== this.me && Math.hypot(cx - e.x, cy - e.y) <= Math.max(28, this.baseHitRadius) + margin);
+      if (target.kind === 'seed') {
+        const ox = x - Math.floor(Math.max(...target.pattern.map(c => c[0])) / 2), oy = y - Math.floor(Math.max(...target.pattern.map(c => c[1])) / 2);
+        cells = target.pattern.map(([dx, dy]) => [ox + dx, oy + dy]);
+        if (cells.some(([cx, cy]) => cx < 0 || cy < 0 || cx >= 1000 || cy >= 1000)) reason = '播种图案超出地图';
+        else if (cells.some(([cx, cy]) => this.board[cy * 1000 + cx])) reason = '播种位置已被占用';
+        else if (cells.some(([cx, cy]) => protectedCore(cx, cy))) reason = '不能向敌核心保护区播种';
+        else if (p && (p.cells + cells.length > (p.capacity ?? this.playerCells) || this.cells.size + cells.length > this.maxCells)) reason = '活细胞容量已满';
+      }
+      if (target.kind === 'nebula') {
+        if (x - target.radius < 0 || y - target.radius < 0 || x + target.radius >= 1000 || y + target.radius >= 1000) reason = '星云圆域超出地图';
+        else if (protectedCore(x, y, target.radius)) reason = '星云不能接触敌核心保护区';
+      }
+      return { x, y, pw: 1, ph: 1, valid: !reason, reason, isCard: true, radius: target.radius, cells };
     }
     if (!this.pointer || !this.pattern.length || !this.state) return null;
     const [wx,wy]=this.worldPoint(this.pointer.x,this.pointer.y), p=this.state.players.find(p=>p.id===this.me);
@@ -71,16 +88,16 @@ export class Battlefield {
     const x=Math.floor(wx-pw/2),y=Math.floor(wy-ph/2);
     let reason='';
     if(!p || p.eliminated || this.state.status!=='playing') reason='当前无法部署';
-    else if(p.energy<this.pattern.length) reason='能量不足';
-    else if(p.cells+this.pattern.length>this.playerCells || this.cells.size+this.pattern.length>this.maxCells) reason='活细胞容量已满';
+    else if(p.energy<Math.ceil(this.pattern.length*(p.deployMultiplier??1))) reason='能量不足';
+    else if(p.cells+this.pattern.length>(p.capacity??this.playerCells) || this.cells.size+this.pattern.length>this.maxCells) reason='活细胞容量已满';
     else for(const [dx,dy] of this.pattern){
       const cx=x+dx,cy=y+dy;
       if(cx<0||cy<0||cx>=1000||cy>=1000){reason='超出边界';break;}
       if(this.board[cy*1000+cx]){reason='位置已被占用';break;}
-      if(!canDeployInTerritory(this.territories,this.state.players,this.state.nodes,p.id,cx,cy)){reason='不在己方多边形领地内';break;}
+      if(!canDeployInTerritory(this.territories,this.state.players,this.state.nodes,p.id,cx,cy)&&!this.extraLand?.includes(territoryAt(this.territories,cx,cy))){reason='不在己方或获准的相邻中立分区内';break;}
       if(this.state.players.some(e=>!e.eliminated&&e.id!==p.id&&Math.hypot(cx-e.x,cy-e.y)<28)){reason='敌方核心保护区';break;}
     }
-    return {x,y,pw,ph,valid:!reason,reason};
+    return {x,y,pw,ph,valid:!reason,reason,cost:Math.ceil(this.pattern.length*(p?.deployMultiplier??1))};
   }
   effect(x,y,type='deploy',color=COLORS[this.me-1]) { this.effects.push({x,y,type,color,start:performance.now()}); }
   frame(now) {
@@ -126,6 +143,11 @@ export class Battlefield {
     }
     c.imageSmoothingEnabled=false;c.drawImage(this.world,ox,oy,1000*z,1000*z);
     this.drawDormancy(now);
+    for (const area of this.state?.localRules || []) {
+      const [x,y] = this.screen(area.x,area.y), r=area.radius*z;
+      c.save();c.beginPath();c.arc(x,y,r,0,TAU);c.fillStyle='#b07cff16';c.fill();c.strokeStyle='#bc96ff';c.lineWidth=1.5;c.setLineDash([5,4]);c.stroke();
+      c.font='10px Consolas, Microsoft YaHei, monospace';c.textAlign='center';c.fillStyle='#d8c1ff';c.fillText(`${area.name} · ${Math.max(0,Math.ceil((area.endsAt-this.state.serverTime)/1000))}s`,x,y-r-7);c.restore();
+    }
     if(z>=7){c.strokeStyle='#08151a66';c.lineWidth=.7;c.beginPath();for(let x=left;x<=right;x++){const sx=this.screen(x,0)[0];c.moveTo(sx,0);c.lineTo(sx,h);}for(let y=top;y<=bottom;y++){const sy=this.screen(0,y)[1];c.moveTo(0,sy);c.lineTo(w,sy);}c.stroke();}
     if(this.state){for(const n of this.state.nodes)this.drawNode(n,now);for(const p of this.state.players)this.drawBase(p,now);}
     c.restore();c.strokeStyle='#3f687255';c.lineWidth=1;c.strokeRect(ox,oy,1000*z,1000*z);
@@ -140,6 +162,7 @@ export class Battlefield {
         c.fillStyle=hexAlpha(color,.06);c.fill();
         c.strokeStyle=hexAlpha(color,.9);c.lineWidth=1.4;c.setLineDash([6,4]);c.stroke();c.setLineDash([]);
         c.beginPath();c.arc(x,y,3,0,TAU);c.fillStyle=color;c.fill();
+        for (const [cx,cy] of placement.cells || []) { const [sx,sy]=this.screen(cx,cy);c.fillRect(sx,sy,Math.max(1,z-.8),Math.max(1,z-.8)); }
         c.font='10px Consolas, Microsoft YaHei, monospace';c.textAlign='center';c.fillStyle=color;
         c.fillText(`点击施放 · 半径 ${placement.radius} 格`,x,y-r-8);
         c.restore();
@@ -208,6 +231,7 @@ export class Battlefield {
     if(x< -extent||y< -extent||x>this.width+extent||y>this.height+extent)return;
     c.save();c.translate(x,y);
     if(!p.eliminated){
+      if (this.state.cards?.effects.some(e=>e.playerId===p.id&&e.stat==='shield')) { c.beginPath();c.arc(0,0,this.baseHitRadius*z+6,0,TAU);c.strokeStyle='#b4eaff';c.lineWidth=3;c.stroke(); }
       // This radius is deliberately not clamped: it is the actual 12-cell hit
       // boundary, independent of the decorative core icon and UI zoom level.
       const hitRadius=this.baseHitRadius*z;

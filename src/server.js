@@ -197,7 +197,7 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
     ws.room = room; ws.member = member; member.ws = ws; member.offlineGen = null;
     send(ws, { type: 'welcome', id: member.id, token: member.token, code: room.code });
     broadcastRoom(room);
-    if (room.game) { send(ws, { type: 'started', id: member.id, rules: RULES, startedAt: room.startedAt }); send(ws, room.game.state()); ws.send(room.game.packet(true)); }
+    if (room.game) { send(ws, { type: 'started', id: member.id, rules: RULES, startedAt: room.startedAt }); send(ws, room.game.state(member.id)); ws.send(room.game.packet(true)); }
     updateLists();
   }
   function start(room) {
@@ -205,7 +205,7 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
     room.members.forEach((m, i) => { m.id = i + 1; });
     room.host = hostMember.id;
     room.game = new Game(room.members); room.startedGen = serverGen; room.startedAt = room.game.startedAt; room.lastActiveGen = serverGen; room.finishedBroadcast = false;
-    for (const m of room.members) { send(m.ws, { type: 'started', id: m.id, rules: RULES, startedAt: room.startedAt }); send(m.ws, room.game.state()); if (m.ws?.readyState === WebSocket.OPEN) m.ws.send(room.game.packet(true)); }
+    for (const m of room.members) { send(m.ws, { type: 'started', id: m.id, rules: RULES, startedAt: room.startedAt }); send(m.ws, room.game.state(m.id)); if (m.ws?.readyState === WebSocket.OPEN) m.ws.send(room.game.packet(true)); }
     broadcastRoom(room); updateLists();
   }
   wss.on('connection', ws => {
@@ -272,23 +272,26 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
         }
         case 'deploy': {
           if (!room?.game || !member) return fail('尚未进入对局');
-          if (member.lastDeployGen !== undefined && room.game.generation - member.lastDeployGen < RULES.deployCooldown) return fail('部署冷却中');
           const result = room.game.deploy(member.id, msg.x, msg.y, msg.cells);
           if (result.error) return fail(result.error);
-          member.lastDeployGen = room.game.generation; send(ws, { type: 'deployed', x: msg.x, y: msg.y, cost: result.cost }); return;
+          send(ws, { type: 'deployed', x: msg.x, y: msg.y, cost: result.cost }); return;
         }
         case 'pick_card': {
           if (!room?.game || !member) return fail('尚未进入对局');
           const result = room.game.pickCard(member.id, String(msg.cardId || ''));
           if (result.error) return fail(result.error);
-          for (const m of room.members) send(m.ws, { type: 'card_picked', playerId: member.id, cardId: result.card.id });
+          send(ws, { type: 'card_picked', playerId: member.id, cardId: result.card.id });
+          send(ws, room.game.state(member.id));
           return;
         }
         case 'play_card': {
           if (!room?.game || !member) return fail('尚未进入对局');
           const result = room.game.playCard(member.id, String(msg.cardId || ''), Number.isInteger(msg.x) ? msg.x : undefined, Number.isInteger(msg.y) ? msg.y : undefined);
           if (result.error) return fail(result.error);
-          for (const m of room.members) send(m.ws, { type: 'card_played', playerId: member.id, cardId: String(msg.cardId || ''), x: msg.x, y: msg.y });
+          for (const m of room.members) {
+            send(m.ws, { type: 'card_played', playerId: member.id, cardId: String(msg.cardId || ''), x: msg.x, y: msg.y });
+            send(m.ws, room.game.state(m.id));
+          }
           return;
         }
       }
@@ -325,7 +328,7 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
         if (ws?.readyState !== WebSocket.OPEN) continue;
         if (ws.bufferedAmount > 262144) { ws.needsSnapshot = true; continue; }
         ws.send(ws.needsSnapshot ? game.packet(true) : packet); ws.needsSnapshot = false;
-        if (game.generation % Math.max(1, Math.round(RULES.hz / 5)) === 0 || game.status === 'finished') send(ws, { ...game.state(), tickMs: Math.round((room.tickMs || 0) * 100) / 100 }); // 状态推送保持约 5Hz，与 hz 解耦
+        if (game.generation % Math.max(1, Math.round(RULES.hz / 5)) === 0 || game.status === 'finished') send(ws, { ...game.state(m.id), tickMs: Math.round((room.tickMs || 0) * 100) / 100 }); // 状态推送保持约 5Hz，与 hz 解耦
       }
       game.changes.clear();
       if (game.status === 'finished') room.finishedBroadcast = true;

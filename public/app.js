@@ -1,5 +1,6 @@
 import { PATTERNS, PATTERN_CATEGORIES, setPatternData, transform, normalize, parseRLE, toRLE } from './patterns.js';
 import { Battlefield, Ambient, COLORS, drawPattern } from './renderer.js';
+import { CARD_CONFIG, isTargetedCard, ruleLabel } from './cards.js';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -446,8 +447,8 @@ if (cardGridEl) {
     const cardObj = state?.cards?.hand?.[playerId - 1];
     const cardId = card.dataset.cardId || cardObj?.id;
     // 道具卡（需要选点）：进入选点模式，卡牌放回容器等待目标确认
-    if (cardObj?.effect?.kind === 'purge') {
-      battlefield.cardTarget = { cardId, radius: cardObj.effect.radius };
+    if (isTargetedCard(cardObj)) {
+      battlefield.cardTarget = { cardId, name: cardObj.name, ...cardObj.effect };
       card.classList.remove('dragging');
       card.style.left = ''; card.style.top = ''; card.style.width = '';
       const phIndex = [...cardGridEl.children].indexOf(placeholder);
@@ -726,7 +727,7 @@ function onMessage(msg) {
     case 'welcome': playerId=msg.id;session={code:msg.code,token:msg.token};saveStorage('lifewar.session',session,sessionStorage);break;
     case 'room':room=msg;renderRoom();if(msg.status==='lobby')showPage('lobby');break;
     case 'started':
-      state=null;pendingCardPlay=false;renderCards(true);
+      state=null;pendingCardPlay=false;shownDraftGen=0;renderCards(true);
       playerId=msg.id;if(msg.rules?.hz)gameHz=msg.rules.hz;if(msg.rules?.baseHP){maxHP=msg.rules.baseHP;battlefield.baseHP=maxHP;}if(msg.rules?.maxEnergy)maxEnergy=msg.rules.maxEnergy;if(msg.rules?.regen)energyRegen=msg.rules.regen;if(msg.rules?.nodeRegen)energyNodeRegen=msg.rules.nodeRegen;if(msg.rules?.playerCells)battlefield.playerCells=msg.rules.playerCells;if(msg.rules?.maxCells)battlefield.maxCells=msg.rules.maxCells;if(msg.rules?.baseHitRadius)battlefield.baseHitRadius=msg.rules.baseHitRadius;if(msg.rules?.captureTime)battlefield.captureTime=msg.rules.captureTime;startedAt=msg.startedAt||Date.now();battlefield.me=playerId;battlefield.reset();eventIds.clear();resultShown=false;state=null;closeDialogs();showPage('game');renderPatterns();if(selected)selectPattern(selected);sound('capture');break;
     case 'state':{
       const first=!state;
@@ -735,10 +736,10 @@ function onMessage(msg) {
       }
       if(typeof msg.dormancyThreshold==='number')lastDormancyThreshold=msg.dormancyThreshold;
       state=msg;battlefield.setState(state);
-      renderCards();if(msg.cardDraft)showCardDraft(msg.cardDraft);else $('#open-draft').classList.add('hidden');
+      renderCards();if(msg.cardDraft)showCardDraft(msg.cardDraft);else { $('#open-draft').classList.add('hidden'); if($('#card-draft-dialog').open)$('#card-draft-dialog').close(); }
       if(first)battlefield.focusBase();updateGameHUD();break;
     }
-    case 'card_picked': if (msg.playerId === playerId) $('#open-draft').classList.add('hidden'); break;
+    case 'card_picked': if (msg.playerId === playerId) { $('#open-draft').classList.add('hidden'); if($('#card-draft-dialog').open)$('#card-draft-dialog').close(); } break;
     case 'card_played': if (msg.playerId === playerId) { pendingCardPlay = false; battlefield.cardTarget = null; } break;
     case 'deployed':battlefield.effect(msg.x,msg.y);sound('deploy');if(state){const me=state.players.find(p=>p.id===playerId);if(me)me.energy=Math.max(0,me.energy-msg.cost);}break;
     case 'error':if(pendingCardPlay){pendingCardPlay=false;renderCards(true);}toast(msg.message,true);break;
@@ -855,7 +856,7 @@ function renderCards(force = false) {
   if (!card) {
     const empty = document.createElement('div');
     empty.className = 'card-empty';
-    empty.innerHTML = '<span>手牌为空</span><small>第 3 / 5 / 7 分钟发放三选一</small>';
+    empty.innerHTML = `<span>手牌为空</span><small>第 ${CARD_CONFIG.drawSeconds.map(s=>s/60).join(' / ')} 分钟征召</small>`;
     cardGridEl.appendChild(empty);
     return;
   }
@@ -863,7 +864,7 @@ function renderCards(force = false) {
   el.className = `card ${card.type}`;
   el.dataset.cardId = card.id;
   const typeLabel = { law: '法则 · LAW', buff: '增益 · BUFF', item: '道具 · ITEM' }[card.type] || '卡牌';
-  const hint = card.effect?.kind === 'purge' ? '拖出 → 点击战场选择目标' : '拖出即使用';
+  const hint = isTargetedCard(card) ? '拖出 → 点击战场选择目标' : '拖出即使用';
   el.innerHTML = `<span class="card-type">${typeLabel}</span><strong class="card-name">${escapeHTML(card.name)}</strong><p class="card-desc">${escapeHTML(card.desc)}</p><span class="card-cost">${hint}</span>`;
   cardGridEl.appendChild(el);
 }
@@ -873,10 +874,14 @@ function showCardDraft(draft, { force = false } = {}) {
   const draftButton = $('#open-draft');
   const entry = draft.players.find(p => p.playerId === playerId);
   // 没有候选或自己已选完：隐藏按钮，不再打开弹窗
-  if (!entry || entry.picked) { draftButton.classList.add('hidden'); return; }
+  if (!entry || entry.picked) { draftButton.classList.add('hidden'); if($('#card-draft-dialog').open)$('#card-draft-dialog').close(); return; }
+  const remaining = Math.max(0, Math.ceil((draft.deadlineAt - state.serverTime) / 1000));
+  const holding = state.cards.hand[playerId - 1];
+  $('.draft-note').textContent = `剩余 ${remaining} 秒 · 法则 / 增益 / 道具各一张。${holding ? '选择将替换「'+holding.name+'」；超时保留旧卡。' : '超时自动选择增益卡。'}`;
   // 按钮手动打开（force）时忽略 shownDraftGen；自动推送同一代候选不重复弹窗
-  if (draft.gen === shownDraftGen && !force) return;
-  shownDraftGen = draft.gen;
+  const draftKey = `${draft.round}:${draft.gen}`;
+  if (draftKey === shownDraftGen && !force) return;
+  shownDraftGen = draftKey;
   const box = $('#card-draft-options');
   box.innerHTML = '';
   const typeLabel = { law: '法则 · LAW', buff: '增益 · BUFF', item: '道具 · ITEM' };
@@ -886,7 +891,6 @@ function showCardDraft(draft, { force = false } = {}) {
     el.innerHTML = `<span class="card-type">${typeLabel[card.type] || '卡牌'}</span><strong class="card-name">${escapeHTML(card.name)}</strong><p class="card-desc">${escapeHTML(card.desc)}</p><span class="card-cost">点击选择</span>`;
     el.addEventListener('click', () => {
       send({ type: 'pick_card', cardId: card.id });
-      closeDialogs();
     });
     box.appendChild(el);
   }
@@ -896,13 +900,32 @@ function showCardDraft(draft, { force = false } = {}) {
 }
 $('#open-draft').onclick = () => { if (state?.cardDraft) showCardDraft(state.cardDraft, { force: true }); };
 
+$('#cancel-card-target').onclick = () => { battlefield.cardTarget = null; updateCardStatus(); };
+function updateCardStatus() {
+  if (!state) return;
+  $('#card-status').style.top = `${$('#battle-top').getBoundingClientRect().bottom + 10}px`;
+  const now = state.serverTime, seconds = end => Math.max(0, Math.ceil((end - now) / 1000));
+  const law = state.pendingRule || state.ruleOverride, banner = $('#law-status');
+  banner.classList.toggle('hidden', !law);
+  if (law) banner.textContent = `${state.pendingRule ? '法则预告' : '全局法则'} · ${law.name} · ${ruleLabel(law)} · ${seconds(state.pendingRule ? law.startsAt : law.endsAt)} 秒${state.pendingRule ? '后生效' : ''}`;
+  const effects = (state.cards.effects || []).filter(e => e.playerId === playerId);
+  $('#card-effects').textContent = effects.map(e => `${e.name} ${seconds(e.endsAt)}s${e.charges ? ' / 1次' : ''}`).join(' · ');
+  $('#card-effects').classList.toggle('hidden', !effects.length);
+  const target = battlefield.cardTarget;
+  $('#card-target-status').classList.toggle('hidden', !target);
+  if (target) $('#card-target-label').textContent = `${target.name} · 点击战场施放`;
+  $('#card-schedule').textContent = state.status !== 'playing' ? '对局结束' : state.nextCardAt ? `下轮征召 ${formatClock(state.nextCardAt - now)}` : '本局三轮征召已完成';
+}
+
 function formatTime(generation){const seconds=Math.floor(generation/(gameHz||10));return `${String(Math.floor(seconds/60)).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')}`;}
 function formatClock(ms){const total=Math.max(0,Math.floor(ms/1000));return `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`;}
 function updateGameHUD(){
   const me=state.players.find(p=>p.id===playerId);if(!me)return;
+  updateCardStatus();
+  maxEnergy=me.energyCap ?? maxEnergy;
   $('#territory-summary').textContent=`${state.nodes.length} 个中继节点 · ${state.nodes.length+state.players.length} 块领地`;
   $('#match-time').textContent=startedAt?formatClock(Date.now()-startedAt):formatTime(state.generation);$('#generation').textContent='GEN '+String(state.generation).padStart(6,'0');
-  $('#energy-number').textContent=Math.floor(me.energy);$('#energy-max').textContent=maxEnergy;$('#energy-regen').textContent=`+${me.eliminated?0:parseFloat((energyRegen+me.nodes*energyNodeRegen).toFixed(2))} / GEN`;$('#energy-meter').style.width=(me.energy/maxEnergy*100)+'%';
+  $('#energy-number').textContent=Math.floor(me.energy);$('#energy-max').textContent=maxEnergy;$('#energy-regen').textContent=`+${me.eliminated?0:parseFloat(((energyRegen+me.nodes*energyNodeRegen)*(me.regenMultiplier??1)).toFixed(2))} / GEN`;$('#energy-meter').style.width=(me.energy/maxEnergy*100)+'%';
   $('#battle-players').innerHTML=state.players.map(p=>`<div class="battle-player ${p.eliminated?'eliminated':''}" style="--player:${COLORS[p.id-1]}"><div class="battle-player-top"><i class="player-dot"></i><span>${escapeHTML(p.name)}</span>${p.id===playerId?'<span class="you-tag">YOU</span>':''}<span>${p.eliminated?'OUT':p.hp+' HP'}</span></div><div class="hp-meter"><i style="width:${p.hp/maxHP*100}%"></i></div><div class="player-metrics"><span>◈ ${p.nodes} NODES</span><span>${p.cells.toLocaleString()} CELLS</span></div></div>`).join('');
   for(const event of state.events){const id=`${event.generation}/${event.type}/${event.player}/${event.text}`;if(eventIds.has(id))continue;eventIds.add(id);
     if(event.type==='damage'){const p=state.players.find(p=>p.id===event.player);if(p)battlefield.effect(p.x,p.y,'damage',COLORS[1]);if(event.player===playerId&&!(state.generation%Math.max(1,Math.round(gameHz))))toast('警报：你的基地正在受到攻击',true);continue;}
@@ -982,13 +1005,12 @@ canvas.addEventListener('pointerup',e=>{
           // 道具卡选点模式：点击战场即施放，坐标交由服务器校验
           const cardTarget=battlefield.cardTarget;
           const [wx,wy]=battlefield.worldPoint(e.clientX,e.clientY);
-          battlefield.cardTarget=null;
           send({type:'play_card',cardId:cardTarget.cardId,x:Math.floor(wx),y:Math.floor(wy)});
-          return;
+        } else {
+          const place=battlefield.placement();
+          if(place?.valid)send({type:'deploy',x:place.x,y:place.y,cells:battlefield.pattern});
+          else if(place)toast(place.reason,true);
         }
-        const place=battlefield.placement();
-        if(place?.valid)send({type:'deploy',x:place.x,y:place.y,cells:battlefield.pattern});
-        else if(place)toast(place.reason,true);
       }else if(drag.button===2){
         // 右键点击：选点模式下取消施放，否则旋转当前图案。
         if(battlefield.cardTarget){battlefield.cardTarget=null;toast('已取消卡牌施放');}
@@ -1071,7 +1093,7 @@ function makePanelDraggable(handle, panel, ignore) {
 makePanelDraggable($('.minimap-panel .panel-heading'), $('.minimap-panel'));
 makePanelDraggable($('.map-controls'), $('.map-controls'), e => e.target.closest('button, a'));
 battlefield.onCamera=camera=>{$('#zoom-label').textContent=Math.round(camera.zoom*100)+'%';$('#camera-coordinates').textContent=`X ${String(Math.round(camera.x)).padStart(4,'0')} / Y ${String(Math.round(camera.y)).padStart(4,'0')}`;};
-battlefield.onPreview=(p,pointer)=>{const tip=$('#placement-tooltip');tip.classList.toggle('hidden',!p);if(!p)return;tip.classList.toggle('invalid',!p.valid);tip.textContent=p.isCard?(p.valid?`${p.x}, ${p.y}  /  点击施放`:'当前无法使用卡牌'):(p.valid?`${p.x}, ${p.y}  /  ${selected.cells.length} EN`:p.reason);tip.style.left=Math.min(pointer.x+20,innerWidth-180)+'px';tip.style.top=Math.min(pointer.y+24,innerHeight-32)+'px';};
+battlefield.onPreview=(p,pointer)=>{const tip=$('#placement-tooltip');tip.classList.toggle('hidden',!p);if(!p)return;tip.classList.toggle('invalid',!p.valid);tip.textContent=p.isCard?(p.valid?`${p.x}, ${p.y}  /  点击施放`:p.reason):(p.valid?`${p.x}, ${p.y}  /  ${p.cost ?? selected.cells.length} EN`:p.reason);tip.style.left=Math.min(pointer.x+20,innerWidth-180)+'px';tip.style.top=Math.min(pointer.y+24,innerHeight-32)+'px';};
 function toggleHUD(){const hidden=$('#game-hud').classList.toggle('hidden');$('#restore-hud').classList.toggle('hidden',!hidden);}
 $('#toggle-hud').onclick=toggleHUD;$('#restore-hud').onclick=toggleHUD;
 $$('.collapse-button').forEach(b=>{b.setAttribute('aria-expanded','true');b.onclick=()=>{
@@ -1230,3 +1252,5 @@ $('#save-pattern').onclick=()=>{
   customPatterns=updated;renderPatterns();selectPattern(pattern);$('#editor-dialog').close();toast('图案已保存并装备');
 };
 $('#delete-pattern').onclick=()=>{customPatterns=customPatterns.filter(p=>p.id!==editingId);saveStorage('lifewar.patterns',customPatterns);renderPatterns();selectPattern(PATTERNS[0]);$('#editor-dialog').close();toast('自定义图案已删除');};
+
+window.addEventListener('keydown', e => { if (e.key === 'Escape' && battlefield.cardTarget) { battlefield.cardTarget = null; updateCardStatus(); } });

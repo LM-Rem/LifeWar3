@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
+import { CARD_CONFIG, isTargetedCard } from '../public/cards.js';
 
 // Exercise the existing browser handlers with a minimal DOM/event adapter.
 // Keep server snapshots between pointer events: that is the regression trigger.
@@ -80,7 +81,7 @@ function setup(card = energy) {
   document.createElement = () => new Element();
   const sent = [];
   const context = vm.createContext({
-    document, state: null, playerId: 1, battlefield: {},
+    document, state: null, playerId: 1, battlefield: {}, CARD_CONFIG, isTargetedCard,
     $: selector => selector === '.card-grid' ? grid : container,
     getComputedStyle: () => ({ getPropertyValue: () => '#67f5d1' }),
     requestAnimationFrame() {}, escapeHTML: String, toast() {}, sound() {},

@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { BASE_HIT_RADIUS } from '../public/territory.js';
 
-const CONFIG_PATH = fileURLToPath(new URL('../config.json', import.meta.url));
+const CONFIG_PATH = process.env.LIFEWAR_CONFIG_PATH || fileURLToPath(new URL('../config.json', import.meta.url));
 
 const DEFAULTS = Object.freeze({
   size: 1000,
