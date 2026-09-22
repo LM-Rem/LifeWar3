@@ -1185,7 +1185,9 @@ kbd {
   touch-action: none
 }
 
-.card.dragging {
+.card.dragging,
+.card.dragging:hover,
+.card.dragging.selected {
   position: fixed;
   width: var(--card-w, 168px);
   margin: 0;

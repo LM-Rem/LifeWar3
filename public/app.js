@@ -215,8 +215,12 @@ if (patternListEl) {
 
 // ===== 卡牌仓库：占位符式拖动排序，拖出容器使用卡牌 =====
 const cardGridEl = $('.card-grid');
+let renderedCardKey;
+let resetCardInteraction = () => {};
+let pendingCardPlay = false;
 if (cardGridEl) {
   let dragCard = null, placeholder = null, dragOffsetX = 0, dragOffsetY = 0, dragging = false;
+  let dragPointerId = null;
   let selectedCard = null; // 移动端：当前选中的卡牌（选中的才能拖动）
   let tapCandidate = null; // 移动端触摸点击候选：{ card, startX, startY, moved }
   const TAP_SLOP = 8; // 位移超过该阈值视为滚动/拖动，不算点击
@@ -285,13 +289,13 @@ if (cardGridEl) {
 
   cardGridEl.addEventListener('pointerdown', e => {
     const card = e.target.closest('.card');
-    if (e.button !== 0 || dragging) return;
+    if (e.button !== 0 || e.isPrimary === false || dragging || tapCandidate) return;
     if (card && e.target.closest('button, a')) return;
     const touch = e.pointerType === 'touch';
 
     if (touch) {
       // 移动端：只记录点击候选，不立即拖动（让浏览器正常滚动列表）
-      tapCandidate = { card, startX: e.clientX, startY: e.clientY, moved: false };
+      tapCandidate = { card, pointerId: e.pointerId, startX: e.clientX, startY: e.clientY, moved: false };
       return;
     }
 
@@ -302,7 +306,7 @@ if (cardGridEl) {
   // 移动端：按住选中的卡牌移动超过阈值即开始拖动；其余滑动交给浏览器滚动列表
   cardGridEl.addEventListener('pointermove', e => {
     const t = tapCandidate;
-    if (!t || e.pointerType !== 'touch') return;
+    if (!t || e.pointerId !== t.pointerId || e.pointerType !== 'touch') return;
     const dx = e.clientX - t.startX, dy = e.clientY - t.startY;
     if (Math.hypot(dx, dy) <= TAP_SLOP) return;
     if (t.card && t.card === selectedCard) {
@@ -315,8 +319,9 @@ if (cardGridEl) {
 
   cardGridEl.addEventListener('pointerup', e => {
     const t = tapCandidate;
+    if (!t || e.pointerId !== t.pointerId) return;
     tapCandidate = null;
-    if (!t || e.pointerType !== 'touch' || t.moved) return;
+    if (e.pointerType !== 'touch' || t.moved || Math.hypot(e.clientX - t.startX, e.clientY - t.startY) > TAP_SLOP) return;
     if (t.card) {
       // 点击已选中的卡牌 = 取消选中；点击其他卡牌 = 选中它
       setSelected(t.card === selectedCard ? null : t.card);
@@ -325,7 +330,17 @@ if (cardGridEl) {
     }
   });
 
-  cardGridEl.addEventListener('pointercancel', () => { tapCandidate = null; });
+  cardGridEl.addEventListener('pointercancel', e => {
+    if (e.pointerId === tapCandidate?.pointerId) tapCandidate = null;
+  });
+
+  // 仅在手牌真正变更或对局重置时清理交互，普通状态推送保留同一张 DOM 卡牌。
+  resetCardInteraction = () => {
+    onDragCancel();
+    tapCandidate = null;
+    setSelected(null);
+    battlefield.cardTarget = null;
+  };
 
   // 开始拖动：记录偏移、创建占位符、把卡牌提升到 body 跟随指针
   function startDrag(e, card) {
@@ -334,6 +349,7 @@ if (cardGridEl) {
     dragOffsetX = e.clientX - r.left;
     dragOffsetY = e.clientY - r.top;
     dragCard = card;
+    dragPointerId = e.pointerId;
     dragging = true;
     // 记录实际宽度（移动端缩小后不是固定 168px），拖动与分解时保持同尺寸
     card.style.width = `${card.offsetWidth}px`;
@@ -355,18 +371,21 @@ if (cardGridEl) {
   }
 
   function onDragMove(e) {
-    if (!dragCard) return;
+    if (!dragCard || e.pointerId !== dragPointerId) return;
     dragCard.style.left = `${e.clientX - dragOffsetX}px`;
     dragCard.style.top = `${e.clientY - dragOffsetY}px`;
     movePlaceholder(e.clientX, e.clientY);
   }
 
   function onDragEnd(e) {
+    if (e.pointerId !== dragPointerId) return;
     document.removeEventListener('pointermove', onDragMove);
     document.removeEventListener('pointerup', onDragEnd);
     document.removeEventListener('pointercancel', onDragCancel);
     if (!dragCard) return;
     const card = dragCard;
+    try { card.releasePointerCapture(dragPointerId); } catch { /* 指针可能已释放 */ }
+    dragPointerId = null;
     const container = $('#card-container').getBoundingClientRect();
     const outside = e.clientX < container.left || e.clientX > container.right ||
                     e.clientY < container.top || e.clientY > container.bottom;
@@ -400,12 +419,15 @@ if (cardGridEl) {
     dragCard = null; dragging = false;
   }
 
-  function onDragCancel() {
+  function onDragCancel(e) {
+    if (e && e.pointerId !== dragPointerId) return;
     document.removeEventListener('pointermove', onDragMove);
     document.removeEventListener('pointerup', onDragEnd);
     document.removeEventListener('pointercancel', onDragCancel);
     if (!dragCard) return;
     const card = dragCard;
+    try { card.releasePointerCapture(dragPointerId); } catch { /* 指针可能已释放 */ }
+    dragPointerId = null;
     card.classList.remove('dragging');
     card.style.left = '';
     card.style.top = '';
@@ -433,12 +455,15 @@ if (cardGridEl) {
       else cardGridEl.appendChild(card);
       placeholder?.remove(); placeholder = null;
       dragCard = null; dragging = false;
-      if (selectedCard === card) selectedCard = null;
+      setSelected(null);
       toast(`「${name}」已就绪：点击战场选择目标位置`);
       return;
     }
     toast(`已使用：${name}`);
-    send({ type: 'play_card', cardId });
+    pendingCardPlay = true;
+    send({ type: 'play_card', cardId }).then(sent => {
+      if (!sent && pendingCardPlay) { pendingCardPlay = false; renderCards(true); }
+    });
     const cardW = card.offsetWidth; // 当前实际宽度（移动端缩小后保持同尺寸）
     card.classList.remove('dragging');
     card.style.position = 'fixed';
@@ -452,7 +477,7 @@ if (cardGridEl) {
     placeholder?.remove();
     placeholder = null;
     dragCard = null; dragging = false;
-    if (selectedCard === card) selectedCard = null;
+    setSelected(null);
     sound('capture');
     decomposeCard(card);
   }
@@ -692,7 +717,7 @@ async function connect() {
   });
   return connectionPromise;
 }
-async function send(message) { try { await connect();socket.send(JSON.stringify(message)); }catch(e){toast(e.message,true);} }
+async function send(message) { try { await connect();socket.send(JSON.stringify(message));return true; }catch(e){toast(e.message,true);return false;} }
 const getName=()=>{const name=$('#commander-name').value.trim()||'指挥官';saveStorage('lifewar.name',name);return name;};
 function onMessage(msg) {
   switch(msg.type){
@@ -701,6 +726,7 @@ function onMessage(msg) {
     case 'welcome': playerId=msg.id;session={code:msg.code,token:msg.token};saveStorage('lifewar.session',session,sessionStorage);break;
     case 'room':room=msg;renderRoom();if(msg.status==='lobby')showPage('lobby');break;
     case 'started':
+      state=null;pendingCardPlay=false;renderCards(true);
       playerId=msg.id;if(msg.rules?.hz)gameHz=msg.rules.hz;if(msg.rules?.baseHP){maxHP=msg.rules.baseHP;battlefield.baseHP=maxHP;}if(msg.rules?.maxEnergy)maxEnergy=msg.rules.maxEnergy;if(msg.rules?.regen)energyRegen=msg.rules.regen;if(msg.rules?.nodeRegen)energyNodeRegen=msg.rules.nodeRegen;if(msg.rules?.playerCells)battlefield.playerCells=msg.rules.playerCells;if(msg.rules?.maxCells)battlefield.maxCells=msg.rules.maxCells;if(msg.rules?.baseHitRadius)battlefield.baseHitRadius=msg.rules.baseHitRadius;if(msg.rules?.captureTime)battlefield.captureTime=msg.rules.captureTime;startedAt=msg.startedAt||Date.now();battlefield.me=playerId;battlefield.reset();eventIds.clear();resultShown=false;state=null;closeDialogs();showPage('game');renderPatterns();if(selected)selectPattern(selected);sound('capture');break;
     case 'state':{
       const first=!state;
@@ -713,9 +739,9 @@ function onMessage(msg) {
       if(first)battlefield.focusBase();updateGameHUD();break;
     }
     case 'card_picked': if (msg.playerId === playerId) $('#open-draft').classList.add('hidden'); break;
-    case 'card_played': if (msg.playerId === playerId) { battlefield.cardTarget = null; } break;
+    case 'card_played': if (msg.playerId === playerId) { pendingCardPlay = false; battlefield.cardTarget = null; } break;
     case 'deployed':battlefield.effect(msg.x,msg.y);sound('deploy');if(state){const me=state.players.find(p=>p.id===playerId);if(me)me.energy=Math.max(0,me.energy-msg.cost);}break;
-    case 'error':toast(msg.message,true);break;
+    case 'error':if(pendingCardPlay){pendingCardPlay=false;renderCards(true);}toast(msg.message,true);break;
     case 'pong':latency=Math.max(0,Date.now()-msg.time);$('#ping').textContent=latency+' ms';break;
     case 'resume_failed':session=null;room=null;saveStorage('lifewar.session',null,sessionStorage);if(page==='game'){showPage('lobby');toast('原对局已结束或服务器已重启',true);}renderRoom();break;
     case 'left':session=null;room=null;state=null;saveStorage('lifewar.session',null,sessionStorage);closeDialogs();showPage('lobby');renderRoom();send({type:'list'});break;
@@ -817,8 +843,14 @@ async function initPatterns(){
 initPatterns();
 
 // 阶段3：动态渲染手牌（来自 state.cards.hand），替换静态示例卡
-function renderCards() {
+function renderCards(force = false) {
   const card = state?.cards?.hand?.[playerId - 1] || null;
+  // state 每秒更新约 5 次；相同手牌不能重建，否则会复制拖动中的卡牌并丢失触摸选择。
+  const key = JSON.stringify(card);
+  if (!force && key === renderedCardKey) return;
+  resetCardInteraction();
+  renderedCardKey = key;
+  pendingCardPlay = false;
   cardGridEl.innerHTML = '';
   if (!card) {
     const empty = document.createElement('div');
