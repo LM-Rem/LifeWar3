@@ -1955,7 +1955,10 @@ kbd {
 .notice-banner {
   position: absolute;
   left: 50%;
-  top: 62px;
+  top: 92px;
+  max-width: calc(100% - 28px);
+  text-align: center;
+  pointer-events: none;
   transform: translateX(-50%);
   padding: 9px 16px;
   background: #3d2a12ee;

@@ -49,6 +49,7 @@ function toast(message, error = false) {
 function showDormancyNotice(from, to) {
   const el = $('#notice-banner');
   el.textContent = `休眠清理阈值：${from} → ${to} 代`;
+  positionBattleNotices();
   el.classList.remove('hidden', 'fade-out');
   void el.offsetWidth; // 强制重排，确保每次触发都重新播放入场动画
   clearTimeout(dormancyNoticeTimer);
@@ -58,6 +59,19 @@ function showDormancyNotice(from, to) {
     dormancyFadeTimer = setTimeout(() => el.classList.add('hidden'), 300); // 动画结束后再隐藏
   }, 3000);
 }
+function positionBattleNotices() {
+  const header = $('#battle-top'), status = $('#card-status');
+  const gameTop = $('#game').getBoundingClientRect().top;
+  const headerBottom = header.getBoundingClientRect().bottom - gameTop;
+  status.style.top = `${headerBottom + 10}px`;
+  const statusBottom = status.getBoundingClientRect().bottom - gameTop;
+  $('#notice-banner').style.top = `${Math.max(18, headerBottom + 10, statusBottom + 10)}px`;
+}
+// Track header expansion, responsive layout and changing card status content.
+const battleNoticeLayout = new ResizeObserver(positionBattleNotices);
+battleNoticeLayout.observe($('#battle-top'));
+battleNoticeLayout.observe($('#card-status'));
+
 function showPage(next) {
   page = next; $$('.screen').forEach(el => el.classList.toggle('active', el.id === next));
   ambient.mode = next; ambient.staticRendered = null; battlefield.active = next === 'game';
@@ -903,7 +917,6 @@ $('#open-draft').onclick = () => { if (state?.cardDraft) showCardDraft(state.car
 $('#cancel-card-target').onclick = () => { battlefield.cardTarget = null; updateCardStatus(); };
 function updateCardStatus() {
   if (!state) return;
-  $('#card-status').style.top = `${$('#battle-top').getBoundingClientRect().bottom + 10}px`;
   const now = state.serverTime, seconds = end => Math.max(0, Math.ceil((end - now) / 1000));
   const law = state.pendingRule || state.ruleOverride, banner = $('#law-status');
   banner.classList.toggle('hidden', !law);
@@ -915,6 +928,7 @@ function updateCardStatus() {
   $('#card-target-status').classList.toggle('hidden', !target);
   if (target) $('#card-target-label').textContent = `${target.name} · 点击战场施放`;
   $('#card-schedule').textContent = state.status !== 'playing' ? '对局结束' : state.nextCardAt ? `下轮征召 ${formatClock(state.nextCardAt - now)}` : '本局三轮征召已完成';
+  positionBattleNotices();
 }
 
 function formatTime(generation){const seconds=Math.floor(generation/(gameHz||10));return `${String(Math.floor(seconds/60)).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')}`;}
