@@ -9,7 +9,7 @@ const SPAWNS = [[180, 180], [820, 820], [820, 180], [180, 820]];
 const dist2 = (a, b, x, y) => (a - x) ** 2 + (b - y) ** 2;
 
 export class Game {
-  // cardDrawTimes：发卡时间点（毫秒，从游戏开始起算），默认第 3/5/7 分钟。
+  // 默认发牌时间唯一来源为 cards.json 的 drawSeconds；cardDrawTimes 为测试用毫秒覆盖值。
   // now：时间源，默认 Date.now；测试可注入假时钟模拟真实时间推进。
   constructor(members, { random = Math.random, cardDrawTimes = CARD_CONFIG.drawSeconds.map(s => s * 1000), now = Date.now } = {}) {
     this.size = RULES.size;
@@ -35,8 +35,8 @@ export class Game {
     // 阶段1：卡牌系统核心状态（发卡时间点 / 三选一候选 / 手牌 / 激活效果）
     this.cardDrawTimes = [...cardDrawTimes];
     this.cardDraft = null; // { gen, players:[{playerId, options, picked}] }
-    this.drawCount = 0;    // 已发卡次数，用于按 early/mid/late 卡池抽取
-    this.cards = { hand: members.map(() => null), effects: [] };
+    this.drawCount = 0;    // 第 1/2 轮使用 early/mid，后续各轮使用 late
+    this.cards = { hand: members.map(() => []), effects: [] };
     // 休眠阈值随现实时间衰减：游戏开始后每分钟 dormancyDecayPerMinute 代，下限 minDormancyGenerations。
     this.startedAt = now();
     this.baseDormancyGenerations = RULES.dormancyGenerations;
@@ -207,7 +207,7 @@ export class Game {
     const p = this.players.find(p => p.id === id);
     if (!p || p.eliminated) return;
     p.eliminated = true; p.hp = 0; p.cells = 0;
-    this.cards.hand[id - 1] = null;
+    this.cards.hand[id - 1] = [];
     this.cards.effects = this.cards.effects.filter(e => e.playerId !== id);
     if (this.cardDraft) {
       this.cardDraft.players = this.cardDraft.players.filter(e => e.playerId !== id);
@@ -256,8 +256,8 @@ export class Game {
   finishDraft() {
     if (!this.cardDraft) return;
     for (const entry of this.cardDraft.players) {
-      if (!entry.picked && !this.players[entry.playerId - 1].eliminated && !this.cards.hand[entry.playerId - 1]) {
-        this.cards.hand[entry.playerId - 1] = entry.options.find(c => c.type === 'buff') || entry.options[0];
+      if (!entry.picked && !this.players[entry.playerId - 1].eliminated) {
+        this.cards.hand[entry.playerId - 1].push(entry.options.find(c => c.type === 'buff') || entry.options[0]);
       }
     }
     this.cardDraft = null;
@@ -290,9 +290,9 @@ export class Game {
     if (!entry || entry.picked) return { error: '当前没有待选择的卡牌' };
     const card = entry.options.find(c => c.id === cardId);
     if (!card) return { error: '无效卡牌' };
-    // Single-card hand: an explicit selection replaces the old card; timeout keeps it.
+    // Each draft adds one card; identical cards remain separate copies.
     entry.picked = true;
-    this.cards.hand[playerId - 1] = card;
+    this.cards.hand[playerId - 1].push(card);
     if (this.cardDraft.players.every(d => d.picked)) this.cardDraft = null;
     return { ok: true, card };
   }
@@ -319,7 +319,8 @@ export class Game {
     const p = this.players.find(p => p.id === playerId);
     if (!p || p.eliminated) return { error: '无法使用卡牌' };
     const hand = this.cards.hand[playerId - 1];
-    if (!hand || hand.id !== cardId) return { error: '手牌中没有这张卡' };
+    const handIndex = hand.findIndex(c => c.id === cardId);
+    if (handIndex < 0) return { error: '手牌中没有这张卡' };
     const card = CARDS.find(c => c.id === cardId);
     if (!card) return { error: '无效卡牌' };
     const eff = card.effect, now = this.now();
@@ -376,7 +377,7 @@ export class Game {
       }
       default: return { error: '该卡牌效果尚未实现' };
     }
-    this.cards.hand[playerId - 1] = null;
+    hand.splice(handIndex, 1);
     this.event('card', playerId, `${eff.kind === 'rule' ? '法则预告' : '使用卡牌'}：${card.name}`);
     return { ok: true };
   }

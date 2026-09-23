@@ -36,15 +36,15 @@ test('card protocol: draft, pick and play over WebSocket',async t=>{
   const picked=await a.wait('card_picked');
   assert.equal(picked.playerId,1);
   assert.equal(picked.cardId,cardId);
-  await a.wait('state',s=>s.cards?.hand?.[0]?.id===cardId);
+  await a.wait('state',s=>s.cards?.hand?.[0]?.[0]?.id===cardId);
   // 使用卡牌：替换为确定性的能量爆发（避免随机到需要坐标的道具卡）
-  room.game.cards.hand[0]=CARDS.find(c=>c.id==='energy_burst');
+  room.game.cards.hand[0]=[CARDS.find(c=>c.id==='energy_burst')];
   a.send({type:'play_card',cardId:'energy_burst'});
   const played=await a.wait('card_played');
   assert.equal(played.playerId,1);
   assert.equal(played.cardId,'energy_burst');
   // 状态同步：能量达到上限（120+60=180）且手牌已空
-  await a.wait('state',s=>s.players[0].energy===180&&!s.cards?.hand?.[0]);
+  await a.wait('state',s=>s.players[0].energy===180&&s.cards?.hand?.[0]?.length===0);
   // 手牌已空，再次使用被拒
   a.send({type:'play_card',cardId:'energy_burst'});
   assert.match((await a.wait('error')).message,/手牌/);
@@ -63,15 +63,17 @@ test('private drafts and hands, law prewarning and active buffs survive WebSocke
   const sa=await a.wait('state',s=>s.cardDraft),sb=await b.wait('state',s=>s.cardDraft);
   assert.deepEqual(sa.cardDraft.players.map(p=>p.playerId),[1]);assert.deepEqual(sb.cardDraft.players.map(p=>p.playerId),[2]);
   const choice=sa.cardDraft.players[0].options[0];a.send({type:'pick_card',cardId:choice.id});await a.wait('card_picked');
-  await a.wait('state',s=>s.cards.hand[0]?.id===choice.id);
+  await a.wait('state',s=>s.cards.hand[0]?.[0]?.id===choice.id);
   assert.equal((await b.wait('state',s=>s.generation>sa.generation)).cards.hand[0],null);
   a.send({type:'play_card',cardId:choice.id});await a.wait('card_played');
   const warning=await b.wait('state',s=>s.pendingRule);assert.equal(warning.pendingRule.cardId,choice.id);assert.ok(Array.isArray(warning.pendingRule.birth));
-  g.cards.hand[0]=CARDS.find(c=>c.id==='shield');assert.ok(g.playCard(1,'shield').ok);
+  g.cards.hand[0]=[CARDS.find(c=>c.id==='shield')];assert.ok(g.playCard(1,'shield').ok);
+  g.cards.hand[0]=[CARDS.find(c=>c.id==='purge'),CARDS.find(c=>c.id==='purge'),CARDS.find(c=>c.id==='repair')];
   now=warning.pendingRule.startsAt;g.step();
   a.ws.terminate();
   const resumed=await client(url);peers.push(resumed);resumed.send({type:'resume',code:welcome.code,token:welcome.token});
   await resumed.wait('started');const restored=await resumed.wait('state');
   assert.equal(restored.ruleOverride.cardId,choice.id);assert.ok(restored.cards.effects.some(e=>e.stat==='shield'&&e.playerId===1));
+  assert.deepEqual(restored.cards.hand[0].map(c=>c.id),['purge','purge','repair']);
   assert.equal(restored.cards.hand[1],null);await resumed.wait('binary');
 });

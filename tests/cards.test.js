@@ -17,7 +17,7 @@ test('法则卡：临时覆盖全局规则，到期后恢复默认 B3/S23', () =
   let now = 0;
   const g = new Game([{name:'A'},{name:'B'}], { now: () => now });
   seed(g, [[400, 400]]);
-  g.cards.hand[0] = card('great_flood');
+  g.cards.hand[0] = [card('great_flood')];
   assert.ok(g.playCard(1, 'great_flood').ok);
   assert.ok(g.pendingRule);
   assert.equal(g.ruleOverride, null);
@@ -60,14 +60,14 @@ test('三选一：选卡加入手牌、重复选被拒、全员选完清除候�
   const [p1, p2] = g.cardDraft.players;
   const c1 = p1.options[0].id;
   assert.ok(g.pickCard(p1.playerId, c1).ok);
-  assert.equal(g.cards.hand[0].id, c1);
+  assert.equal(g.cards.hand[0][0].id, c1);
   assert.ok(g.pickCard(p1.playerId, c1).error); // 已选择过
   assert.ok(g.cardDraft); // 还有玩家未选
   assert.ok(g.pickCard(p2.playerId, p2.options[1].id).ok);
   assert.equal(g.cardDraft, null); // 全员选完
 });
 
-test('手牌上限：主动选择新卡会替换旧卡', () => {
+test('多张手牌：主动选择新卡会追加而不替换旧卡', () => {
   let s = 21, t = 0;
   const rng = () => (s = (s * 16807) % 2147483647) / 2147483647;
   const g = new Game([{ name: 'A' }, { name: 'B' }], { cardDrawTimes: [3000, 6000], random: rng, now: () => t });
@@ -81,17 +81,18 @@ test('手牌上限：主动选择新卡会替换旧卡', () => {
   assert.ok(g.cardDraft);
   const np1 = g.cardDraft.players.find(d => d.playerId === 1);
   assert.ok(g.pickCard(1, np1.options[0].id).ok);
-  assert.equal(g.cards.hand[0].id, np1.options[0].id);
+  assert.equal(g.cards.hand[0].length, 2);
+  assert.equal(g.cards.hand[0][1].id, np1.options[0].id);
 });
 
 test('增益卡：能量爆发增加能量且不超过上限，使用后消耗手牌', () => {
   const g = game();
   const p = g.players[0];
-  g.cards.hand[0] = card('energy_burst');
+  g.cards.hand[0] = [card('energy_burst')];
   assert.ok(g.playCard(1, 'energy_burst').ok);
   assert.equal(p.energy, 180); // 120 + 60 = 180 达到上限
-  assert.equal(g.cards.hand[0], null); // 使用后消耗
-  g.cards.hand[0] = card('energy_burst');
+  assert.deepEqual(g.cards.hand[0], []); // 使用后消耗
+  g.cards.hand[0] = [card('energy_burst')];
   p.energy = 0;
   assert.ok(g.playCard(1, 'energy_burst').ok);
   assert.equal(p.energy, 60);
@@ -101,11 +102,33 @@ test('道具卡：净化清除指定半径内细胞、保留半径外细胞并�
   const g = game();
   seed(g, [[400, 400], [401, 400], [400, 401], [401, 401]], 1); // 目标 block
   seed(g, [[500, 500]], 2); // 半径外细胞
-  g.cards.hand[0] = card('purge');
+  g.cards.hand[0] = [card('purge')];
   assert.ok(g.playCard(1, 'purge', 401, 401).ok);
   assert.equal(g.board[400 * 1000 + 400], 0);
   assert.equal(g.players[0].cells, 0);
   assert.equal(g.board[500 * 1000 + 500], 2); // 远处保留
   assert.equal(g.players[1].cells, 1);
-  assert.equal(g.cards.hand[0], null);
+  assert.deepEqual(g.cards.hand[0], []);
+});
+
+
+test('unlimited repeated cards accumulate across drafts and consume exactly one successful copy',()=>{
+  let now=0;
+  const g=new Game([{name:'A'},{name:'B'}],{now:()=>now,cardDrawTimes:Array.from({length:12},(_,i)=>(i+1)*1000),random:()=>0});
+  for(let round=1;round<=12;round++){
+    now=round*1000;g.checkCardDraw();
+    const entry=g.cardDraft.players[0];
+    assert.ok(g.pickCard(1,entry.options[2].id).ok);
+    g.finishDraft();
+  }
+  assert.equal(g.cards.hand[0].length,12);
+  const id=g.cards.hand[0][2].id;
+  const copies=g.cards.hand[0].filter(c=>c.id===id).length;
+  assert.ok(copies>1);
+  assert.ok(g.playCard(1,id,-1,0).error);
+  assert.equal(g.cards.hand[0].length,12);
+  assert.ok(g.playCard(1,id,400,400).ok);
+  assert.equal(g.cards.hand[0].length,11);
+  assert.equal(g.cards.hand[0].filter(c=>c.id===id).length,copies-1);
+  g.eliminate(1);assert.deepEqual(g.cards.hand[0],[]);
 });

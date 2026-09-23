@@ -1,8 +1,8 @@
 {
   "drawSeconds": [
-    180,
-    300,
-    420
+    3,
+    10,
+    20
   ],
   "draftSeconds": 30,
   "lawWarningSeconds": 1,

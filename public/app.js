@@ -233,6 +233,7 @@ const cardGridEl = $('.card-grid');
 let renderedCardKey;
 let resetCardInteraction = () => {};
 let pendingCardPlay = false;
+let playCardAnimated = () => {};
 if (cardGridEl) {
   let dragCard = null, placeholder = null, dragOffsetX = 0, dragOffsetY = 0, dragging = false;
   let dragPointerId = null;
@@ -304,7 +305,7 @@ if (cardGridEl) {
 
   cardGridEl.addEventListener('pointerdown', e => {
     const card = e.target.closest('.card');
-    if (e.button !== 0 || e.isPrimary === false || dragging || tapCandidate) return;
+    if (pendingCardPlay || e.button !== 0 || e.isPrimary === false || dragging || tapCandidate) return;
     if (card && e.target.closest('button, a')) return;
     const touch = e.pointerType === 'touch';
 
@@ -458,7 +459,7 @@ if (cardGridEl) {
   // 拖出容器：使用卡牌，播放与卡牌本体完全一致的科幻粒子分解动画
   function useCard(card) {
     const name = card.querySelector('.card-name')?.textContent || '未知卡牌';
-    const cardObj = state?.cards?.hand?.[playerId - 1];
+    const cardObj = state?.cards?.hand?.[playerId - 1]?.find(c => c.id === card.dataset.cardId);
     const cardId = card.dataset.cardId || cardObj?.id;
     // 道具卡（需要选点）：进入选点模式，卡牌放回容器等待目标确认
     if (isTargetedCard(cardObj)) {
@@ -474,12 +475,20 @@ if (cardGridEl) {
       toast(`「${name}」已就绪：点击战场选择目标位置`);
       return;
     }
-    toast(`已使用：${name}`);
-    pendingCardPlay = true;
-    send({ type: 'play_card', cardId }).then(sent => {
-      if (!sent && pendingCardPlay) { pendingCardPlay = false; renderCards(true); }
-    });
-    const cardW = card.offsetWidth; // 当前实际宽度（移动端缩小后保持同尺寸）
+    playCardAnimated(card);
+  }
+
+  playCardAnimated = (card, target = {}) => {
+    if (pendingCardPlay || !card) return;
+    const cardId = card.dataset.cardId;
+    const operation = pendingCardPlay = { cardId, target: battlefield.cardTarget };
+    battlefield.cardTarget = null;
+    const rect = card.getBoundingClientRect();
+    // Targeted cards animate at the selected point, even when the warehouse is collapsed.
+    card.style.left = `${target.screenX === undefined ? rect.left : target.screenX - rect.width / 2}px`;
+    card.style.top = `${target.screenY === undefined ? rect.top : target.screenY - rect.height / 2}px`;
+    document.body.appendChild(card);
+    const cardW = rect.width; // 保留离开仓库前的实际宽度
     card.classList.remove('dragging');
     card.style.position = 'fixed';
     card.style.width = `${cardW}px`;
@@ -494,8 +503,14 @@ if (cardGridEl) {
     dragCard = null; dragging = false;
     setSelected(null);
     sound('capture');
-    decomposeCard(card);
-  }
+    decomposeCard(card, () => {
+      // A reset or a new match invalidates delayed animation callbacks.
+      if (pendingCardPlay !== operation) return;
+      send({ type: 'play_card', cardId, ...(target.x === undefined ? {} : {x:target.x,y:target.y}) }).then(sent => {
+        if (!sent && pendingCardPlay === operation) { pendingCardPlay = false; renderCards(true); battlefield.cardTarget = operation.target; }
+      });
+    });
+  };
 
   // ===== 卡牌分解动画：参考实现移植（源图网格采样 + 粒子化 + 脉冲高光）=====
   // 注意：每个分解动画实例的状态（cells / disT / totalDur）都封装在 decomposeCard 的
@@ -625,7 +640,7 @@ if (cardGridEl) {
 
   // 主入口：创建覆盖卡牌及周边大范围的透明 canvas，
   // 原卡牌 DOM 保留为底图（形态细节与本体完全一致），粒子可扩散到周边不被裁剪
-  function decomposeCard(card) {
+  function decomposeCard(card, onComplete) {
     const rect = card.getBoundingClientRect();
     const W = Math.max(1, Math.round(rect.width));
     const H = Math.max(1, Math.round(rect.height));
@@ -689,6 +704,7 @@ if (cardGridEl) {
         card.style.visibility = 'hidden';
         canvas.remove();
         card.remove();
+        onComplete();
       }
     }
     requestAnimationFrame(frame);
@@ -756,7 +772,7 @@ function onMessage(msg) {
     case 'card_picked': if (msg.playerId === playerId) { $('#open-draft').classList.add('hidden'); if($('#card-draft-dialog').open)$('#card-draft-dialog').close(); } break;
     case 'card_played': if (msg.playerId === playerId) { pendingCardPlay = false; battlefield.cardTarget = null; } break;
     case 'deployed':battlefield.effect(msg.x,msg.y);sound('deploy');if(state){const me=state.players.find(p=>p.id===playerId);if(me)me.energy=Math.max(0,me.energy-msg.cost);}break;
-    case 'error':if(pendingCardPlay){pendingCardPlay=false;renderCards(true);}toast(msg.message,true);break;
+    case 'error':if(pendingCardPlay){const target=pendingCardPlay.target;pendingCardPlay=false;renderCards(true);battlefield.cardTarget=target;}toast(msg.message,true);break;
     case 'pong':latency=Math.max(0,Date.now()-msg.time);$('#ping').textContent=latency+' ms';break;
     case 'resume_failed':session=null;room=null;saveStorage('lifewar.session',null,sessionStorage);if(page==='game'){showPage('lobby');toast('原对局已结束或服务器已重启',true);}renderRoom();break;
     case 'left':session=null;room=null;state=null;saveStorage('lifewar.session',null,sessionStorage);closeDialogs();showPage('lobby');renderRoom();send({type:'list'});break;
@@ -859,28 +875,34 @@ initPatterns();
 
 // 阶段3：动态渲染手牌（来自 state.cards.hand），替换静态示例卡
 function renderCards(force = false) {
-  const card = state?.cards?.hand?.[playerId - 1] || null;
+  const hand = state?.cards?.hand?.[playerId - 1] || [];
+  if (pendingCardPlay && !force) {
+    if ((!state?.status || state.status === 'playing') && hand.some(c => c.id === pendingCardPlay.cardId)) return;
+    force = true; // Ended matches and removed cards invalidate the delayed request.
+  }
   // state 每秒更新约 5 次；相同手牌不能重建，否则会复制拖动中的卡牌并丢失触摸选择。
-  const key = JSON.stringify(card);
+  const key = JSON.stringify(hand);
   if (!force && key === renderedCardKey) return;
   resetCardInteraction();
   renderedCardKey = key;
   pendingCardPlay = false;
   cardGridEl.innerHTML = '';
-  if (!card) {
+  if (!hand.length) {
     const empty = document.createElement('div');
     empty.className = 'card-empty';
-    empty.innerHTML = `<span>手牌为空</span><small>第 ${CARD_CONFIG.drawSeconds.map(s=>s/60).join(' / ')} 分钟征召</small>`;
+    empty.innerHTML = `<span>手牌为空</span><small>${CARD_CONFIG.drawSeconds.length ? `征召时间 ${CARD_CONFIG.drawSeconds.map(s=>formatClock(s*1000)).join(' / ')}` : '本局未安排征召'}</small>`;
     cardGridEl.appendChild(empty);
     return;
   }
-  const el = document.createElement('article');
-  el.className = `card ${card.type}`;
-  el.dataset.cardId = card.id;
-  const typeLabel = { law: '法则 · LAW', buff: '增益 · BUFF', item: '道具 · ITEM' }[card.type] || '卡牌';
-  const hint = isTargetedCard(card) ? '拖出 → 点击战场选择目标' : '拖出即使用';
-  el.innerHTML = `<span class="card-type">${typeLabel}</span><strong class="card-name">${escapeHTML(card.name)}</strong><p class="card-desc">${escapeHTML(card.desc)}</p><span class="card-cost">${hint}</span>`;
-  cardGridEl.appendChild(el);
+  for (const card of hand) {
+    const el = document.createElement('article');
+    el.className = `card ${card.type}`;
+    el.dataset.cardId = card.id;
+    const typeLabel = { law: '法则 · LAW', buff: '增益 · BUFF', item: '道具 · ITEM' }[card.type] || '卡牌';
+    const hint = isTargetedCard(card) ? '拖出 → 点击战场选择目标' : '拖出 → 消散后使用';
+    el.innerHTML = `<span class="card-type">${typeLabel}</span><strong class="card-name">${escapeHTML(card.name)}</strong><p class="card-desc">${escapeHTML(card.desc)}</p><span class="card-cost">${hint}</span>`;
+    cardGridEl.appendChild(el);
+  }
 }
 
 let shownDraftGen = 0; // 已展示的三选一代数，防止自动推送时重复弹出同一个候选
@@ -890,8 +912,7 @@ function showCardDraft(draft, { force = false } = {}) {
   // 没有候选或自己已选完：隐藏按钮，不再打开弹窗
   if (!entry || entry.picked) { draftButton.classList.add('hidden'); if($('#card-draft-dialog').open)$('#card-draft-dialog').close(); return; }
   const remaining = Math.max(0, Math.ceil((draft.deadlineAt - state.serverTime) / 1000));
-  const holding = state.cards.hand[playerId - 1];
-  $('.draft-note').textContent = `剩余 ${remaining} 秒 · 法则 / 增益 / 道具各一张。${holding ? '选择将替换「'+holding.name+'」；超时保留旧卡。' : '超时自动选择增益卡。'}`;
+  $('.draft-note').textContent = `剩余 ${remaining} 秒 · 法则 / 增益 / 道具各一张。选择后加入手牌；超时自动选择增益卡。`;
   // 按钮手动打开（force）时忽略 shownDraftGen；自动推送同一代候选不重复弹窗
   const draftKey = `${draft.round}:${draft.gen}`;
   if (draftKey === shownDraftGen && !force) return;
@@ -927,7 +948,7 @@ function updateCardStatus() {
   const target = battlefield.cardTarget;
   $('#card-target-status').classList.toggle('hidden', !target);
   if (target) $('#card-target-label').textContent = `${target.name} · 点击战场施放`;
-  $('#card-schedule').textContent = state.status !== 'playing' ? '对局结束' : state.nextCardAt ? `下轮征召 ${formatClock(state.nextCardAt - now)}` : '本局三轮征召已完成';
+  $('#card-schedule').textContent = state.status !== 'playing' ? '对局结束' : state.nextCardAt ? `下轮征召 ${formatClock(state.nextCardAt - now)}` : CARD_CONFIG.drawSeconds.length ? '本局征召已完成' : '本局未安排征召';
   positionBattleNotices();
 }
 
@@ -1019,7 +1040,8 @@ canvas.addEventListener('pointerup',e=>{
           // 道具卡选点模式：点击战场即施放，坐标交由服务器校验
           const cardTarget=battlefield.cardTarget;
           const [wx,wy]=battlefield.worldPoint(e.clientX,e.clientY);
-          send({type:'play_card',cardId:cardTarget.cardId,x:Math.floor(wx),y:Math.floor(wy)});
+          const card = [...cardGridEl.querySelectorAll('.card')].find(c => c.dataset.cardId === cardTarget.cardId);
+          playCardAnimated(card,{x:Math.floor(wx),y:Math.floor(wy),screenX:e.clientX,screenY:e.clientY});
         } else {
           const place=battlefield.placement();
           if(place?.valid)send({type:'deploy',x:place.x,y:place.y,cells:battlefield.pattern});

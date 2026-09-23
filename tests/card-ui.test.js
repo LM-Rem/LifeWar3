@@ -54,6 +54,7 @@ class Element {
     return this.parent?.closest(selector) || null;
   }
   getBoundingClientRect() { return { left: 0, top: 0, right: 500, bottom: 300, width: 168, height: 235 }; }
+  getContext() { return new Proxy({}, {get: (target,key) => target[key] ?? (()=>{}), set:(target,key,value)=>{target[key]=value;return true;}}); }
   setPointerCapture(id) { this.pointerId = id; }
   releasePointerCapture() { this.pointerId = null; }
   addEventListener(type, listener) {
@@ -79,22 +80,26 @@ function setup(card = energy) {
   document.body.appendChild(container);
   container.appendChild(grid);
   document.createElement = () => new Element();
-  const sent = [];
+  const sent = [], frames = [];
+  let frameTime = 0;
   const context = vm.createContext({
     document, state: null, playerId: 1, battlefield: {}, CARD_CONFIG, isTargetedCard,
+    formatClock: ms => `${String(Math.floor(ms/60000)).padStart(2,'0')}:${String(Math.floor(ms/1000)%60).padStart(2,'0')}`,
     $: selector => selector === '.card-grid' ? grid : container,
     getComputedStyle: () => ({ getPropertyValue: () => '#67f5d1' }),
-    requestAnimationFrame() {}, escapeHTML: String, toast() {}, sound() {},
+    requestAnimationFrame: cb => frames.push(cb), window:{devicePixelRatio:1}, performance:{now:()=>frameTime}, escapeHTML: String, toast() {}, sound() {},
     send: async message => { sent.push(message); return true; },
   });
   vm.runInContext(interaction + '\n' + rendering + '\n' + messages, context);
   const update = card => {
     // WebSocket JSON decoding produces a new object on every state update.
-    context.state = { cards: { hand: [card ? structuredClone(card) : null] } };
+    context.state = { cards: { hand: [card ? structuredClone(Array.isArray(card) ? card : [card]) : []] } };
     vm.runInContext('renderCards()', context);
   };
   update(card);
-  return { context, document, grid, sent, update, card: () => grid.querySelector('.card'),
+  return { context, document, grid, sent, update,
+    animate: () => { for(let i=0;frames.length && i<200;i++){frameTime+=50;const callbacks=frames.splice(0);for(const cb of callbacks)cb(frameTime);}assert.equal(frames.length,0); },
+    card: () => grid.querySelector('.card'),
     event: (type, target, options = {}) => grid.emit(type, { target, ...options }) };
 }
 
@@ -178,7 +183,7 @@ test('purge: dragging out returns one unselected card and snapshots preserve tar
 test('rejected play restores the hand even when the server card has not changed', () => {
   const ui = setup();
   ui.grid.innerHTML = ''; // Card has left the hand for its consumption animation.
-  vm.runInContext('pendingCardPlay = true', ui.context);
+  vm.runInContext("pendingCardPlay = {cardId:'energy_burst'}", ui.context);
   ui.update(energy);
   assert.equal(ui.card(), null, 'snapshots must not respawn a pending card');
   vm.runInContext("onMessage({ type: 'error', message: '无法使用卡牌' })", ui.context);
@@ -186,4 +191,45 @@ test('rejected play restores the hand even when the server card has not changed'
   ui.update(null);
   assert.equal(ui.card(), null);
   assert.ok(ui.grid.querySelector('.card-empty'));
+});
+
+for (const card of [energy,purge]) test(`${card.id}: no request before animation completes, including snapshots and duplicate attempts`,()=>{
+  const ui=setup([card,card,energy]);
+  const el=ui.card();
+  if(card===purge){
+    ui.event('pointerdown',el);ui.document.emit('pointerup',{clientY:600});
+    assert.equal(ui.sent.length,0);
+    ui.context.targetEl=el;
+    vm.runInContext('playCardAnimated(targetEl,{x:400,y:410,screenX:400,screenY:410})',ui.context);
+  } else { ui.event('pointerdown',el);ui.document.emit('pointerup',{clientY:600}); }
+  assert.equal(ui.sent.length,0);
+  ui.context.targetEl=el;vm.runInContext('playCardAnimated(targetEl)',ui.context);
+  ui.update([card,card,energy,purge]);
+  assert.equal(ui.sent.length,0);
+  assert.equal(ui.document.body.querySelectorAll('.card').length,3,'snapshots cannot duplicate the animated card');
+  ui.animate();
+  assert.equal(ui.sent.length,1);
+  assert.equal(ui.sent[0].cardId,card.id);
+  if(card===purge)assert.equal(ui.sent[0].x,400);
+  vm.runInContext(`onMessage({type:'card_played',playerId:1,cardId:'${card.id}'})`,ui.context);
+  ui.update([card,energy,purge]);
+  assert.equal(ui.grid.querySelectorAll('.card').length,3);
+});
+
+test('a match reset cancels delayed use, and rejected target plays restore all cards and targeting',()=>{
+  const ui=setup([purge,energy]);ui.event('pointerdown',ui.card());ui.document.emit('pointerup',{clientY:600});
+  ui.context.targetEl=ui.card();vm.runInContext('playCardAnimated(targetEl,{x:-1,y:20})',ui.context);
+  ui.animate();assert.equal(ui.sent.length,1);
+  vm.runInContext("onMessage({type:'error',message:'目标越界'})",ui.context);
+  assert.equal(ui.grid.querySelectorAll('.card').length,2);
+  assert.equal(ui.context.battlefield.cardTarget.cardId,'purge');
+  ui.context.targetEl=ui.card();vm.runInContext('playCardAnimated(targetEl,{x:20,y:20}); pendingCardPlay=false; renderCards(true)',ui.context);
+  ui.animate();assert.equal(ui.sent.length,1,'reset must invalidate the old callback');
+});
+
+
+test('ending a match during animation cancels play even if the hand is unchanged',()=>{
+  const ui=setup();ui.event('pointerdown',ui.card());ui.document.emit('pointerup',{clientY:600});
+  ui.context.state.status='finished';vm.runInContext('renderCards()',ui.context);
+  ui.animate();assert.equal(ui.sent.length,0);
 });

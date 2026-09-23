@@ -7,9 +7,10 @@ import { runBots } from '../src/bots.js';
 
 function setup(members = [{name:'A'},{name:'B'}]) {
   let time = 0, seed = 71;
-  const g = new Game(members, { now:()=>time, random:()=>((seed=seed*16807%2147483647)/2147483647) });
+  // Lifecycle tests use a fixed fixture, independent of the editable production schedule.
+  const g = new Game(members, { cardDrawTimes:[180000,300000,420000], now:()=>time, random:()=>((seed=seed*16807%2147483647)/2147483647) });
   return {g, clock: t=>{time=t;}, play:(id,player=1,x,y)=>{
-    g.cards.hand[player-1] = CARDS.find(c=>c.id===id);
+    g.cards.hand[player-1] = [CARDS.find(c=>c.id===id)];
     return g.playCard(player,id,x,y);
   }};
 }
@@ -26,6 +27,39 @@ test('catalog rejects duplicate IDs, B0, missing category, invalid buffs and tar
   }
 });
 
+test('editable schedule supports any round count and drives default games without changing the catalog',()=>{
+  const original = CARD_CONFIG.drawSeconds;
+  try {
+    for (const schedule of [[], [1], [1, 61], [1, 61, 121, 181, 4001]]) {
+      const config = structuredClone(CARD_CONFIG);
+      config.drawSeconds = schedule;
+      validateCardConfig(config);
+      CARD_CONFIG.drawSeconds = schedule;
+      let now = 5000;
+      const g = new Game([{name:'A'},{name:'B'}], {now:()=>now, random:()=>0.5});
+      assert.deepEqual(g.cardDrawTimes, schedule.map(s=>s*1000));
+      for (let i=0;i<schedule.length;i++) {
+        now = g.startedAt + schedule[i]*1000 - 1;
+        g.checkCardDraw();
+        assert.equal(g.drawCount,i);
+        assert.equal(g.state(1).nextCardAt,now+1);
+        now++;
+        g.checkCardDraw();
+        assert.equal(g.cardDraft.round,i+1);
+        assert.ok(g.cardDraft.players.every(p=>p.options.every(c=>c.pool===['early','mid','late'][Math.min(i,2)])));
+        g.finishDraft();
+      }
+      assert.equal(g.state(1).nextCardAt,null);
+      now+=100000;g.checkCardDraw();assert.equal(g.drawCount,schedule.length);
+      assert.deepEqual(CARD_CONFIG.drawSeconds,schedule);
+    }
+  } finally { CARD_CONFIG.drawSeconds=original; }
+  for(const schedule of [[0],[-1],[NaN],[Infinity],['60'],[60,60],[120,60],null]) {
+    const config=structuredClone(CARD_CONFIG);config.drawSeconds=schedule;
+    assert.throws(()=>validateCardConfig(config));
+  }
+});
+
 test('three real-time rounds offer one card of each type, even with a constant random source',()=>{
   const {g,clock}=setup();g.random=()=>0;
   clock(179999);g.checkCardDraw();assert.equal(g.cardDraft,null);
@@ -37,14 +71,14 @@ test('three real-time rounds offer one card of each type, even with a constant r
   assert.equal(g.drawCount,3);
 });
 
-test('draft expiry auto-picks a buff for an empty hand, keeps an old card, and elimination cannot block rounds',()=>{
+test('draft expiry auto-picks a buff for an empty hand, adds to an existing hand, and elimination cannot block rounds',()=>{
   const {g,clock}=setup([{name:'A'},{name:'B'},{name:'C'}]);
-  g.cards.hand[0]=CARDS.find(c=>c.id==='purge');
+  g.cards.hand[0]=[CARDS.find(c=>c.id==='purge')];
   clock(180000);g.checkCardDraw();g.eliminate(3);
   assert.equal(g.cardDraft.players.length,2);
   assert.ok(g.pickCard(3,'energy_burst').error);
   clock(210000);g.checkCardDraw();
-  assert.equal(g.cardDraft,null);assert.equal(g.cards.hand[0].id,'purge');assert.equal(g.cards.hand[1].type,'buff');
+  assert.equal(g.cardDraft,null);assert.equal(g.cards.hand[0][0].id,'purge');assert.equal(g.cards.hand[0].length,2);assert.equal(g.cards.hand[1][0].type,'buff');
   assert.ok(g.pickCard(2,'energy_burst').error);
   clock(300000);g.checkCardDraw();assert.equal(g.cardDraft.round,2);
 });
@@ -145,7 +179,7 @@ test('entropy protects only own dormant structures; explicit purge still removes
 test('target validation is atomic for every item; generation respects collision, capacity and protected cores',()=>{
   for(const card of CARDS.filter(c=>c.type==='item')) {
     const {g,play}=setup();for(const [x,y] of [[-1,100],[1000,100],[NaN,100],[1.5,100],[100,undefined]]) {
-      assert.ok(play(card.id,1,x,y).error,card.id);assert.equal(g.cards.hand[0].id,card.id);assert.equal(g.alive.length,0);
+      assert.ok(play(card.id,1,x,y).error,card.id);assert.equal(g.cards.hand[0][0].id,card.id);assert.equal(g.alive.length,0);
     }
   }
   const {g,play}=setup();assert.ok(play('seed',1,820,820).error);assert.ok(play('nebula',1,820,820).error);
@@ -164,13 +198,13 @@ test('seed, nebula and purge changes reconstruct the authoritative board exactly
 });
 
 test('player snapshots hide opponents hands and draft options but retain public active effects',()=>{
-  const {g,clock,play}=setup();clock(180000);g.checkCardDraw();play('shield',2);g.cards.hand[1]=CARDS[0];
+  const {g,clock,play}=setup();clock(180000);g.checkCardDraw();play('shield',2);g.cards.hand[1]=[CARDS[0]];
   const s=g.state(1);assert.equal(s.cards.hand[1],null);assert.deepEqual(s.cardDraft.players.map(e=>e.playerId),[1]);assert.equal(s.cards.effects[0].playerId,2);
 });
 
 test('AI can activate every catalog card without bypassing authoritative validation',()=>{
   for(const card of CARDS) {
-    const {g}=setup([{name:'A'},{name:'BOT',bot:true}]);g.cards.hand[1]=card;
-    runBots(g);assert.equal(g.cards.hand[1],null,card.id);
+    const {g}=setup([{name:'A'},{name:'BOT',bot:true}]);g.cards.hand[1]=[card];
+    runBots(g);assert.deepEqual(g.cards.hand[1], [],card.id);
   }
 });

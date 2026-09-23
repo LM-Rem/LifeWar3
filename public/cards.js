@@ -8,7 +8,7 @@ export const ruleLabel = effect => `B${effect.birth.join('')}/S${effect.survival
 export function validateCardConfig(data) {
   const require = (valid, message) => { if (!valid) throw new Error(`卡牌配置：${message}`); };
   const positive = (n, max = 3600) => typeof n === 'number' && Number.isFinite(n) && n > 0 && n <= max;
-  require(Array.isArray(data.drawSeconds) && data.drawSeconds.length === 3 && data.drawSeconds.every((n, i, a) => positive(n) && (!i || n > a[i - 1])), '需要三个递增发卡时间（秒）');
+  require(Array.isArray(data.drawSeconds) && data.drawSeconds.every((n, i, a) => positive(n, Infinity) && (!i || n > a[i - 1])), '发卡时间必须为严格递增的正数（秒），空数组表示关闭发牌');
   require(positive(data.draftSeconds, 120) && positive(data.lawWarningSeconds, 10), '选卡与法则预告时间无效');
   require(Array.isArray(data.cards), 'cards 必须为数组');
   const ids = new Set();

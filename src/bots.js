@@ -12,17 +12,18 @@ export function runBots(game) {
   for (const player of game.players) {
     if (!player.bot || player.eliminated) continue;
     // 阶段4：AI 使用手牌（能量/法则卡直接使用，净化道具卡以最近的敌方基地为目标施放）
-    const hand = game.cards.hand[player.id - 1];
-    if (hand) {
+    // Try later cards if an earlier targeted card has no legal placement.
+    // Use at most one card per bot update.
+    for (const hand of game.cards.hand[player.id - 1]) {
       const card = CARDS.find(c => c.id === hand.id);
       const enemies = game.players.filter(p => p.id !== player.id && !p.eliminated);
       if (card && !isTargetedCard(card)) {
-        game.playCard(player.id, hand.id);
+        if (game.playCard(player.id, hand.id).ok) break;
       } else if (card && enemies.length) {
         const creates = ['seed','nebula'].includes(card.effect.kind);
         const targets = creates ? game.nodes.filter(n=>n.owner!==player.id) : game.alive.filter(k=>game.board[k]!==player.id).slice(0,64).map(k=>({x:k%game.size,y:Math.floor(k/game.size)}));
         if (!targets.length) targets.push(creates ? {x:player.x+50,y:player.y} : enemies[0]);
-        for (const target of targets) if (game.playCard(player.id, hand.id, Math.round(target.x), Math.round(target.y)).ok) break;
+        if (targets.some(target => game.playCard(player.id, hand.id, Math.round(target.x), Math.round(target.y)).ok)) break;
       }
     }
     if (player.energy < 9) continue;
