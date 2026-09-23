@@ -1,4 +1,5 @@
 import { BASE_HIT_RADIUS, createTerritories, territoryOwner, canDeployInTerritory, territoryAt, adjacentNeutralTerritories } from './territory.js';
+import { browserMetrics } from './performance-metrics.js';
 export const COLORS = ['#67f5d1', '#ff796c', '#ac98ff', '#f4cc75'];
 const TAU = Math.PI * 2;
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
@@ -24,6 +25,13 @@ export class Battlefield {
     this.cells = new Map(); this.effects = []; this.pointer = null; this.pattern = []; this.keys = new Set(); this.active = false;
     this.state = null; this.territories = []; this.me = 1; this.generation = 0; this.baseHP = 240; this.playerCells = 6000; this.baseHitRadius = BASE_HIT_RADIUS; this.captureTime = 30;
     this.cardTarget = null; // 道具卡选点模式：{ cardId, radius }
+    if (browserMetrics) {
+      for (const [method, name] of [['draw', 'draw.ms'], ['drawMinimap', 'minimap.ms'], ['placement', 'preview.ms']]) {
+        const original = this[method];
+        this[method] = (...args) => { const start = browserMetrics.now(); try { return original.apply(this, args); }
+          finally { browserMetrics.duration(name, start, this.generation); } };
+      }
+    }
     this.resize(); new ResizeObserver(() => this.resize()).observe(canvas);
     this.lastTime = performance.now(); this.frame = this.frame.bind(this); requestAnimationFrame(this.frame);
   }
@@ -39,7 +47,12 @@ export class Battlefield {
     this.extraLand = state.players.find(p => p.id === this.me)?.neutralDeploy ? adjacentNeutralTerritories(this.territories, state.players, state.nodes, this.me) : [];
   }
   updatePacket(buffer) {
+    const traceStart = browserMetrics ? browserMetrics.now() : 0;
     const view = new DataView(buffer);
+    if (browserMetrics) {
+      browserMetrics.record('receivedGeneration', buffer.byteLength, view.getUint32(4, true));
+      if (view.getUint32(0, true) === 1) browserMetrics.record('snapshot', 1, view.getUint32(4, true));
+    }
     if (view.getUint32(0, true) === 1) { this.cells.clear(); this.board.fill(0); this.wctx.clearRect(0,0,1000,1000); }
     this.generation = view.getUint32(4, true);
     for (let i = 8; i < view.byteLength; i += 4) {
@@ -47,6 +60,10 @@ export class Battlefield {
       this.board[key] = owner;
       if (owner) { this.cells.set(key,owner); this.wctx.fillStyle=COLORS[owner-1]; this.wctx.fillRect(x,y,1,1); }
       else { this.cells.delete(key); this.wctx.clearRect(x,y,1,1); }
+    }
+    if (browserMetrics) {
+      browserMetrics.duration('packet.decodeApplyTexture.ms', traceStart, this.generation);
+      browserMetrics.record('appliedGeneration', 0, this.generation);
     }
   }
   screen(x, y) { return [(x-this.camera.x)*this.camera.zoom+this.width/2, (y-this.camera.y)*this.camera.zoom+this.height/2]; }
@@ -101,6 +118,8 @@ export class Battlefield {
   }
   effect(x,y,type='deploy',color=COLORS[this.me-1]) { this.effects.push({x,y,type,color,start:performance.now()}); }
   frame(now) {
+    const traceStart = browserMetrics ? browserMetrics.now() : 0;
+    if (browserMetrics && this.active) browserMetrics.record('rafInterval.ms', now - this.lastTime, this.generation);
     const dt=Math.min(.05,(now-this.lastTime)/1000);this.lastTime=now;
     if(this.active){
       const speed=550*dt/this.camera.zoom;
@@ -119,8 +138,10 @@ export class Battlefield {
       }
       this.camera.x=clamp(this.camera.x,0,1000);this.camera.y=clamp(this.camera.y,0,1000);
       this.draw(now);
+      if (browserMetrics) browserMetrics.record('drawnGeneration', 0, this.generation);
       if(now-(this.lastMini||0)>33){this.drawMinimap();this.lastMini=now;this.onCamera?.(this.camera);}
     }
+    if (browserMetrics && this.active) browserMetrics.duration('frame.ms', traceStart, this.generation);
     requestAnimationFrame(this.frame);
   }
   draw(now) {

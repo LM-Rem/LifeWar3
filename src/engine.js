@@ -99,6 +99,7 @@ export class Game {
   step(dt = 1 / RULES.hz) {
     if (this.status !== 'playing') return;
     this.expireCardEffects();
+    const evolutionStart = this.metrics ? this.metrics.now() : 0;
     this.generation++;
     const { board, next, counts, votes, marks, candidates, size } = this;
     let length = 0;
@@ -121,6 +122,7 @@ export class Game {
     // 当前生效的生命规则：默认 B3/S23，法则卡激活期间读取 ruleOverride
     let birthSet = this.birthRule, survivalSet = this.survivalRule;
     if (this.ruleOverride) { birthSet = this.ruleOverride.birth; survivalSet = this.ruleOverride.survival; }
+    this.lastCandidateCount = length; // O(1) diagnostic; never changes candidate order.
     next.fill(0);
     const nextAlive = [], totals = [0, 0, 0, 0, 0];
     const inheritance = this.cards.effects.filter(e => e.stat === 'birthPriority' && e.endsAt > this.now());
@@ -148,12 +150,15 @@ export class Game {
     }
     this.board = next; this.next = board; this.alive = nextAlive;
     for (const p of this.players) p.cells = totals[p.id];
+    if (this.metrics) this.metrics.duration('evolution.ms', evolutionStart, this.generation);
     this.resolveObjectives();
     this.dormancy.update(this, this.currentDormancyGenerations(), RULES.dormancyWarning);
+    const energyStart = this.metrics ? this.metrics.now() : 0;
     for (const p of this.players) {
       p.nodes = this.nodes.filter(n => n.owner === p.id).length;
       if (!p.eliminated) p.energy = Math.min(this.energyCap(p.id), p.energy + (RULES.regen + p.nodes * RULES.nodeRegen) * (this.buff(p.id, 'regen')?.multiplier ?? 1));
     }
+    if (this.metrics) this.metrics.duration('energy.ms', energyStart, this.generation);
     this.checkVictory();
     this.checkCardDraw();
   }
@@ -170,6 +175,7 @@ export class Game {
 
   resolveObjectives() {
     if (this.status !== 'playing') return;
+    let deleted = false;
     // Damage uses ownership at the beginning of the settlement; all bases settle together.
     const tick = Math.max(0, Math.floor((this.now() - this.startedAt) / 1000 - RULES.nodeDamageStartSeconds));
     const previousTick = this.nodeDamageTick;
@@ -210,19 +216,30 @@ export class Game {
       if (p.eliminated) continue;
       let hits = 0;
       this.nearby(p.x, p.y, RULES.baseHitRadius, (owner, key) => {
-        if (owner !== p.id) { this.board[key] = 0; this.changes.set(key, 0); this.players[owner - 1].cells--; hits++; }
+        if (owner !== p.id) { this.board[key] = 0; this.changes.set(key, 0); this.players[owner - 1].cells--; hits++; deleted = true; }
       });
       if (hits && !this.buff(p.id, 'shield')) { p.hp = Math.max(0, p.hp - hits); this.event('damage', p.id, `基地受到 ${hits} 点伤害`); }
     }
     // Resolve all impact damage before clearing eliminated factions so simultaneous
     // core destruction is fair and may end in a draw.
-    for (const p of this.players) if (!p.hp && !p.eliminated) this.eliminate(p.id);
-    this.alive = this.alive.filter(key => this.board[key] !== 0);
+    for (const p of this.players) if (!p.hp && !p.eliminated) { this.eliminate(p.id, true); deleted = true; }
+    if (this.metrics) this.metrics.record('objectives.cleanupVisited', deleted ? this.alive.length : 0, this.generation);
+    if (deleted) this.compactAlive();
+  }
+
+  compactAlive() {
+    // Stable in-place compaction: AI and packet/small-map order are observable.
+    if (this.metrics) this.metrics.record('alive.compactionVisited', this.alive.length, this.generation);
+    let write = 0;
+    for (let read = 0; read < this.alive.length; read++) {
+      const key = this.alive[read]; if (this.board[key]) this.alive[write++] = key;
+    }
+    this.alive.length = write;
   }
 
   event(type, player, text) { this.events.push({ type, player, text, generation: this.generation, time: Date.now() }); if (this.events.length > 20) this.events.shift(); }
 
-  eliminate(id) {
+  eliminate(id, deferCompaction = false) {
     if (this.status !== 'playing') return;
     const p = this.players.find(p => p.id === id);
     if (!p || p.eliminated) return;
@@ -234,7 +251,7 @@ export class Game {
       if (this.cardDraft.players.every(e => e.picked)) this.cardDraft = null;
     }
     for (const key of this.alive) if (this.board[key] === id) { this.board[key] = 0; this.changes.set(key, 0); }
-    this.alive = this.alive.filter(key => this.board[key]);
+    if (!deferCompaction) this.compactAlive();
     for (const n of this.nodes) { if (n.owner === id) n.owner = 0; if (n.claimant === id) { n.claimant = 0; n.progress = 0; } }
     this.event('eliminated', id, `${p.name} 的核心已被摧毁`);
   }
@@ -413,10 +430,15 @@ export class Game {
 
 
   packet(snapshot = false) {
-    const entries = snapshot ? this.alive.map(k => [k, this.board[k]]) : [...this.changes];
-    const result = new ArrayBuffer(8 + entries.length * 4), view = new DataView(result);
+    const length = snapshot ? this.alive.length : this.changes.size;
+    const result = new ArrayBuffer(8 + length * 4), view = new DataView(result);
     view.setUint32(0, snapshot ? 1 : 0, true); view.setUint32(4, this.generation, true);
-    entries.forEach(([key, owner], i) => view.setUint32(8 + i * 4, key + owner * 1000000, true));
+    let offset = 8;
+    if (snapshot) {
+      for (const key of this.alive) { view.setUint32(offset, key + this.board[key] * 1000000, true); offset += 4; }
+    } else {
+      for (const [key, owner] of this.changes) { view.setUint32(offset, key + owner * 1000000, true); offset += 4; }
+    }
     return result;
   }
 

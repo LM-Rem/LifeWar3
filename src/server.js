@@ -7,6 +7,8 @@ import { randomBytes } from 'node:crypto';
 import { WebSocketServer, WebSocket } from 'ws';
 import { Game, RULES } from './engine.js';
 import { runBots } from './bots.js';
+import { performanceConfig } from './performance-config.js';
+import { PerformanceMetrics, instrumentGame, startEventLoopMetrics } from './metrics.js';
 
 const ROOT = fileURLToPath(new URL('../public/', import.meta.url));
 const LIBRARY_DIR = fileURLToPath(new URL('../图案集_128/', import.meta.url));
@@ -34,7 +36,9 @@ const readBody = req => new Promise((resolve, reject) => {
   req.on('error', reject);
 });
 
-export function createServer({ port = Number(process.env.PORT) || 3000, host = '0.0.0.0' } = {}) {
+export function createServer({ port = Number(process.env.PORT) || 3000, host = '0.0.0.0', trace = performanceConfig().enabled } = {}) {
+  const metrics = trace ? new PerformanceMetrics({ capacity: performanceConfig().capacity }) : null;
+  const eventLoop = metrics ? startEventLoopMetrics() : null;
   const rooms = new Map();
   let serverGen = 0; // 服务器全局演化代数，用于按代判断的房间清理
   const server = http.createServer(async (req, res) => {
@@ -164,15 +168,27 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
   });
   const wss = new WebSocketServer({ noServer: true, maxPayload: 16384, perMessageDeflate: false });
   server.on('upgrade', (req, socket, head) => {
-    let allowed = req.url === '/ws' && wss.clients.size < 64;
+    let allowed = (req.url === '/ws' || req.url === '/ws?trace=1') && wss.clients.size < 64;
     try { if (req.headers.origin && new URL(req.headers.origin).host !== req.headers.host) allowed = false; } catch { allowed = false; }
     if (!allowed) { socket.destroy(); return; }
-    wss.handleUpgrade(req, socket, head, ws => wss.emit('connection', ws));
+    wss.handleUpgrade(req, socket, head, ws => { ws.trace = !!metrics && req.url === '/ws?trace=1'; wss.emit('connection', ws); });
   });
   function roomView(room) {
     return { type: 'room', code: room.code, host: room.host, status: room.game?.status || 'lobby', players: room.members.map(m => ({ id: m.id, name: m.name, ready: m.ready, bot: m.bot, connected: !!m.ws || m.bot })), capacity: 4 };
   }
   function broadcastRoom(room) { for (const m of room.members) send(m.ws, roomView(room)); }
+  function sendBoard(ws, room, packet, snapshot = false) {
+    const game = room.game, start = metrics ? metrics.now() : 0;
+    ws.send(packet);
+    if (metrics) {
+      const stream = `${room.code}/${ws.member?.id ?? 0}`, epoch = String(room.startedAt);
+      metrics.record('sentGeneration', packet.byteLength, game.generation, stream, epoch);
+      metrics.record('sendSubmit.ms', metrics.now() - start, game.generation, stream, epoch);
+      metrics.record('bufferedBytes', ws.bufferedAmount, game.generation, stream, epoch);
+      if (snapshot) metrics.record('snapshot', 1, game.generation, stream, epoch);
+      if (ws.trace) send(ws, { type: 'performance', epoch, generation: game.generation });
+    }
+  }
   function lobbyList(ws) { send(ws, { type: 'rooms', rooms: [...rooms.values()].map(r => ({ code: r.code, name: `${r.members[0]?.name || '未知'} 的战区`, count: r.members.length, status: r.game?.status || 'lobby' })) }); }
   function updateLists() { for (const ws of wss.clients) if (!ws.member) lobbyList(ws); }
   function unlink(ws, explicit = false) {
@@ -197,7 +213,7 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
     ws.room = room; ws.member = member; member.ws = ws; member.offlineGen = null;
     send(ws, { type: 'welcome', id: member.id, token: member.token, code: room.code });
     broadcastRoom(room);
-    if (room.game) { send(ws, { type: 'started', id: member.id, rules: RULES, startedAt: room.startedAt }); send(ws, room.game.state(member.id)); ws.send(room.game.packet(true)); }
+    if (room.game) { send(ws, { type: 'started', id: member.id, rules: RULES, startedAt: room.startedAt }); send(ws, room.game.state(member.id)); sendBoard(ws, room, room.game.packet(true), true); }
     updateLists();
   }
   function start(room) {
@@ -205,7 +221,8 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
     room.members.forEach((m, i) => { m.id = i + 1; });
     room.host = hostMember.id;
     room.game = new Game(room.members); room.startedGen = serverGen; room.startedAt = room.game.startedAt; room.lastActiveGen = serverGen; room.finishedBroadcast = false;
-    for (const m of room.members) { send(m.ws, { type: 'started', id: m.id, rules: RULES, startedAt: room.startedAt }); send(m.ws, room.game.state(m.id)); if (m.ws?.readyState === WebSocket.OPEN) m.ws.send(room.game.packet(true)); }
+    if (metrics) instrumentGame(room.game, metrics, room.code);
+    for (const m of room.members) { send(m.ws, { type: 'started', id: m.id, rules: RULES, startedAt: room.startedAt }); send(m.ws, room.game.state(m.id)); if (m.ws?.readyState === WebSocket.OPEN) sendBoard(m.ws, room, room.game.packet(true), true); }
     broadcastRoom(room); updateLists();
   }
   wss.on('connection', ws => {
@@ -306,13 +323,18 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
       else if (now - room.lastActive > 90000) { rooms.delete(room.code); updateLists(); continue; }
       const game = room.game;
       if (!game) continue;
+      const tickStart = metrics ? metrics.now() : 0;
       for (const m of room.members) if (game.status === 'playing' && !m.bot && !m.ws && m.offlineAt && now - m.offlineAt > 90000 && !game.players[m.id-1].eliminated) {
         game.eliminate(m.id); game.checkVictory();
         if(room.host === m.id) { room.host = room.members.find(other => other.ws)?.id ?? room.host; broadcastRoom(room); }
       }
       if (game.status === 'playing') {
-        if (game.generation % Math.max(1, Math.round(RULES.hz * 3)) === 0) runBots(game); // 保持约每秒 0.33 次 AI 决策，与 hz 解耦
+        if (game.generation % Math.max(1, Math.round(RULES.hz * 3)) === 0) {
+          const botStart = metrics ? metrics.now() : 0; runBots(game);
+          if (metrics) metrics.record('ai.ms', metrics.now() - botStart, game.generation, room.code, String(room.startedAt));
+        } // 保持约每秒 0.33 次 AI 决策，与 hz 解耦
         const t = performance.now(); game.step(); room.tickMs = performance.now() - t;
+        if (metrics) metrics.record('computedGeneration', 0, game.generation, room.code, String(room.startedAt));
       }
       if (game.status === 'finished') {
         if (!room.members.find(m => m.id === room.host)?.ws) {
@@ -326,20 +348,22 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
       for (const m of room.members) {
         const ws=m.ws;
         if (ws?.readyState !== WebSocket.OPEN) continue;
-        if (ws.bufferedAmount > 262144) { ws.needsSnapshot = true; continue; }
-        ws.send(ws.needsSnapshot ? game.packet(true) : packet); ws.needsSnapshot = false;
+        if (ws.bufferedAmount > 262144) { ws.needsSnapshot = true; if (metrics) metrics.record('backpressureSkip', ws.bufferedAmount, game.generation, `${room.code}/${m.id}`, String(room.startedAt)); continue; }
+        sendBoard(ws, room, ws.needsSnapshot ? game.packet(true) : packet, !!ws.needsSnapshot); ws.needsSnapshot = false;
         if (game.generation % Math.max(1, Math.round(RULES.hz / 5)) === 0 || game.status === 'finished') send(ws, { ...game.state(m.id), tickMs: Math.round((room.tickMs || 0) * 100) / 100 }); // 状态推送保持约 5Hz，与 hz 解耦
       }
       game.changes.clear();
+      if (metrics) metrics.record('tick.ms', metrics.now() - tickStart, game.generation, room.code, String(room.startedAt));
       if (game.status === 'finished') room.finishedBroadcast = true;
     }
   }, 1000 / RULES.hz);
   const heartbeat = setInterval(() => {
     for (const ws of wss.clients) { if (!ws.alive) ws.terminate(); else { ws.alive = false; ws.ping(); } }
   }, 15000);
-  const closed = () => { clearInterval(timer); clearInterval(heartbeat); for (const ws of wss.clients) ws.terminate(); wss.close(); };
+  const closed = () => { clearInterval(timer); clearInterval(heartbeat); eventLoop?.close(); for (const ws of wss.clients) ws.terminate(); wss.close(); };
   server.on('close', closed);
-  return { server, rooms, wss, listen: () => new Promise(resolve => server.listen(port, host, () => resolve(server.address()))), close: () => new Promise(resolve => { closed(); server.close(resolve); }) };
+  return { server, rooms, wss, performanceReport: () => metrics ? { ...metrics.export(), eventLoop: eventLoop.export() } : null,
+    listen: () => new Promise(resolve => server.listen(port, host, () => resolve(server.address()))), close: () => new Promise(resolve => { closed(); server.close(resolve); }) };
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

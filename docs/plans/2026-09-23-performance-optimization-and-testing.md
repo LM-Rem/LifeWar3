@@ -10,6 +10,8 @@
 
 **状态：** 2026-09-23 编制；仅新增本方案文档，未执行实现、安装、部署或提交。
 
+**执行进度（2026-09-23）：** T01–T04 已实施并完成阶段验证，详见 [实施结果](../performance/t01-t04-results.md)。T05–T17 未执行；上文“状态”为本方案编制时记录。密集场景尚未满足最终20Hz性能门槛，不将阶段完成解释为全项目认证通过。
+
 **依据：** [前期分析](../性能优化与CUDA可行性分析.md)、当前工作区 README、config.json、src/engine.js、src/dormancy.js、src/server.js、src/bots.js、public/renderer.js、public/app.js、public/territory.js 和 tests/。
 
 本文文件路径均相对于项目根目录 `D:\Desktop\Project\LifeWar3`。拟新增文件会明确标为“新增”。

@@ -21,13 +21,17 @@ const manifest = { schemaVersion: 1, capturedAt: new Date().toISOString(),
   provenance: 'uncommitted working tree before T01–T04 changes',
   gitHead: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim(),
   gitStatus: execFileSync('git', ['status', '--porcelain=v1'], { cwd: root, encoding: 'utf8' }), files: {} };
+const storage = { schemaVersion: 1, purpose: 'Accept only Git CRLF/LF conversion; original byte hashes remain in manifest.json', files: {} };
 for (const rel of files.sort()) {
   const bytes = readFileSync(path.join(root, rel));
   const dest = path.join(target, rel); mkdirSync(path.dirname(dest), { recursive: true });
   writeFileSync(dest, bytes);
   manifest.files[rel] = { sha256: createHash('sha256').update(bytes).digest('hex'), bytes: bytes.length };
+  storage.files[rel] = createHash('sha256').update(bytes.toString('utf8').replace(/\r\n/g, '\n')).digest('hex');
 }
 writeFileSync(path.join(target, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
+writeFileSync(path.join(target, 'storage-manifest.json'), JSON.stringify(storage, null, 2) + '\n');
+writeFileSync(path.join(target, '.gitattributes'), '# Preserve frozen bytes across checkouts.\n* -text\n');
 const fixture = path.join(root, 'tests/fixtures/performance'); mkdirSync(fixture, { recursive: true });
 writeFileSync(path.join(fixture, 'production-20hz.json'), readFileSync(path.join(root, 'config.json')));
 console.log(`Captured ${files.length} files from the working tree; reference is immutable.`);

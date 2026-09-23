@@ -21,7 +21,12 @@ export function runBots(game) {
         if (game.playCard(player.id, hand.id, undefined, undefined, hand.instanceId).ok) break;
       } else if (card && enemies.length) {
         const creates = ['seed','nebula'].includes(card.effect.kind);
-        const targets = creates ? game.nodes.filter(n=>n.owner!==player.id) : game.alive.filter(k=>game.board[k]!==player.id).slice(0,64).map(k=>({x:k%game.size,y:Math.floor(k/game.size)}));
+        const targets = creates ? game.nodes.filter(n=>n.owner!==player.id) : [];
+        if (!creates) for (const key of game.alive) {
+          if (game.board[key] === player.id) continue;
+          targets.push({ x: key % game.size, y: Math.floor(key / game.size) });
+          if (targets.length === 64) break;
+        }
         if (!targets.length) targets.push(creates ? {x:player.x+50,y:player.y} : enemies[0]);
         if (targets.some(target => game.playCard(player.id, hand.id, Math.round(target.x), Math.round(target.y), hand.instanceId).ok)) break;
       }

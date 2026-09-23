@@ -8,7 +8,11 @@
     "dev": "node --watch src/server.js",
     "test": "node --import ./tests/setup.js --test tests/*.test.js",
     "benchmark": "node tests/benchmark.js",
-    "benchmark:expansion": "node tests/expansion-benchmark.js"
+    "benchmark:expansion": "node tests/expansion-benchmark.js",
+    "benchmark:compare": "node tests/performance/compare.mjs",
+    "test:replay": "node tests/performance/replay-runner.mjs",
+    "performance:environment": "node tests/performance/environment.mjs",
+    "test:browser:smoke": "node tests/performance/browser-smoke.mjs"
   },
   "dependencies": {
     "ws": "^8.18.0"

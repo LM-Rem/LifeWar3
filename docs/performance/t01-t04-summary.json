@@ -1,0 +1,354 @@
+{
+  "schemaVersion": 1,
+  "scope": "T01-T04 synthetic server timing and headless browser smoke; not full realtime certification",
+  "ab": [
+    {
+      "scenario": "P01",
+      "rounds": 5,
+      "generationsPerRound": 100,
+      "warmup": 30,
+      "legacy": {
+        "medianMeanMs": 2.549769999999998,
+        "medianP95Ms": 2.967300000000023,
+        "perRoundMeanMs": [
+          2.3681000000000014,
+          2.627265999999995,
+          2.5515859999999937,
+          2.549769999999998,
+          2.541444000000003
+        ],
+        "perRoundP99Ms": [
+          2.719600000000014,
+          3.807199999999966,
+          3.0434999999999945,
+          3.360500000000002,
+          3.539800000000014
+        ],
+        "maxMs": 5.972699999999975,
+        "deadlineMisses": 0
+      },
+      "current": {
+        "medianMeanMs": 2.0310250000000005,
+        "medianP95Ms": 2.4599000000000046,
+        "perRoundMeanMs": [
+          2.0310250000000005,
+          1.9478699999999998,
+          1.995274000000001,
+          2.038691000000001,
+          2.0898900000000014
+        ],
+        "perRoundP99Ms": [
+          2.52109999999999,
+          2.664100000000019,
+          2.6859000000000037,
+          2.699800000000039,
+          2.7531000000000176
+        ],
+        "maxMs": 2.9856000000000336,
+        "deadlineMisses": 0
+      },
+      "traced": {
+        "medianMeanMs": 1.9686959999999964,
+        "medianP95Ms": 2.4370999999999867,
+        "perRoundMeanMs": [
+          1.858801000000002,
+          1.955700999999999,
+          1.9704129999999995,
+          2.0111679999999996,
+          1.9686959999999964
+        ],
+        "perRoundP99Ms": [
+          2.4542000000000144,
+          2.511799999999994,
+          2.668200000000013,
+          2.805000000000007,
+          2.6152999999999906
+        ],
+        "maxMs": 2.9325999999999794,
+        "deadlineMisses": 0
+      },
+      "meanImprovementPercent": 20.344776195499904,
+      "traceOverheadPercent": -3.068844548934846
+    },
+    {
+      "scenario": "P03",
+      "rounds": 5,
+      "generationsPerRound": 100,
+      "warmup": 30,
+      "legacy": {
+        "medianMeanMs": 69.33445900000004,
+        "medianP95Ms": 77.64470000000028,
+        "perRoundMeanMs": [
+          68.1644849999999,
+          69.38229900000005,
+          67.71124200000004,
+          69.54506000000002,
+          69.33445900000004
+        ],
+        "perRoundP99Ms": [
+          77.26919999999973,
+          81.85850000000028,
+          78.34949999999981,
+          85.72530000000006,
+          80.08749999999964
+        ],
+        "maxMs": 92.88259999999991,
+        "deadlineMisses": 500
+      },
+      "current": {
+        "medianMeanMs": 56.196031999999995,
+        "medianP95Ms": 61.62219999999979,
+        "perRoundMeanMs": [
+          56.30914999999999,
+          55.460245000000015,
+          55.713088000000006,
+          56.196031999999995,
+          56.25576800000002
+        ],
+        "perRoundP99Ms": [
+          68.46119999999974,
+          66.6235000000006,
+          64.29379999999946,
+          64.35840000000007,
+          66.42879999999968
+        ],
+        "maxMs": 69.01010000000042,
+        "deadlineMisses": 429
+      },
+      "traced": {
+        "medianMeanMs": 56.26586700000004,
+        "medianP95Ms": 62.41249999999991,
+        "perRoundMeanMs": [
+          56.26586700000004,
+          55.096064000000005,
+          56.08772099999997,
+          56.744533999999966,
+          57.329977999999976
+        ],
+        "perRoundP99Ms": [
+          65.45740000000023,
+          67.12870000000021,
+          67.45690000000013,
+          67.0052999999998,
+          66.36990000000014
+        ],
+        "maxMs": 70.22429999999986,
+        "deadlineMisses": 443
+      },
+      "meanImprovementPercent": 18.949346673347566,
+      "traceOverheadPercent": 0.12427033994153458
+    },
+    {
+      "scenario": "P04",
+      "rounds": 5,
+      "generationsPerRound": 100,
+      "warmup": 30,
+      "legacy": {
+        "medianMeanMs": 112.77650300000006,
+        "medianP95Ms": 126.36520000000019,
+        "perRoundMeanMs": [
+          114.05008799999992,
+          112.81640199999994,
+          110.05791800000009,
+          112.77650300000006,
+          112.66291600000005
+        ],
+        "perRoundP99Ms": [
+          129.79609999999957,
+          126.48220000000038,
+          128.95659999999998,
+          129.53420000000006,
+          130.22730000000047
+        ],
+        "maxMs": 132.21370000000024,
+        "deadlineMisses": 500
+      },
+      "current": {
+        "medianMeanMs": 88.26038300000002,
+        "medianP95Ms": 94.75929999999971,
+        "perRoundMeanMs": [
+          87.60074500000007,
+          89.25595000000001,
+          87.97020099999997,
+          89.32055800000006,
+          88.26038300000002
+        ],
+        "perRoundP99Ms": [
+          96.89620000000014,
+          98.20880000000034,
+          95.34779999999955,
+          97.01800000000003,
+          95.66569999999956
+        ],
+        "maxMs": 99.14330000000018,
+        "deadlineMisses": 500
+      },
+      "traced": {
+        "medianMeanMs": 87.37599399999988,
+        "medianP95Ms": 93.50009999999929,
+        "perRoundMeanMs": [
+          83.51353700000007,
+          87.37599399999988,
+          89.40850500000008,
+          85.27098699999996,
+          88.372274
+        ],
+        "perRoundP99Ms": [
+          101.5893000000001,
+          94.69940000000042,
+          97.36020000000008,
+          92.40179999999964,
+          96.78839999999946
+        ],
+        "maxMs": 104.66769999999997,
+        "deadlineMisses": 500
+      },
+      "meanImprovementPercent": 21.738677249107496,
+      "traceOverheadPercent": -1.002022617554399
+    }
+  ],
+  "finalTraceOverhead": [
+    {
+      "scenario": "P01",
+      "rounds": 3,
+      "generationsPerRound": 100,
+      "warmup": 30,
+      "current": {
+        "medianMeanMs": 2.209908000000001,
+        "medianP95Ms": 2.6007999999999925,
+        "perRoundMeanMs": [
+          2.3802900000000045,
+          2.0563069999999986,
+          2.209908000000001
+        ],
+        "perRoundP99Ms": [
+          3.012100000000032,
+          2.7146999999999935,
+          2.718499999999949
+        ],
+        "maxMs": 3.0563999999999965,
+        "deadlineMisses": 0
+      },
+      "traced": {
+        "medianMeanMs": 2.083523000000003,
+        "medianP95Ms": 2.5457000000000107,
+        "perRoundMeanMs": [
+          2.0581339999999972,
+          2.083523000000003,
+          2.310281
+        ],
+        "perRoundP99Ms": [
+          2.7778999999999883,
+          2.8190999999999917,
+          2.8858999999999924
+        ],
+        "maxMs": 3.573599999999999,
+        "deadlineMisses": 0
+      },
+      "traceOverheadPercent": -5.719016357241912
+    },
+    {
+      "scenario": "P03",
+      "rounds": 3,
+      "generationsPerRound": 100,
+      "warmup": 30,
+      "current": {
+        "medianMeanMs": 56.193599999999996,
+        "medianP95Ms": 62.34729999999945,
+        "perRoundMeanMs": [
+          56.07294200000001,
+          56.193599999999996,
+          57.357810000000036
+        ],
+        "perRoundP99Ms": [
+          66.13339999999971,
+          67.90089999999964,
+          67.82819999999992
+        ],
+        "maxMs": 68.85629999999946,
+        "deadlineMisses": 262
+      },
+      "traced": {
+        "medianMeanMs": 56.43865399999998,
+        "medianP95Ms": 62.67460000000028,
+        "perRoundMeanMs": [
+          56.104453999999976,
+          56.43865399999998,
+          57.30575000000001
+        ],
+        "perRoundP99Ms": [
+          65.22879999999986,
+          64.26419999999962,
+          66.76550000000043
+        ],
+        "maxMs": 67.54609999999957,
+        "deadlineMisses": 265
+      },
+      "traceOverheadPercent": 0.4360888072662661
+    },
+    {
+      "scenario": "P04",
+      "rounds": 3,
+      "generationsPerRound": 100,
+      "warmup": 30,
+      "current": {
+        "medianMeanMs": 89.06454200000002,
+        "medianP95Ms": 95.32539999999972,
+        "perRoundMeanMs": [
+          89.49169799999994,
+          87.73722099999995,
+          89.06454200000002
+        ],
+        "perRoundP99Ms": [
+          97.68849999999975,
+          96.38749999999982,
+          99.01529999999912
+        ],
+        "maxMs": 99.42060000000129,
+        "deadlineMisses": 300
+      },
+      "traced": {
+        "medianMeanMs": 87.95363599999995,
+        "medianP95Ms": 93.98959999999988,
+        "perRoundMeanMs": [
+          87.95363599999995,
+          87.30597200000011,
+          89.76117100000003
+        ],
+        "perRoundP99Ms": [
+          96.39409999999953,
+          95.20400000000063,
+          102.4339
+        ],
+        "maxMs": 106.38610000000062,
+        "deadlineMisses": 300
+      },
+      "traceOverheadPercent": -1.2473044547852363
+    }
+  ],
+  "browser": {
+    "status": "PASS",
+    "browser": "153.0.8010.53",
+    "traceSequences": 5,
+    "fixedTimePixelComparison": "main + minimap byte-identical PNG",
+    "scope": "headless desktop smoke, not frame-rate certification or physical presentation",
+    "pageErrors": []
+  },
+  "environment": {
+    "capturedAt": "2026-09-23T15:46:49.049Z",
+    "node": "v24.11.1",
+    "platform": "win32",
+    "os": "10.0.26200",
+    "arch": "x64",
+    "cpu": "13th Gen Intel(R) Core(TM) i9-13900HX",
+    "logicalCores": 32,
+    "memoryBytes": 34124718080,
+    "gpu": "NVIDIA GeForce RTX 5070 Ti Laptop GPU, 595.79, 12227 MiB, 54, 615 MHz",
+    "powerSchemeGuid": "381b4222-f694-41f0-9685-ff5bb260df2e",
+    "browser": null,
+    "dpr": null,
+    "displayRefreshHz": null,
+    "measuredNetworkMbps": null,
+    "unavailable": "null means unmeasured; CPU synthetic runs do not measure browser, display or network."
+  }
+}

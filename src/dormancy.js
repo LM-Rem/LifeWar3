@@ -65,7 +65,7 @@ export class RegionalCycleDetector {
     this.scan(game);
     const remove=new Uint8Array(this.length);
     const warnings=[];
-    let verified=null;
+    let verified=null,hasRemoval=false;
     // 仅最近 maxPeriod 代内任一相位有细胞的瓦片参与判定，
     // 避免空瓦片在 lifetime==warning 等边界配置下产生虚假警告。
     const occupied=new Uint8Array(this.length);
@@ -79,7 +79,7 @@ export class RegionalCycleDetector {
       if(age<lifetime-warning)continue;
       if(age>=lifetime) {
         verified??=this.exactCandidates(game,lifetime,this.halo);
-        if(verified[t]){remove[t]=1;continue;}
+        if(verified[t]){remove[t]=1;hasRemoval=true;continue;}
         // 精确验证不通过（哈希碰撞或移动模式恰好经过该瓦片），仅重置本瓦片
         this.age[t]=0;this.period[t]=0;
         continue;
@@ -87,17 +87,20 @@ export class RegionalCycleDetector {
       warnings.push({tiles:[t],remaining:lifetime-age});
     }
     let removed=0;
-    for(const key of game.alive) {
+    const cleanupStart=game.metrics?game.metrics.now():0;
+    if(game.metrics)game.metrics.record('dormancy.cleanupVisited',hasRemoval?game.alive.length:0,game.generation);
+    if(hasRemoval)for(const key of game.alive) {
       const tile=Math.floor(Math.floor(key/this.size)/50)*this.side+Math.floor((key%this.size)/50);
       if(!remove[tile])continue;
       const owner=game.board[key];if(!owner || game.buff?.(owner, 'dormancy'))continue;
       game.players[owner-1].cells--;game.board[key]=0;game.changes.set(key,0);removed++;
     }
     if(removed) {
-      game.alive=game.alive.filter(key=>game.board[key]);
+      game.compactAlive();
       for(let t=0;t<this.length;t++)if(remove[t]){this.age[t]=0;this.period[t]=0;}
       game.event('decay',0,`休眠结构消散 · ${removed} 个细胞`);
     }
+    if(game.metrics)game.metrics.duration('dormancy.remove.ms',cleanupStart,game.generation);
     this.warnings=warnings;
     return removed;
   }
