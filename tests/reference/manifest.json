@@ -1,0 +1,201 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-09-23T15:23:33.443Z",
+  "provenance": "uncommitted working tree before T01–T04 changes",
+  "gitHead": "a025bc06d00d4012093524dc44d889bc594ebc8e",
+  "gitStatus": " M README.md\n M config.json\n M \"docs/\\345\\215\\241\\347\\211\\214\\345\\256\\236\\347\\216\\260.md\"\n M package.json\n M public/app.js\n M public/cards.js\n M public/cards.json\n M public/index.html\n M public/renderer.js\n M public/style.css\n M src/bots.js\n M src/config.js\n M src/engine.js\n M src/server.js\n M tests/card-effects.test.js\n M tests/cards.test.js\n?? docs/plans/2026-09-23-performance-optimization-and-testing.md\n?? \"docs/\\346\\200\\247\\350\\203\\275\\344\\274\\230\\345\\214\\226\\344\\270\\216CUDA\\345\\217\\257\\350\\241\\214\\346\\200\\247\\345\\210\\206\\346\\236\\220.md\"\n?? \"docs/\\346\\211\\251\\345\\274\\240\\344\\270\\216\\345\\271\\263\\350\\241\\241.md\"\n?? tests/expansion-benchmark.js\n?? tests/expansion.test.js\n?? tests/performance/\n",
+  "files": {
+    ".gitignore": {
+      "sha256": "96123c091d8cd8513262b42cdc9d09f1e0a50da0d359264edad172f0884c0fb4",
+      "bytes": 72
+    },
+    "README.md": {
+      "sha256": "55d6c2731226de764d704bd32a377da261734d839d74d90489155810d5a1226e",
+      "bytes": 19860
+    },
+    "config.json": {
+      "sha256": "0f81ab7b982e94abed15ce96e23304e6f3c7af2e13c2aeba081191e5ddeb06d5",
+      "bytes": 555
+    },
+    "docs/decay-analysis.md": {
+      "sha256": "582f416092bc03c55c7547e0cf90368729d665015aef86750a0df68beb2a48d0",
+      "bytes": 4955
+    },
+    "docs/plans/2026-09-16-dormancy.md": {
+      "sha256": "dba98e90050f08094f30ed9434dfd1e454beefa90e6f802e554d6e07329f84fe",
+      "bytes": 1195
+    },
+    "docs/plans/2026-09-16-lifewar-design.md": {
+      "sha256": "c2e7e6cea0ae8758fb32806a2da8234c2b5021102f0796efdd765f4d2a346242",
+      "bytes": 2508
+    },
+    "docs/plans/2026-09-16-territory-update.md": {
+      "sha256": "aff3da7ff3daaa42ee6e6a05f3a8a8faaa189f2fe6b08db8f15211c433bdf07a",
+      "bytes": 1423
+    },
+    "docs/plans/2026-09-22-card-system.md": {
+      "sha256": "0e2ad28840a91d705a59ca8cddc7aa320ac74285d7f721c9dffb3ec475470da1",
+      "bytes": 1110
+    },
+    "docs/plans/2026-09-23-performance-optimization-and-testing.md": {
+      "sha256": "2832119c09d44b302a827590e09b875c82e0474daeee15418208b67c21d8cce4",
+      "bytes": 54199
+    },
+    "docs/project.md": {
+      "sha256": "1eec7c3133d728d9d594d9dfa272e0910cc64e0fa6192dc320cc91d28f4c781b",
+      "bytes": 20535
+    },
+    "docs/verification.md": {
+      "sha256": "02f16e5488b1caae24c2b9c94c620c3a99bb92e8d822f7cec591b82dca51f7a1",
+      "bytes": 4160
+    },
+    "docs/卡牌实现.md": {
+      "sha256": "577d98c7f228e9ec00fb56a1b5b7aa3040a3d7fb1b01a3b6b0d56837465bc20d",
+      "bytes": 8971
+    },
+    "docs/卡牌设计.md": {
+      "sha256": "c20407ce8ee69f41b52ad6b01de4cca41733031a2cbc52f47bb93ed62d1d6cc8",
+      "bytes": 5907
+    },
+    "docs/性能优化与CUDA可行性分析.md": {
+      "sha256": "56542bc5738da3062eac631ecaabf9d3e92a8669b12478dcac4fdb7f1c0fbfae",
+      "bytes": 19637
+    },
+    "docs/扩张与平衡.md": {
+      "sha256": "164af0db06104cdcccdf9c9eacc11acf026352129899117ef9f0aba2fe83e7f9",
+      "bytes": 4290
+    },
+    "package-lock.json": {
+      "sha256": "d1db47e71e5f9341b292c01ab697379a0245e137b66dda4ba658bc5118a8cb8f",
+      "bytes": 841
+    },
+    "package.json": {
+      "sha256": "d730d451b1980af2b2c6aeeb10b91b64346b6fd3fba08a7eb6560c4cb94719ae",
+      "bytes": 424
+    },
+    "public/app.js": {
+      "sha256": "59f42bd7938af63cde4c44cef5927985579a4b9b746f34236e384996ce89ba5e",
+      "bytes": 78140
+    },
+    "public/cards.js": {
+      "sha256": "bf7a82e78b4f362047aff776b1833d751b742a2a35d87818d160df82718b09a7",
+      "bytes": 5536
+    },
+    "public/cards.json": {
+      "sha256": "7cfbf1add05e53d3bf8a2216194d0f751d250dad601eccd064a37ce6d661a18f",
+      "bytes": 18593
+    },
+    "public/favicon.svg": {
+      "sha256": "cc54c8d905fd1f3cd9ac2120c41161e0b13bed8c8dd3ddbd7bfea63af063f167",
+      "bytes": 272
+    },
+    "public/index.html": {
+      "sha256": "d313b5eb52a60356c7cc92e1015560cad6bc7f2b5667ef18ca85ce31d031c4ae",
+      "bytes": 19774
+    },
+    "public/library.html": {
+      "sha256": "113a7188eb8f4d0fca7e13b53eb19982026ad66aa712dc04206bd72626d69372",
+      "bytes": 4028
+    },
+    "public/library.js": {
+      "sha256": "bbd952f87be550fca28d17261c7393a2edd60b4bc35f47d9aac9892bed81ffe7",
+      "bytes": 23880
+    },
+    "public/patterns.js": {
+      "sha256": "66d555cd204e45dcacad911aa59583d83c9d24c09de6c5e598efab0199e13ba5",
+      "bytes": 2663
+    },
+    "public/patterns.json": {
+      "sha256": "240be60e57e6e001456ee8ee871f99ae985a1c5717ebd908e34929d4a89e1ff1",
+      "bytes": 1881972
+    },
+    "public/renderer.js": {
+      "sha256": "277c353b0bb36df9f43e8b53fe533a1ac501525f95cf90cd1b99cd74902a7caa",
+      "bytes": 24040
+    },
+    "public/style.css": {
+      "sha256": "9d8e4fbfa868eb6eb48f1c0e405146d18b01997dddc7c9f235bb2c271aed2c1a",
+      "bytes": 65313
+    },
+    "public/territory.js": {
+      "sha256": "f9dbc462910c299be6423370e462ce5fca306d403c0823c0aa3991ca1c6fd336",
+      "bytes": 4213
+    },
+    "src/bots.js": {
+      "sha256": "6d7021a627309cdbe01ffb7a3787a64be25d281340d201866b2c1937c4939a33",
+      "bytes": 2924
+    },
+    "src/config.js": {
+      "sha256": "4850f86a53b3951b7cc305995513546bba4010ac58df3d4961db0867baf37bf4",
+      "bytes": 3701
+    },
+    "src/dormancy.js": {
+      "sha256": "fa49b97878e59323e228ce6fb40947edb75c131a6e34ad7d9470a52d052bd8f5",
+      "bytes": 5915
+    },
+    "src/engine.js": {
+      "sha256": "95671df1c93d1844d2cc99be2994daded7b123c92846a4dba83230b7401ec821",
+      "bytes": 25908
+    },
+    "src/server.js": {
+      "sha256": "a191049c9fd091793814afea16d180b35fdf1705ae82977d70984ecb3ecf2013",
+      "bytes": 22411
+    },
+    "tests/benchmark.js": {
+      "sha256": "de80c29d682e6b15d61377c520ccd8bbf209c48c362b16e03d614b6bbc8f51ed",
+      "bytes": 1916
+    },
+    "tests/card-effects.test.js": {
+      "sha256": "d82d6281fc1dea5aaa00e412c855fbd712190903259d56c8f6f3550aec03f034",
+      "bytes": 12203
+    },
+    "tests/card-ui.test.js": {
+      "sha256": "b1b71a07190c1500ad211870425ed8dd6ea2df67861078ec71f446ffbb9bc45f",
+      "bytes": 12017
+    },
+    "tests/cards-ai.test.js": {
+      "sha256": "7fe79f1f236000afebcbe342720c4e8dabdeea963e67bad0ce48a52d92ba7a98",
+      "bytes": 5020
+    },
+    "tests/cards-server.test.js": {
+      "sha256": "befce507d181a93606f993ed3d10ba96190a2552b38c898832f07bdbafec6d64",
+      "bytes": 5343
+    },
+    "tests/cards.test.js": {
+      "sha256": "5b2b63b4f90d660e84ae168c06fa33c407170135b9d66b28b7992b9bce91d650",
+      "bytes": 5921
+    },
+    "tests/dormancy.test.js": {
+      "sha256": "47aa9961d0806daf9daccb1ee672ec8b754e536e476240cfa6fd66f0910c7d03",
+      "bytes": 4127
+    },
+    "tests/engine.test.js": {
+      "sha256": "99458f2226f60e9ee57719698061ce720dcbb774446a9d483c9f682b8903123a",
+      "bytes": 5790
+    },
+    "tests/expansion-benchmark.js": {
+      "sha256": "f098edf58266445165440931cff85c7a48d7b662b7de8074ef11970a07faea44",
+      "bytes": 826
+    },
+    "tests/expansion.test.js": {
+      "sha256": "e2ba80171d023f9e2b70a5e54557e1c66844b7de69c1ece6d9b093531be7a8bf",
+      "bytes": 6009
+    },
+    "tests/fixtures/config.json": {
+      "sha256": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+      "bytes": 3
+    },
+    "tests/network.test.js": {
+      "sha256": "407fca0dd2a7c854d45856d4452669f7cd80b054b061304ec74f928ae9dd9afc",
+      "bytes": 4546
+    },
+    "tests/setup.js": {
+      "sha256": "b75006d3f357bfa0c65492afeabc928cf8f83e4ba42befcadb03ee8057f1501d",
+      "bytes": 218
+    },
+    "tests/territory.test.js": {
+      "sha256": "10848eb0949f2826ceee2723f2c3b7332d5e97f2b163eccf49f1b9a26cb5e5ec",
+      "bytes": 4831
+    }
+  }
+}

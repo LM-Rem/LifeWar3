@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#080e13">
+  <meta name="description" content="LIFEWAR 图案库 — 浏览、演化并导入图案集中的生命图案，添加到游戏生命图谱。">
+  <title>LIFEWAR — 图案库</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/library.js"></script>
+</head>
+<body>
+  <canvas id="ambient" aria-hidden="true"></canvas>
+  <div class="noise" aria-hidden="true"></div>
+  <header class="site-header">
+    <a class="brand" href="/"><span class="brand-symbol">✣</span><span>LIFEWAR<span class="brand-version"> / PATTERN LIBRARY</span></span></a>
+    <nav><a class="nav-link" href="/">返回战区 <span>↗</span></a></nav>
+  </header>
+  <main class="library-layout">
+    <aside class="library-side panel">
+      <div class="panel-heading"><span>图案集 <span class="micro">/ LIBRARY</span></span><span class="micro" id="library-count">载入中…</span></div>
+      <div class="library-tabs" role="tablist">
+        <button class="library-tab active" data-tab="files" role="tab" aria-selected="true">图案集</button>
+        <button class="library-tab" data-tab="game" role="tab" aria-selected="false">生命图谱</button>
+      </div>
+      <div class="library-search"><input id="library-search" type="search" placeholder="搜索当前目录…（如 glider）" autocomplete="off"></div>
+      <div class="library-path" id="library-path"></div>
+      <div class="library-list" id="library-list"><div class="empty-rooms">正在读取图案集…</div></div>
+      <div class="library-detail" id="library-detail">
+        <div class="library-detail-head">
+          <span>详情 <span class="micro">/ DETAIL</span></span>
+          <button class="library-detail-toggle" id="library-detail-toggle" title="折叠/展开详情" aria-label="折叠/展开详情">▾</button>
+        </div>
+        <div class="library-detail-body" id="library-detail-body"><div class="empty-rooms">选择左侧图案以预览</div></div>
+      </div>
+    </aside>
+    <section class="library-stage panel">
+      <div class="panel-heading"><span>演化预览 <span class="micro">/ LIFE SIMULATION</span></span><span class="micro"><span id="sim-generation">GEN 0</span> · <span id="sim-population">0</span> CELLS</span></div>
+      <div class="library-canvas-wrap"><canvas id="sim-canvas" width="640" height="640"></canvas></div>
+      <div class="library-controls">
+        <button class="button subtle" id="sim-play">▶ 演化</button>
+        <button class="button subtle" id="sim-step">步进 +1</button>
+        <button class="button subtle" id="sim-reset">重置</button>
+        <button class="button subtle" id="sim-focus">⌂ 居中视图</button>
+        <label class="library-speed">速度 <span id="sim-speed-label">10</span> GEN/S<input id="sim-speed" type="range" min="1" max="60" value="10"></label>
+      </div>
+      <div class="library-actions">
+        <div class="library-categories" id="library-categories"></div>
+        <input id="library-name" maxlength="32" placeholder="图案名称" autocomplete="off">
+        <input id="library-en" maxlength="32" placeholder="英文名（如 GLIDER）" autocomplete="off">
+        <input id="library-role" maxlength="32" placeholder="角色 / 定位" autocomplete="off">
+        <textarea id="library-desc" maxlength="200" rows="2" placeholder="添加文字描述…" autocomplete="off"></textarea>
+        <div class="library-editor-actions">
+          <button class="button primary" id="library-add">添加到生命图谱 ↗</button>
+          <button class="button danger-button" id="library-delete" hidden>删除图案</button>
+        </div>
+      </div>
+    </section>
+  </main>
+  <div id="toasts" aria-live="polite"></div>
+</body>
+</html>
