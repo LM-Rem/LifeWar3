@@ -12,7 +12,8 @@
     "benchmark:compare": "node tests/performance/compare.mjs",
     "test:replay": "node tests/performance/replay-runner.mjs",
     "performance:environment": "node tests/performance/environment.mjs",
-    "test:browser:smoke": "node tests/performance/browser-smoke.mjs"
+    "test:browser:smoke": "node tests/performance/browser-smoke.mjs",
+    "test:browser:equivalence": "node tests/browser/render-equivalence.mjs"
   },
   "dependencies": {
     "ws": "^8.18.0"

@@ -68,7 +68,7 @@ test('AI 使用净化道具卡：以敌方基地为目标施放并消耗手牌',
   for (const [dx, dy] of [[0, 0], [1, 0], [0, 1]]) {
     const key = (enemy.y + dy) * g.size + (enemy.x + dx);
     g.board[key] = 1;
-    g.alive.push(key);
+    g.alive.push(key);g.rebuildDerivedState();
     g.players[0].cells++;
   }
   runBots(g);

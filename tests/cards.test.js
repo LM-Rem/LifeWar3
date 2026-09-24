@@ -7,7 +7,7 @@ function seed(g, cells, owner = 1) {
   for (const [x, y] of cells) {
     const key = y * 1000 + x;
     g.board[key] = owner;
-    g.alive.push(key);
+    g.alive.push(key);g.rebuildDerivedState();
     g.players[owner - 1].cells++;
   }
 }

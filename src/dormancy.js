@@ -9,6 +9,8 @@ export class RegionalCycleDetector {
     // 活跃振荡核心的最大间距，避免误删大型振荡器（如高斯帕滑翔机枪）的静态尾巴，
     // 同时不影响真正独立静物（周围 halo 格内确实静止）的清理。
     this.halo=halo;
+    this.current1=new Uint32Array(this.length);this.current2=new Uint32Array(this.length);this.currentCount=new Uint16Array(this.length);
+    this.dirty=true;this.mode='incremental';
   }
   invalidate(keys) {
     // Include neighbouring observation tiles, even if deployment dies next step.
@@ -20,17 +22,28 @@ export class RegionalCycleDetector {
         }
     }
   }
-  scan(game) {
-    this.hash1.fill(0);this.hash2.fill(0);this.count.fill(0);
-    for(const key of game.alive){
+  change(key,oldOwner,newOwner) {
+    if(this.dirty||this.mode==='legacy'||oldOwner===newOwner)return;
+    if(oldOwner)this.contribute(key,oldOwner,-1);
+    if(newOwner)this.contribute(key,newOwner,1);
+  }
+  contribute(key,owner,direction) {
       const x=key%this.size,y=Math.floor(key/this.size),tx=Math.floor(x/50),ty=Math.floor(y/50);
       const x0=tx-(x%50<2&&tx>0?1:0),x1=tx+(x%50>=48&&tx+1<this.side?1:0);
       const y0=ty-(y%50<2&&ty>0?1:0),y1=ty+(y%50>=48&&ty+1<this.side?1:0);
-      let h=key+game.board[key]*1000000;
+      let h=key+owner*1000000;
       h=Math.imul(h^(h>>>16),0x45d9f3b);h=Math.imul(h^(h>>>16),0x45d9f3b);h=(h^(h>>>16))>>>0;
       const h2=Math.imul(h^0x9e3779b9,0x85ebca6b)>>>0;
-      for(let yy=y0;yy<=y1;yy++)for(let xx=x0;xx<=x1;xx++){const t=yy*this.side+xx;this.hash1[t]^=h;this.hash2[t]+=h2;this.count[t]++;}
+      for(let yy=y0;yy<=y1;yy++)for(let xx=x0;xx<=x1;xx++){const t=yy*this.side+xx;this.current1[t]^=h;this.current2[t]+=direction*h2;this.currentCount[t]+=direction;}
+  }
+  scan(game) {
+    if(this.mode==='legacy'||this.dirty) {
+      this.current1.fill(0);this.current2.fill(0);this.currentCount.fill(0);
+      for(const key of game.alive) this.contribute(key,game.board[key],1);
+      this.dirty=false;
     }
+    // Exposed scan values and history remain the pre-deletion state.
+    this.hash1.set(this.current1);this.hash2.set(this.current2);this.count.set(this.currentCount);
     const offset=(this.tick%this.maxPeriod)*this.length;
     let candidates=0;
     for(let tile=0;tile<this.length;tile++){
@@ -93,7 +106,7 @@ export class RegionalCycleDetector {
       const tile=Math.floor(Math.floor(key/this.size)/50)*this.side+Math.floor((key%this.size)/50);
       if(!remove[tile])continue;
       const owner=game.board[key];if(!owner || game.buff?.(owner, 'dormancy'))continue;
-      game.players[owner-1].cells--;game.board[key]=0;game.changes.set(key,0);removed++;
+      game.players[owner-1].cells--;game.writeCell(key,0,'dormancy');removed++;
     }
     if(removed) {
       game.compactAlive();

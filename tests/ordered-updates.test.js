@@ -22,7 +22,7 @@ test('objective deletions and deferred eliminations compact in original order on
   for (const game of [g, reference]) { loadFixtureState(game, cells); game.players[0].hp = 1; }
   const metrics = new PerformanceMetrics(); instrumentGame(g, metrics); const originalNow = Date.now; Date.now = () => 0;
   try { reference.resolveObjectives(); g.resolveObjectives(); } finally { Date.now = originalNow; }
-  assert.deepEqual(g.alive, reference.alive); assert.deepEqual([...g.changes], [...reference.changes]);
+  assert.deepEqual([...g.alive], reference.alive); assert.deepEqual([...g.changes], [...reference.changes]);
   assert.deepEqual(g.players, reference.players);
   assert.equal(metrics.export().records.filter(r => r.name === 'alive.compactionVisited').length, 1);
 });

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {Game,RULES} from '../src/engine.js';
 import {CARDS,CARD_CONFIG,materializeCard,validateCardConfig} from '../public/cards.js';
 const make=(n=2)=>{let now=0;const g=new Game(Array.from({length:n},(_,i)=>({name:'P'+i})),{now:()=>now,cardDrawTimes:[],random:()=>.5});return {g,time:t=>now=t};};
-const put=(g,x,y,owner=1)=>{const k=y*g.size+x;if(!g.board[k]){g.board[k]=owner;g.alive.push(k);g.players[owner-1].cells++;}};
+const put=(g,x,y,owner=1)=>{const k=y*g.size+x;if(!g.board[k]){g.board[k]=owner;g.alive.push(k);g.rebuildDerivedState();g.players[owner-1].cells++;}};
 const play=(g,id,owner=1)=>{g.cards.hand[owner-1].push(CARDS.find(c=>c.id===id));assert.ok(g.playCard(owner,id).ok);};
 
 test('node pressure starts after ten minutes, scales per enemy node and uses real seconds once',()=>{

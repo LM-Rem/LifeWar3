@@ -16,7 +16,7 @@ function setup(members = [{name:'A'},{name:'B'}]) {
 }
 function seed(g, x, y, owner=1) {
   const key=y*g.size+x;
-  if (!g.board[key]) { g.board[key]=owner;g.alive.push(key);g.players[owner-1].cells++; }
+  if (!g.board[key]) { g.board[key]=owner;g.alive.push(key);g.rebuildDerivedState();g.players[owner-1].cells++; }
 }
 const block=(g,x,y,owner=1)=>{for(const [dx,dy] of [[0,0],[1,0],[0,1],[1,1]])seed(g,x+dx,y+dy,owner);};
 
@@ -106,7 +106,7 @@ test('every law obeys its B/S truth table for all nonzero neighbor counts',()=>{
     play(card.id);clock(1000);g.step();
     assert.equal(!!g.board[300*1000+300],card.effect.survival.includes(n),`${card.id} S${n}`);
     assert.equal(!!g.board[600*1000+600],card.effect.birth.includes(n),`${card.id} B${n}`);
-    assert.ok(g.alive.every(k=>g.board[k]>=1&&g.board[k]<=2));
+    assert.ok([...g.alive].every(k=>g.board[k]>=1&&g.board[k]<=2));
   }
 });
 

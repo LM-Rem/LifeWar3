@@ -5,7 +5,7 @@ import { PATTERNS } from '../public/patterns.js';
 
 const fresh=()=>new Game([{name:'A'},{name:'B'}]);
 function seed(g,id,x,y,owner=1) {
-  for(const[dx,dy]of PATTERNS.find(p=>p.id===id).cells){const k=(y+dy)*1000+x+dx;g.board[k]=owner;g.alive.push(k);g.players[owner-1].cells++;}
+  for(const[dx,dy]of PATTERNS.find(p=>p.id===id).cells){const k=(y+dy)*1000+x+dx;g.board[k]=owner;g.alive.push(k);g.rebuildDerivedState();g.players[owner-1].cells++;}
 }
 function step(g,n){for(let i=0;i<n;i++){g.changes.clear();g.step();}}
 

@@ -50,7 +50,7 @@ test('server rejects patterns straddling an unowned polygon atomically; client a
 test('base hit marking constant equals actual inclusive damage boundary',()=>{
   const g=new Game([{name:'A'},{name:'B'}],{random:rng(7)}),p=g.players[0];
   const dx=RULES.baseHitRadius;
-  for(const off of [dx,dx+1]){const k=p.y*1000+p.x+off;g.board[k]=2;g.alive.push(k);g.players[1].cells++;}
+  for(const off of [dx,dx+1]){const k=p.y*1000+p.x+off;g.board[k]=2;g.alive.push(k);g.rebuildDerivedState();g.players[1].cells++;}
   g.resolveObjectives(.1);assert.equal(p.hp,RULES.baseHP-1);assert.equal(g.board[p.y*1000+p.x+dx],0);assert.equal(g.board[p.y*1000+p.x+dx+1],2);
 });
 test('AI expands across neutral polygon territory using moving life patterns',()=>{

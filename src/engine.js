@@ -1,3 +1,5 @@
+import { OrderedCells } from './ordered-cells.js';
+import { CellChanges } from './cell-changes.js';
 import { generateNodes, createTerritories, canDeployInTerritory, territoryAt, adjacentNeutralTerritories } from '../public/territory.js';
 import { CARDS, CARD_CONFIG, isTargetedCard, materializeCard } from '../public/cards.js';
 import { RegionalCycleDetector } from './dormancy.js';
@@ -11,7 +13,7 @@ const dist2 = (a, b, x, y) => (a - x) ** 2 + (b - y) ** 2;
 export class Game {
   // 默认发牌时间唯一来源为 cards.json 的 drawSeconds；cardDrawTimes 为测试用毫秒覆盖值。
   // now：时间源，默认 Date.now；测试可注入假时钟模拟真实时间推进。
-  constructor(members, { random = Math.random, cardDrawTimes = CARD_CONFIG.drawSeconds.map(s => s * 1000), now = Date.now } = {}) {
+  constructor(members, { random = Math.random, cardDrawTimes = CARD_CONFIG.drawSeconds.map(s => s * 1000), now = Date.now, dormancyMode = process.env.LIFEWAR_DORMANCY ?? 'auto' } = {}) {
     this.size = RULES.size;
     this.board = new Uint8Array(this.size * this.size);
     this.next = new Uint8Array(this.board.length);
@@ -19,9 +21,12 @@ export class Game {
     this.votes = new Uint16Array(this.board.length);
     this.marks = new Uint32Array(this.board.length);
     this.candidates = new Uint32Array(this.board.length);
-    this.alive = [];
+    this.alive = new OrderedCells(this.board.length);
+    this.spareAlive = new OrderedCells(this.board.length);
     this.generation = 0;
     this.dormancy = new RegionalCycleDetector(this.size);
+    if (!['auto', 'incremental', 'legacy'].includes(dormancyMode)) throw new Error('Invalid dormancy mode');
+    this.dormancy.mode = dormancyMode;
     this.status = 'playing';
     this.winner = null;
     // 阶段1：生命规则参数化（默认 B3/S23，可被法则卡临时覆盖）
@@ -45,11 +50,30 @@ export class Game {
     this.baseDormancyGenerations = RULES.dormancyGenerations;
     this.minDormancyGenerations = RULES.minDormancyGenerations;
     this.dormancyDecayPerMinute = RULES.dormancyDecayPerMinute;
-    this.changes = new Map();
+    this.changes = new CellChanges(this.board.length);
     this.events = [];
     this.players = members.map((m, i) => ({ id: i + 1, name: m.name, bot: !!m.bot, x: SPAWNS[i][0], y: SPAWNS[i][1], hp: RULES.baseHP, energy: 120, cells: 0, nodes: 0, eliminated: false }));
     this.nodes = generateNodes(this.players, random, this.size);
     this.territories = createTerritories(this.players, this.nodes, this.size);
+  }
+
+  // One ordered transition stream; network changes separately retain final values.
+  recordChange(key, oldOwner, newOwner, phase) {
+    this.dormancy.change(key, oldOwner, newOwner);
+    this.onCellTransition?.({ key, oldOwner, newOwner, phase });
+    this.changes.set(key, newOwner);
+  }
+  writeCell(key, owner, phase) {
+    const old = this.board[key]; this.board[key] = owner;
+    this.recordChange(key, old, owner, phase);
+  }
+  // Explicit hook for bulk fixture/import writes that bypass gameplay commands.
+  rebuildDerivedState() {
+    if (!(this.alive instanceof OrderedCells)) {
+      const values = this.alive; this.alive = new OrderedCells(this.board.length);
+      for (const key of values) this.alive.push(key);
+    }
+    this.dormancy.dirty = true;
   }
 
   inRange(player, x, y) {
@@ -83,7 +107,7 @@ export class Game {
     if (p.cells + positions.size > this.playerCapacity(id)) return { error: '已达到活细胞容量上限' };
     p.energy -= cost;
     this.dormancy.invalidate(positions);
-    for (const key of positions) { this.board[key] = id; this.alive.push(key); this.changes.set(key, id); }
+    for (const key of positions) { this.writeCell(key, id, 'deploy'); this.alive.push(key); }
     p.cells += positions.size;
     p.lastDeployGen = this.generation;
     if (free) this.cards.effects = this.cards.effects.filter(e => e !== free);
@@ -104,8 +128,8 @@ export class Game {
     const { board, next, counts, votes, marks, candidates, size } = this;
     let length = 0;
     const stamp = this.generation;
-    for (const key of this.alive) {
-      const owner = board[key];
+    for (let liveIndex = 0; liveIndex < this.alive.length; liveIndex++) {
+      const key = this.alive.keys[liveIndex], owner = board[key];
       if (!owner) continue;
       if (marks[key] !== stamp) { marks[key] = stamp; counts[key] = 0; votes[key] = 0; candidates[length++] = key; }
       const x = key % size, y = Math.floor(key / size), vote = 1 << ((owner - 1) * 4);
@@ -124,7 +148,8 @@ export class Game {
     if (this.ruleOverride) { birthSet = this.ruleOverride.birth; survivalSet = this.ruleOverride.survival; }
     this.lastCandidateCount = length; // O(1) diagnostic; never changes candidate order.
     next.fill(0);
-    const nextAlive = [], totals = [0, 0, 0, 0, 0];
+    const nextAlive = this.spareAlive; nextAlive.length = 0;
+    const totals = [0, 0, 0, 0, 0];
     const inheritance = this.cards.effects.filter(e => e.stat === 'birthPriority' && e.endsAt > this.now());
     const priorityOwner = inheritance.length === 1 ? inheritance[0].playerId : 0;
     for (let i = 0; i < length; i++) {
@@ -144,11 +169,14 @@ export class Game {
       if (!owner) continue;
       next[key] = owner; nextAlive.push(key); totals[owner]++;
     }
+    let changedCount = 0;
+    for (let i = 0; i < length; i++) if (next[candidates[i]] !== board[candidates[i]]) changedCount++;
+    if (this.dormancy.mode === 'auto' && changedCount > Math.max(256, nextAlive.length / 4)) this.dormancy.dirty = true;
     for (let i = 0; i < length; i++) {
       const key = candidates[i];
-      if (next[key] !== board[key]) this.changes.set(key, next[key]);
+      if (next[key] !== board[key]) this.recordChange(key, board[key], next[key], 'evolution');
     }
-    this.board = next; this.next = board; this.alive = nextAlive;
+    this.board = next; this.next = board; this.spareAlive = this.alive; this.alive = nextAlive;
     for (const p of this.players) p.cells = totals[p.id];
     if (this.metrics) this.metrics.duration('evolution.ms', evolutionStart, this.generation);
     this.resolveObjectives();
@@ -216,7 +244,7 @@ export class Game {
       if (p.eliminated) continue;
       let hits = 0;
       this.nearby(p.x, p.y, RULES.baseHitRadius, (owner, key) => {
-        if (owner !== p.id) { this.board[key] = 0; this.changes.set(key, 0); this.players[owner - 1].cells--; hits++; deleted = true; }
+        if (owner !== p.id) { this.writeCell(key, 0, 'core'); this.players[owner - 1].cells--; hits++; deleted = true; }
       });
       if (hits && !this.buff(p.id, 'shield')) { p.hp = Math.max(0, p.hp - hits); this.event('damage', p.id, `基地受到 ${hits} 点伤害`); }
     }
@@ -230,11 +258,7 @@ export class Game {
   compactAlive() {
     // Stable in-place compaction: AI and packet/small-map order are observable.
     if (this.metrics) this.metrics.record('alive.compactionVisited', this.alive.length, this.generation);
-    let write = 0;
-    for (let read = 0; read < this.alive.length; read++) {
-      const key = this.alive[read]; if (this.board[key]) this.alive[write++] = key;
-    }
-    this.alive.length = write;
+    this.alive.compact(this.board);
   }
 
   event(type, player, text) { this.events.push({ type, player, text, generation: this.generation, time: Date.now() }); if (this.events.length > 20) this.events.shift(); }
@@ -250,7 +274,7 @@ export class Game {
       this.cardDraft.players = this.cardDraft.players.filter(e => e.playerId !== id);
       if (this.cardDraft.players.every(e => e.picked)) this.cardDraft = null;
     }
-    for (const key of this.alive) if (this.board[key] === id) { this.board[key] = 0; this.changes.set(key, 0); }
+    for (const key of this.alive) if (this.board[key] === id) { this.writeCell(key, 0, 'eliminate'); }
     if (!deferCompaction) this.compactAlive();
     for (const n of this.nodes) { if (n.owner === id) n.owner = 0; if (n.claimant === id) { n.claimant = 0; n.progress = 0; } }
     this.event('eliminated', id, `${p.name} 的核心已被摧毁`);
@@ -348,7 +372,7 @@ export class Game {
     if (!keys.size) return { error: '目标区域没有可播种的空格' };
     if (p.cells + keys.size > this.playerCapacity(playerId)) return { error: '播种超过活细胞容量' };
     this.dormancy.invalidate(keys);
-    for (const key of keys) { this.board[key] = playerId; this.alive.push(key); this.changes.set(key, playerId); }
+    for (const key of keys) { this.writeCell(key, playerId, 'seed'); this.alive.push(key); }
     p.cells += keys.size;
     return { ok: true };
   }
@@ -393,9 +417,9 @@ export class Game {
       case 'purge': {
         const removed = new Set();
         this.nearby(x, y, eff.radius, (owner, key) => {
-          this.board[key] = 0; this.changes.set(key, 0); this.players[owner - 1].cells--; removed.add(key);
+          this.writeCell(key, 0, 'purge'); this.players[owner - 1].cells--; removed.add(key);
         });
-        this.alive = this.alive.filter(key => this.board[key]);
+        this.compactAlive();
         this.dormancy.invalidate(removed);
         break;
       }
@@ -437,7 +461,7 @@ export class Game {
     if (snapshot) {
       for (const key of this.alive) { view.setUint32(offset, key + this.board[key] * 1000000, true); offset += 4; }
     } else {
-      for (const [key, owner] of this.changes) { view.setUint32(offset, key + owner * 1000000, true); offset += 4; }
+      for (let i = 0; i < this.changes.size; i++) { const key = this.changes.order[i]; view.setUint32(offset, key + this.changes.owners[key] * 1000000, true); offset += 4; }
     }
     return result;
   }

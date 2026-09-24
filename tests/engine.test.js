@@ -4,8 +4,8 @@ import { Game, RULES } from '../src/engine.js';
 import { PATTERNS, transform, parseRLE, toRLE } from '../public/patterns.js';
 
 const game = (n=2) => new Game(Array.from({length:n},(_,i)=>({name:'P'+(i+1)})));
-function seed(g,cells,owner=1){for(const[x,y]of cells){const key=y*1000+x;g.board[key]=owner;g.alive.push(key);g.players[owner-1].cells++;}}
-const positions = g => g.alive.map(k=>[k%1000,Math.floor(k/1000)]).sort((a,b)=>a[1]-b[1]||a[0]-b[0]);
+function seed(g,cells,owner=1){for(const[x,y]of cells){const key=y*1000+x;g.board[key]=owner;g.alive.push(key);g.rebuildDerivedState();g.players[owner-1].cells++;}}
+const positions = g => [...g.alive].map(k=>[k%1000,Math.floor(k/1000)]).sort((a,b)=>a[1]-b[1]||a[0]-b[0]);
 const sorted = cells => [...cells].sort((a,b)=>a[1]-b[1]||a[0]-b[0]);
 
 test('B3/S23: stable block, period-2 blinker and period-4 glider',()=>{
@@ -36,9 +36,9 @@ test('nodes require 3s contact, unlock deployment and can be contested or stolen
   const g=game(),n=g.nodes[0];seed(g,[[n.x,n.y],[n.x+1,n.y],[n.x,n.y+1],[n.x+1,n.y+1]]);
   assert.equal(g.inRange(g.players[0],n.x,n.y),false);
   for(let i=0;i<29;i++)g.step();assert.equal(n.owner,0);g.step();assert.equal(n.owner,1);assert.equal(g.inRange(g.players[0],n.x,n.y),true);
-  for(const key of g.alive)g.board[key]=0;g.alive=[];seed(g,[[n.x,n.y],[n.x+1,n.y],[n.x,n.y+1],[n.x+1,n.y+1]],2);
+  for(const key of g.alive)g.board[key]=0;g.alive.length=0;seed(g,[[n.x,n.y],[n.x+1,n.y],[n.x,n.y+1],[n.x+1,n.y+1]],2);
   for(let i=0;i<10;i++)g.step();const progress=n.progress;seed(g,[[n.x-6,n.y],[n.x-5,n.y],[n.x-6,n.y+1],[n.x-5,n.y+1]],1);g.step();assert.equal(n.progress,progress);
-  for(const k of g.alive)if(g.board[k]===1)g.board[k]=0;g.alive=g.alive.filter(k=>g.board[k]);
+  for(const k of g.alive)if(g.board[k]===1)g.board[k]=0;g.compactAlive();g.rebuildDerivedState();
   for(let i=0;i<20;i++)g.step();assert.equal(n.owner,2);
 });
 test('enemy core exclusion and cell contact damage, elimination and victory',()=>{
