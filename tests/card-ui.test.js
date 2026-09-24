@@ -83,7 +83,7 @@ function setup(card = energy) {
   const sent = [], frames = [];
   let frameTime = 0;
   const context = vm.createContext({
-    document, state: null, playerId: 1, battlefield: {}, CARD_CONFIG, isTargetedCard,
+    document, browserMetrics: null, state: null, playerId: 1, battlefield: {}, CARD_CONFIG, isTargetedCard,
     formatClock: ms => `${String(Math.floor(ms/60000)).padStart(2,'0')}:${String(Math.floor(ms/1000)%60).padStart(2,'0')}`,
     $: selector => selector === '.card-grid' ? grid : container,
     getComputedStyle: () => ({ getPropertyValue: () => '#67f5d1' }),

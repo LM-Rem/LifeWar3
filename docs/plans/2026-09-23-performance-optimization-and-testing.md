@@ -10,7 +10,7 @@
 
 **状态：** 2026-09-23 编制；仅新增本方案文档，未执行实现、安装、部署或提交。
 
-**执行进度（2026-09-23）：** T01–T04 已实施并完成阶段验证，详见 [实施结果](../performance/t01-t04-results.md)。T05/T06/T10/T11 已于 2026-09-24 实施并完成本地阶段验证，详见 [本阶段结果](../performance/t05-t11-results.md)；T07–T09、T12–T17 未执行；上文“状态”为本方案编制时记录。密集场景尚未满足最终20Hz性能门槛，不将阶段完成解释为全项目认证通过。
+**执行进度（2026-09-23）：** T01–T04 已实施并完成阶段验证，详见 [实施结果](../performance/t01-t04-results.md)。T05/T06/T10/T11 已于 2026-09-24 实施并完成本地阶段验证，详见 [本阶段结果](../performance/t05-t11-results.md)；T07/T08/T12 已于 2026-09-24 实施并完成本地功能验证，详见 [本阶段结果](../performance/t07-t12-results.md)；dense 未通过默认晋级门槛，T12 实时认证未全部达标。T09、T13–T17 未执行；上文“状态”为本方案编制时记录。密集场景尚未满足最终20Hz性能门槛，不将阶段完成解释为全项目认证通过。
 
 **依据：** [前期分析](../性能优化与CUDA可行性分析.md)、当前工作区 README、config.json、src/engine.js、src/dormancy.js、src/server.js、src/bots.js、public/renderer.js、public/app.js、public/territory.js 和 tests/。
 

@@ -1,0 +1,17 @@
+{
+  "description": "Actual uncommitted workspace before T07/T08/T12; T05/T06/T10/T11 included",
+  "files": {
+    "src/bots.js": "3dabe6e6c7fda5f32a0b6ea5efcd0b29e3cf8db61ba3d9fdd14413af7db3b9e4",
+    "src/cell-changes.js": "babc47b08024169a7a14b9f2c820ad636938c50d4df3dccfa6162ad0ce419faa",
+    "src/config.js": "4850f86a53b3951b7cc305995513546bba4010ac58df3d4961db0867baf37bf4",
+    "src/dormancy.js": "f0dd6d8de47911a8504908806df77f583991ecaa63eeb46958a6f205fc398889",
+    "src/engine.js": "58bd6e62550d9c65f3253ab09a2fbecaa57933372554c7e8988d3ae01a6cfb66",
+    "src/ordered-cells.js": "d784ff7b62b29acb58183e786afec831a9cc8f44a4efd718ead82b904cf5b897",
+    "public/cards.js": "bf7a82e78b4f362047aff776b1833d751b742a2a35d87818d160df82718b09a7",
+    "public/cards.json": "7cfbf1add05e53d3bf8a2216194d0f751d250dad601eccd064a37ce6d661a18f",
+    "public/territory.js": "f9dbc462910c299be6423370e462ce5fca306d403c0823c0aa3991ca1c6fd336",
+    "public/patterns.js": "66d555cd204e45dcacad911aa59583d83c9d24c09de6c5e598efab0199e13ba5",
+    "public/patterns.json": "240be60e57e6e001456ee8ee871f99ae985a1c5717ebd908e34929d4a89e1ff1"
+  },
+  "laterCommittedAs": "1cfae82607ef680f37dff8bae11c75b5c5b95333"
+}

@@ -46,3 +46,16 @@ test('join capacity, bot removal, malformed messages, and practice match',async 
   for(let i=0;i<3;i++)a.send({type:'bot'});await a.wait('room',r=>r.players.length===4);b.send({type:'join',code:w.code});assert.match((await b.wait('error')).message,/满/);
   a.send({type:'remove_bot',id:2});await a.wait('room',r=>r.players.length===3);b.send({type:'join',code:w.code});const wb=await b.wait('welcome');assert.equal(wb.id,2);
 });
+
+test('resync responds with an authoritative snapshot and private state without restarting the match',async t=>{
+  const app=createServer({port:0,host:'127.0.0.1'}),addr=await app.listen(),a=await client(`ws://127.0.0.1:${addr.port}/ws`);
+  t.after(async()=>{a.ws.terminate();await app.close();});
+  a.send({type:'create',name:'Recovery',practice:true});await a.wait('started');const initial=await a.wait('binary');await a.wait('state');
+  a.send({type:'deploy',x:200,y:200,cells:[[0,0],[1,0],[0,1],[1,1]]});await a.wait('deployed');
+  await a.wait('binary',m=>m.data.readUInt32LE(4)>initial.data.readUInt32LE(4));
+  a.send({type:'resync'});const snapshot=await a.wait('binary',m=>m.data.readUInt32LE(0)===1);
+  const generation=snapshot.data.readUInt32LE(4),state=await a.wait('state',s=>s.generation===generation);
+  assert.ok(generation>0);assert.equal(state.players[0].cells,4);assert.equal(state.cards.hand.length,2);
+  const cells=new Map();for(let i=8;i<snapshot.data.length;i+=4){const v=snapshot.data.readUInt32LE(i);cells.set(v%1000000,Math.floor(v/1000000));}
+  assert.equal(cells.get(200200),1);assert.equal(cells.get(201201),1);
+});

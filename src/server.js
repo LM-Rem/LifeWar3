@@ -268,6 +268,12 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
           if (m.ws && m.ws !== ws) { const old = m.ws; old.member = null; old.room = null; old.close(4001, 'Session resumed elsewhere'); }
           attach(ws, r, m); return;
         }
+        case 'resync': {
+          if (!room?.game || !member || (ws.lastResyncAt && Date.now()-ws.lastResyncAt<1000)) return;
+          if(ws.bufferedAmount>262144){ws.needsSnapshot=true;return;}
+          ws.lastResyncAt=Date.now();
+          sendBoard(ws,room,room.game.packet(true),true);send(ws,room.game.state(member.id));return;
+        }
         case 'leave': unlink(ws, true); send(ws, { type: 'left' }); return;
         case 'ready': if (room && !room.game) { member.ready = !member.ready; broadcastRoom(room); } return;
         case 'bot': {

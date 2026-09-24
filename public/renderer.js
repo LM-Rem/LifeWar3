@@ -1,3 +1,4 @@
+import { GenerationQueue } from './generation-queue.js';
 import { WorldTexture } from './world-texture.js';
 import { MinimapCache } from './minimap-cache.js';
 import { BASE_HIT_RADIUS, createTerritories, territoryOwner, canDeployInTerritory, territoryAt, adjacentNeutralTerritories } from './territory.js';
@@ -25,6 +26,9 @@ export class Battlefield {
     this.world = document.createElement('canvas'); this.world.width = 1000; this.world.height = 1000;
     this.wctx = this.world.getContext('2d'); this.board = new Uint8Array(1000000);
     this.texture = new WorldTexture(this.wctx, COLORS); this.minimapCache = new MinimapCache();
+    this.presentationEpoch=0;
+    this.presentation=new GenerationQueue({onEvent:(name,value)=>{browserMetrics?.record(name,value,this.generation);this.onPresentationEvent?.(name,value);},onRecovery:reason=>this.onRecovery?.(reason)});
+    this.boardRevision=0;this.boundsCache=new WeakMap();
     this.cells = new Map(); this.effects = []; this.pointer = null; this.pattern = []; this.keys = new Set(); this.active = false;
     this.state = null; this.territories = []; this.me = 1; this.generation = 0; this.baseHP = 240; this.playerCells = 6000; this.baseHitRadius = BASE_HIT_RADIUS; this.captureTime = 30;
     this.cardTarget = null; // 道具卡选点模式：{ cardId, radius }
@@ -43,7 +47,19 @@ export class Battlefield {
     this.dpr = Math.min(devicePixelRatio || 1, 2); this.canvas.width = Math.round(this.width * this.dpr); this.canvas.height = Math.round(this.height * this.dpr);
     this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
   }
-  reset() { this.cells.clear(); this.board.fill(0); this.texture.reset(); this.texture.flush(); this.minimapCache.invalidate(); this.effects = []; this.state = null; this.territories = []; this.generation = 0; this.keys.clear(); this.cameraTarget = null; }
+  reset() { this.presentation.reset(++this.presentationEpoch); this.presentation.visibility(document.hidden); this.boardRevision++; this.previewCache=null; this.cells.clear(); this.board.fill(0); this.texture.reset(); this.texture.flush(); this.minimapCache.invalidate(); this.effects = []; this.state = null; this.territories = []; this.generation = 0; this.keys.clear(); this.cameraTarget = null; }
+  receivePacket(buffer,epoch=this.presentation.epoch) {
+    if(browserMetrics&&buffer.byteLength>=8)browserMetrics.record('receivedGeneration',buffer.byteLength,new DataView(buffer).getUint32(4,true));
+    return this.presentation.packet(buffer,epoch);
+  }
+  receiveState(state,epoch=this.presentation.epoch) {return this.presentation.state(state,epoch);}
+  presentNext() {
+    const {packet,state,waitMs}=this.presentation.take();
+    if(packet){this.updatePacket(packet.buffer);browserMetrics?.record('presentation.wait.ms',waitMs,this.generation);}
+    if(state){this.setState(state);this.onPresentedState?.(state);}
+    browserMetrics?.record('presentation.queueDepth',this.presentation.packets.length,this.generation);
+    return packet;
+  }
   setState(state) {
     if (!this.state) this.territories = createTerritories(state.players, state.nodes);
     this.state = state;
@@ -52,8 +68,8 @@ export class Battlefield {
   updatePacket(buffer) {
     const traceStart = browserMetrics ? browserMetrics.now() : 0;
     const view = new DataView(buffer);
+    this.boardRevision++;
     if (browserMetrics) {
-      browserMetrics.record('receivedGeneration', buffer.byteLength, view.getUint32(4, true));
       if (view.getUint32(0, true) === 1) browserMetrics.record('snapshot', 1, view.getUint32(4, true));
     }
     if (view.getUint32(0, true) === 1) { this.cells.clear(); this.board.fill(0); this.texture.reset(); this.minimapCache.invalidate(); }
@@ -80,7 +96,21 @@ export class Battlefield {
     this.camera.x=clamp(this.camera.x+before[0]-after[0],0,1000); this.camera.y=clamp(this.camera.y+before[1]-after[1],0,1000);
   }
   focusBase() { this.cameraTarget=null; const p=this.state?.players.find(p=>p.id===this.me); if(p){this.camera.x=p.x+Math.sign(500-p.x)*35;this.camera.y=p.y+Math.sign(500-p.y)*35;this.camera.zoom=3.5;} }
+  patternBounds(pattern) {
+    let bounds=this.boundsCache.get(pattern);
+    if(!bounds){let w=0,h=0;for(const [x,y] of pattern){w=Math.max(w,x+1);h=Math.max(h,y+1);}bounds={w,h};this.boundsCache.set(pattern,bounds);}
+    return bounds;
+  }
   placement() {
+    const point=this.pointer?this.worldPoint(this.pointer.x,this.pointer.y):null;
+    const bounds=this.patternBounds(this.pattern);
+    const x=point?Math.floor(point[0]-(this.cardTarget?0:bounds.w/2)):null,y=point?Math.floor(point[1]-(this.cardTarget?0:bounds.h/2)):null;
+    const signature=JSON.stringify([x,y,this.boardRevision,this.me,this.baseHitRadius,this.playerCells,this.state?.status,this.state?.players,this.state?.nodes.map(n=>n.owner),this.extraLand]);
+    const cached=this.previewCache;
+    if(cached&&cached.signature===signature&&cached.pattern===this.pattern&&cached.target===this.cardTarget&&cached.state===this.state)return cached.value;
+    const value=this.placementUncached();this.previewCache={signature,pattern:this.pattern,target:this.cardTarget,state:this.state,value};return value;
+  }
+  placementUncached() {
     // 道具卡选点模式：以指针位置为中心返回目标点（不校验领地，服务器权威执行）
     if (this.cardTarget && this.pointer && this.state) {
       const [wx, wy] = this.worldPoint(this.pointer.x, this.pointer.y);
@@ -92,7 +122,7 @@ export class Battlefield {
       let cells = [];
       const protectedCore = (cx, cy, margin = 0) => this.state.players.some(e => !e.eliminated && e.id !== this.me && Math.hypot(cx - e.x, cy - e.y) <= Math.max(28, this.baseHitRadius) + margin);
       if (target.kind === 'seed') {
-        const ox = x - Math.floor(Math.max(...target.pattern.map(c => c[0])) / 2), oy = y - Math.floor(Math.max(...target.pattern.map(c => c[1])) / 2);
+        const ox = x - Math.floor((this.patternBounds(target.pattern).w-1) / 2), oy = y - Math.floor((this.patternBounds(target.pattern).h-1) / 2);
         cells = target.pattern.map(([dx, dy]) => [ox + dx, oy + dy]);
         if (cells.some(([cx, cy]) => cx < 0 || cy < 0 || cx >= 1000 || cy >= 1000)) reason = '播种图案超出地图';
         else if (cells.some(([cx, cy]) => this.board[cy * 1000 + cx])) reason = '播种位置已被占用';
@@ -107,7 +137,7 @@ export class Battlefield {
     }
     if (!this.pointer || !this.pattern.length || !this.state) return null;
     const [wx,wy]=this.worldPoint(this.pointer.x,this.pointer.y), p=this.state.players.find(p=>p.id===this.me);
-    const pw=Math.max(...this.pattern.map(c=>c[0]))+1, ph=Math.max(...this.pattern.map(c=>c[1]))+1;
+    const {w:pw,h:ph}=this.patternBounds(this.pattern);
     const x=Math.floor(wx-pw/2),y=Math.floor(wy-ph/2);
     let reason='';
     if(!p || p.eliminated || this.state.status!=='playing') reason='当前无法部署';
@@ -128,6 +158,7 @@ export class Battlefield {
     if (browserMetrics && this.active) browserMetrics.record('rafInterval.ms', now - this.lastTime, this.generation);
     const dt=Math.min(.05,(now-this.lastTime)/1000);this.lastTime=now;
     if(this.active){
+      this.presentNext();
       const speed=550*dt/this.camera.zoom;
       if(this.keys.has('w')||this.keys.has('arrowup')){this.cameraTarget=null;this.camera.y-=speed;}
       if(this.keys.has('s')||this.keys.has('arrowdown')){this.cameraTarget=null;this.camera.y+=speed;}
@@ -144,6 +175,7 @@ export class Battlefield {
       }
       this.camera.x=clamp(this.camera.x,0,1000);this.camera.y=clamp(this.camera.y,0,1000);
       this.draw(now);
+      this.onPresented?.(this.generation);
       if (browserMetrics) browserMetrics.record('drawnGeneration', 0, this.generation);
       if(now-(this.lastMini||0)>33){this.drawMinimap();this.lastMini=now;this.onCamera?.(this.camera);}
     }

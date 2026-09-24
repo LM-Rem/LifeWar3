@@ -1,0 +1,2071 @@
+{
+  "scope": "T06 workspace baseline vs auto(sparse) and dense; 5 independent rounds x 100 generations after 30 warmup; step+packet only",
+  "scenarios": {
+    "P01": {
+      "baseline": {
+        "sourceHashes": {
+          "src/bots.js": "3dabe6e6c7fda5f32a0b6ea5efcd0b29e3cf8db61ba3d9fdd14413af7db3b9e4",
+          "src/cell-changes.js": "babc47b08024169a7a14b9f2c820ad636938c50d4df3dccfa6162ad0ce419faa",
+          "src/config.js": "4850f86a53b3951b7cc305995513546bba4010ac58df3d4961db0867baf37bf4",
+          "src/dormancy.js": "f0dd6d8de47911a8504908806df77f583991ecaa63eeb46958a6f205fc398889",
+          "src/engine.js": "58bd6e62550d9c65f3253ab09a2fbecaa57933372554c7e8988d3ae01a6cfb66",
+          "src/ordered-cells.js": "d784ff7b62b29acb58183e786afec831a9cc8f44a4efd718ead82b904cf5b897",
+          "public/cards.js": "bf7a82e78b4f362047aff776b1833d751b742a2a35d87818d160df82718b09a7",
+          "public/cards.json": "7cfbf1add05e53d3bf8a2216194d0f751d250dad601eccd064a37ce6d661a18f",
+          "public/territory.js": "f9dbc462910c299be6423370e462ce5fca306d403c0823c0aa3991ca1c6fd336"
+        },
+        "environment": {
+          "capturedAt": "2026-09-24T06:38:54.965Z",
+          "node": "v24.11.1",
+          "platform": "win32",
+          "os": "10.0.26200",
+          "arch": "x64",
+          "cpu": "13th Gen Intel(R) Core(TM) i9-13900HX",
+          "logicalCores": 32,
+          "memoryBytes": 34124718080,
+          "gpu": "NVIDIA GeForce RTX 5070 Ti Laptop GPU, 595.79, 12227 MiB, 50, 652 MHz",
+          "powerSchemeGuid": "381b4222-f694-41f0-9685-ff5bb260df2e",
+          "browser": null,
+          "dpr": null,
+          "displayRefreshHz": null,
+          "measuredNetworkMbps": null,
+          "unavailable": "null means unmeasured; CPU synthetic runs do not measure browser, display or network."
+        },
+        "tickMs": {
+          "min": 1.3645999999999958,
+          "max": 3.9057000000000244,
+          "mean": 1.5927220000000006,
+          "p50": 1.567200000000014,
+          "p95": 1.7865999999999644,
+          "p99": 2.1621000000000095
+        },
+        "roundMeans": [
+          1.578184,
+          1.5964659999999993,
+          1.5920619999999999,
+          1.5772680000000003,
+          1.6196299999999977
+        ],
+        "deadlineMisses": 0,
+        "L": {
+          "min": 24000,
+          "max": 24000,
+          "mean": 24000,
+          "p50": 24000,
+          "p95": 24000,
+          "p99": 24000
+        },
+        "C": {
+          "min": 96000,
+          "max": 96000,
+          "mean": 96000,
+          "p50": 96000,
+          "p95": 96000,
+          "p99": 96000
+        },
+        "D": {
+          "min": 0,
+          "max": 0,
+          "mean": 0,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "memory": [
+          {
+            "rss": 67784704,
+            "heapTotal": 12115968,
+            "heapUsed": 8760776,
+            "external": 41524230,
+            "arrayBuffers": 39177313
+          },
+          {
+            "rss": 66822144,
+            "heapTotal": 12115968,
+            "heapUsed": 6912936,
+            "external": 41434734,
+            "arrayBuffers": 39087817
+          },
+          {
+            "rss": 66883584,
+            "heapTotal": 11591680,
+            "heapUsed": 6094984,
+            "external": 41430085,
+            "arrayBuffers": 39083168
+          },
+          {
+            "rss": 68124672,
+            "heapTotal": 12115968,
+            "heapUsed": 6879592,
+            "external": 41431502,
+            "arrayBuffers": 39084585
+          },
+          {
+            "rss": 67014656,
+            "heapTotal": 11067392,
+            "heapUsed": 6094288,
+            "external": 41430085,
+            "arrayBuffers": 39083168
+          }
+        ]
+      },
+      "auto": {
+        "sourceHashes": {
+          "src/bots.js": "3dabe6e6c7fda5f32a0b6ea5efcd0b29e3cf8db61ba3d9fdd14413af7db3b9e4",
+          "src/cell-changes.js": "babc47b08024169a7a14b9f2c820ad636938c50d4df3dccfa6162ad0ce419faa",
+          "src/config.js": "4850f86a53b3951b7cc305995513546bba4010ac58df3d4961db0867baf37bf4",
+          "src/dormancy.js": "f0dd6d8de47911a8504908806df77f583991ecaa63eeb46958a6f205fc398889",
+          "src/engine.js": "52d4c1594eefe72f7df4aa4e95e66af3826e742b4487a9f30caee5ded1b8dade",
+          "src/metrics.js": "3f4112b485f35ad711123ba1983ebe2453614e912843c49712215ac3f2aa3cb1",
+          "src/ordered-cells.js": "d784ff7b62b29acb58183e786afec831a9cc8f44a4efd718ead82b904cf5b897",
+          "src/performance-config.js": "ec9ec33116914e835368dd3c5e3b6be4ca88a86d43d943a85bcfa97df6f84605",
+          "src/server.js": "eee7fc2435f7eaf750d090134b67f49958cfa061e5d9d81b4f9f21381961e0e4",
+          "src/spatial-index.js": "d981127ff45ac0124174cba1453e33dc373e2e63727585c1d8eb61ead056e8c8",
+          "src/evolution/backend.js": "bcfe56bf70ed2e03aaa3283c3261852e647bdf06298933242ba06c9c8b1b87f5",
+          "src/evolution/dense.js": "e0f534bf24cee010f4aee3e8ce28cb9ec273c28f924675b21a55f2fc5df6c340",
+          "src/evolution/rule-table.js": "8e3e7f070dc68f0ae41be99e2ee6195aac13f71ef7c132e55786926b66f038fc",
+          "src/evolution/select.js": "8b763c7230ab1647c385b9ea2053747995eb058b7b9b91fe0a7a596a21c88fe3",
+          "src/evolution/sparse.js": "3b1fa083de24a6d5ff27f7719db9af94f844f50ae9fca353798a0c6c3c835e81",
+          "public/cards.js": "bf7a82e78b4f362047aff776b1833d751b742a2a35d87818d160df82718b09a7",
+          "public/cards.json": "7cfbf1add05e53d3bf8a2216194d0f751d250dad601eccd064a37ce6d661a18f",
+          "public/territory.js": "3db4be208c15026c62a85104add4375ebedfbf3e59dcc8de3884e46d8ec00817"
+        },
+        "environment": {
+          "capturedAt": "2026-09-24T06:38:55.376Z",
+          "node": "v24.11.1",
+          "platform": "win32",
+          "os": "10.0.26200",
+          "arch": "x64",
+          "cpu": "13th Gen Intel(R) Core(TM) i9-13900HX",
+          "logicalCores": 32,
+          "memoryBytes": 34124718080,
+          "gpu": "NVIDIA GeForce RTX 5070 Ti Laptop GPU, 595.79, 12227 MiB, 50, 667 MHz",
+          "powerSchemeGuid": "381b4222-f694-41f0-9685-ff5bb260df2e",
+          "browser": null,
+          "dpr": null,
+          "displayRefreshHz": null,
+          "measuredNetworkMbps": null,
+          "unavailable": "null means unmeasured; CPU synthetic runs do not measure browser, display or network."
+        },
+        "tickMs": {
+          "min": 0.9121999999999844,
+          "max": 1.8926999999999907,
+          "mean": 1.0919084000000003,
+          "p50": 1.0464000000000055,
+          "p95": 1.3675999999999817,
+          "p99": 1.7574000000000183
+        },
+        "roundMeans": [
+          1.0632449999999976,
+          1.0986420000000012,
+          1.1148160000000025,
+          1.0910969999999978,
+          1.0917420000000029
+        ],
+        "deadlineMisses": 0,
+        "L": {
+          "min": 24000,
+          "max": 24000,
+          "mean": 24000,
+          "p50": 24000,
+          "p95": 24000,
+          "p99": 24000
+        },
+        "C": {
+          "min": 96000,
+          "max": 96000,
+          "mean": 96000,
+          "p50": 96000,
+          "p95": 96000,
+          "p99": 96000
+        },
+        "D": {
+          "min": 0,
+          "max": 0,
+          "mean": 0,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "memory": [
+          {
+            "rss": 67985408,
+            "heapTotal": 12115968,
+            "heapUsed": 7579688,
+            "external": 41578760,
+            "arrayBuffers": 39231843
+          },
+          {
+            "rss": 68329472,
+            "heapTotal": 12115968,
+            "heapUsed": 7503920,
+            "external": 41572288,
+            "arrayBuffers": 39225371
+          },
+          {
+            "rss": 68161536,
+            "heapTotal": 11853824,
+            "heapUsed": 7638104,
+            "external": 41581176,
+            "arrayBuffers": 39234259
+          },
+          {
+            "rss": 66584576,
+            "heapTotal": 12378112,
+            "heapUsed": 7471760,
+            "external": 41569872,
+            "arrayBuffers": 39222955
+          },
+          {
+            "rss": 67919872,
+            "heapTotal": 11591680,
+            "heapUsed": 7399672,
+            "external": 41565824,
+            "arrayBuffers": 39218907
+          }
+        ]
+      },
+      "dense": {
+        "sourceHashes": {
+          "src/bots.js": "3dabe6e6c7fda5f32a0b6ea5efcd0b29e3cf8db61ba3d9fdd14413af7db3b9e4",
+          "src/cell-changes.js": "babc47b08024169a7a14b9f2c820ad636938c50d4df3dccfa6162ad0ce419faa",
+          "src/config.js": "4850f86a53b3951b7cc305995513546bba4010ac58df3d4961db0867baf37bf4",
+          "src/dormancy.js": "f0dd6d8de47911a8504908806df77f583991ecaa63eeb46958a6f205fc398889",
+          "src/engine.js": "52d4c1594eefe72f7df4aa4e95e66af3826e742b4487a9f30caee5ded1b8dade",
+          "src/metrics.js": "3f4112b485f35ad711123ba1983ebe2453614e912843c49712215ac3f2aa3cb1",
+          "src/ordered-cells.js": "d784ff7b62b29acb58183e786afec831a9cc8f44a4efd718ead82b904cf5b897",
+          "src/performance-config.js": "ec9ec33116914e835368dd3c5e3b6be4ca88a86d43d943a85bcfa97df6f84605",
+          "src/server.js": "eee7fc2435f7eaf750d090134b67f49958cfa061e5d9d81b4f9f21381961e0e4",
+          "src/spatial-index.js": "d981127ff45ac0124174cba1453e33dc373e2e63727585c1d8eb61ead056e8c8",
+          "src/evolution/backend.js": "bcfe56bf70ed2e03aaa3283c3261852e647bdf06298933242ba06c9c8b1b87f5",
+          "src/evolution/dense.js": "e0f534bf24cee010f4aee3e8ce28cb9ec273c28f924675b21a55f2fc5df6c340",
+          "src/evolution/rule-table.js": "8e3e7f070dc68f0ae41be99e2ee6195aac13f71ef7c132e55786926b66f038fc",
+          "src/evolution/select.js": "8b763c7230ab1647c385b9ea2053747995eb058b7b9b91fe0a7a596a21c88fe3",
+          "src/evolution/sparse.js": "3b1fa083de24a6d5ff27f7719db9af94f844f50ae9fca353798a0c6c3c835e81",
+          "public/cards.js": "bf7a82e78b4f362047aff776b1833d751b742a2a35d87818d160df82718b09a7",
+          "public/cards.json": "7cfbf1add05e53d3bf8a2216194d0f751d250dad601eccd064a37ce6d661a18f",
+          "public/territory.js": "3db4be208c15026c62a85104add4375ebedfbf3e59dcc8de3884e46d8ec00817"
+        },
+        "environment": {
+          "capturedAt": "2026-09-24T06:38:55.712Z",
+          "node": "v24.11.1",
+          "platform": "win32",
+          "os": "10.0.26200",
+          "arch": "x64",
+          "cpu": "13th Gen Intel(R) Core(TM) i9-13900HX",
+          "logicalCores": 32,
+          "memoryBytes": 34124718080,
+          "gpu": "NVIDIA GeForce RTX 5070 Ti Laptop GPU, 595.79, 12227 MiB, 50, 667 MHz",
+          "powerSchemeGuid": "381b4222-f694-41f0-9685-ff5bb260df2e",
+          "browser": null,
+          "dpr": null,
+          "displayRefreshHz": null,
+          "measuredNetworkMbps": null,
+          "unavailable": "null means unmeasured; CPU synthetic runs do not measure browser, display or network."
+        },
+        "tickMs": {
+          "min": 6.649499999999989,
+          "max": 10.762700000000109,
+          "mean": 7.680321399999999,
+          "p50": 7.643200000000093,
+          "p95": 8.4375,
+          "p99": 9.077799999999968
+        },
+        "roundMeans": [
+          7.247131999999997,
+          7.685534000000006,
+          7.759921999999992,
+          7.848328999999994,
+          7.860690000000012
+        ],
+        "deadlineMisses": 0,
+        "L": {
+          "min": 24000,
+          "max": 24000,
+          "mean": 24000,
+          "p50": 24000,
+          "p95": 24000,
+          "p99": 24000
+        },
+        "C": {
+          "min": 96000,
+          "max": 96000,
+          "mean": 96000,
+          "p50": 96000,
+          "p95": 96000,
+          "p99": 96000
+        },
+        "D": {
+          "min": 0,
+          "max": 0,
+          "mean": 0,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "memory": [
+          {
+            "rss": 69328896,
+            "heapTotal": 12115968,
+            "heapUsed": 8966000,
+            "external": 41620552,
+            "arrayBuffers": 39273635
+          },
+          {
+            "rss": 69259264,
+            "heapTotal": 11329536,
+            "heapUsed": 7133208,
+            "external": 41574103,
+            "arrayBuffers": 39227186
+          },
+          {
+            "rss": 68284416,
+            "heapTotal": 11853824,
+            "heapUsed": 7619688,
+            "external": 41611871,
+            "arrayBuffers": 39264954
+          },
+          {
+            "rss": 69242880,
+            "heapTotal": 11853824,
+            "heapUsed": 7509888,
+            "external": 41611071,
+            "arrayBuffers": 39264154
+          },
+          {
+            "rss": 69500928,
+            "heapTotal": 12115968,
+            "heapUsed": 8738160,
+            "external": 41620552,
+            "arrayBuffers": 39273635
+          }
+        ]
+      },
+      "improvementPercent": 31.443880350745456
+    },
+    "P03": {
+      "baseline": {
+        "sourceHashes": {
+          "src/bots.js": "3dabe6e6c7fda5f32a0b6ea5efcd0b29e3cf8db61ba3d9fdd14413af7db3b9e4",
+          "src/cell-changes.js": "babc47b08024169a7a14b9f2c820ad636938c50d4df3dccfa6162ad0ce419faa",
+          "src/config.js": "4850f86a53b3951b7cc305995513546bba4010ac58df3d4961db0867baf37bf4",
+          "src/dormancy.js": "f0dd6d8de47911a8504908806df77f583991ecaa63eeb46958a6f205fc398889",
+          "src/engine.js": "58bd6e62550d9c65f3253ab09a2fbecaa57933372554c7e8988d3ae01a6cfb66",
+          "src/ordered-cells.js": "d784ff7b62b29acb58183e786afec831a9cc8f44a4efd718ead82b904cf5b897",
+          "public/cards.js": "bf7a82e78b4f362047aff776b1833d751b742a2a35d87818d160df82718b09a7",
+          "public/cards.json": "7cfbf1add05e53d3bf8a2216194d0f751d250dad601eccd064a37ce6d661a18f",
+          "public/territory.js": "f9dbc462910c299be6423370e462ce5fca306d403c0823c0aa3991ca1c6fd336"
+        },
+        "environment": {
+          "capturedAt": "2026-09-24T06:39:04.891Z",
+          "node": "v24.11.1",
+          "platform": "win32",
+          "os": "10.0.26200",
+          "arch": "x64",
+          "cpu": "13th Gen Intel(R) Core(TM) i9-13900HX",
+          "logicalCores": 32,
+          "memoryBytes": 34124718080,
+          "gpu": "NVIDIA GeForce RTX 5070 Ti Laptop GPU, 595.79, 12227 MiB, 51, 682 MHz",
+          "powerSchemeGuid": "381b4222-f694-41f0-9685-ff5bb260df2e",
+          "browser": null,
+          "dpr": null,
+          "displayRefreshHz": null,
+          "measuredNetworkMbps": null,
+          "unavailable": "null means unmeasured; CPU synthetic runs do not measure browser, display or network."
+        },
+        "tickMs": {
+          "min": 27.463700000000017,
+          "max": 47.327400000000125,
+          "mean": 30.331547600000018,
+          "p50": 30.16489999999976,
+          "p95": 32.20510000000013,
+          "p99": 33.72940000000017
+        },
+        "roundMeans": [
+          30.387127999999983,
+          30.572081000000015,
+          30.271391999999988,
+          30.666549000000032,
+          29.760588000000006
+        ],
+        "deadlineMisses": 0,
+        "L": {
+          "min": 823269,
+          "max": 920373,
+          "mean": 871028.72,
+          "p50": 870373,
+          "p95": 915373,
+          "p99": 919373
+        },
+        "C": {
+          "min": 823821,
+          "max": 921129,
+          "mean": 871748.76,
+          "p50": 871129,
+          "p95": 916129,
+          "p99": 920129
+        },
+        "D": {
+          "min": 1430,
+          "max": 1802,
+          "mean": 1699.86,
+          "p50": 1756,
+          "p95": 1756,
+          "p99": 1790
+        },
+        "memory": [
+          {
+            "rss": 83836928,
+            "heapTotal": 8445952,
+            "heapUsed": 7164808,
+            "external": 41815781,
+            "arrayBuffers": 39468864
+          },
+          {
+            "rss": 83275776,
+            "heapTotal": 8445952,
+            "heapUsed": 6598632,
+            "external": 42199493,
+            "arrayBuffers": 39085896
+          },
+          {
+            "rss": 83775488,
+            "heapTotal": 12115968,
+            "heapUsed": 7247496,
+            "external": 41870605,
+            "arrayBuffers": 39523688
+          },
+          {
+            "rss": 84271104,
+            "heapTotal": 11853824,
+            "heapUsed": 8605760,
+            "external": 42199493,
+            "arrayBuffers": 39852576
+          },
+          {
+            "rss": 83828736,
+            "heapTotal": 11591680,
+            "heapUsed": 7384200,
+            "external": 41972805,
+            "arrayBuffers": 39625888
+          }
+        ]
+      },
+      "auto": {
+        "sourceHashes": {
+          "src/bots.js": "3dabe6e6c7fda5f32a0b6ea5efcd0b29e3cf8db61ba3d9fdd14413af7db3b9e4",
+          "src/cell-changes.js": "babc47b08024169a7a14b9f2c820ad636938c50d4df3dccfa6162ad0ce419faa",
+          "src/config.js": "4850f86a53b3951b7cc305995513546bba4010ac58df3d4961db0867baf37bf4",
+          "src/dormancy.js": "f0dd6d8de47911a8504908806df77f583991ecaa63eeb46958a6f205fc398889",
+          "src/engine.js": "52d4c1594eefe72f7df4aa4e95e66af3826e742b4487a9f30caee5ded1b8dade",
+          "src/metrics.js": "3f4112b485f35ad711123ba1983ebe2453614e912843c49712215ac3f2aa3cb1",
+          "src/ordered-cells.js": "d784ff7b62b29acb58183e786afec831a9cc8f44a4efd718ead82b904cf5b897",
+          "src/performance-config.js": "ec9ec33116914e835368dd3c5e3b6be4ca88a86d43d943a85bcfa97df6f84605",
+          "src/server.js": "eee7fc2435f7eaf750d090134b67f49958cfa061e5d9d81b4f9f21381961e0e4",
+          "src/spatial-index.js": "d981127ff45ac0124174cba1453e33dc373e2e63727585c1d8eb61ead056e8c8",
+          "src/evolution/backend.js": "bcfe56bf70ed2e03aaa3283c3261852e647bdf06298933242ba06c9c8b1b87f5",
+          "src/evolution/dense.js": "e0f534bf24cee010f4aee3e8ce28cb9ec273c28f924675b21a55f2fc5df6c340",
+          "src/evolution/rule-table.js": "8e3e7f070dc68f0ae41be99e2ee6195aac13f71ef7c132e55786926b66f038fc",
+          "src/evolution/select.js": "8b763c7230ab1647c385b9ea2053747995eb058b7b9b91fe0a7a596a21c88fe3",
+          "src/evolution/sparse.js": "3b1fa083de24a6d5ff27f7719db9af94f844f50ae9fca353798a0c6c3c835e81",
+          "public/cards.js": "bf7a82e78b4f362047aff776b1833d751b742a2a35d87818d160df82718b09a7",
+          "public/cards.json": "7cfbf1add05e53d3bf8a2216194d0f751d250dad601eccd064a37ce6d661a18f",
+          "public/territory.js": "3db4be208c15026c62a85104add4375ebedfbf3e59dcc8de3884e46d8ec00817"
+        },
+        "environment": {
+          "capturedAt": "2026-09-24T06:39:09.046Z",
+          "node": "v24.11.1",
+          "platform": "win32",
+          "os": "10.0.26200",
+          "arch": "x64",
+          "cpu": "13th Gen Intel(R) Core(TM) i9-13900HX",
+          "logicalCores": 32,
+          "memoryBytes": 34124718080,
+          "gpu": "NVIDIA GeForce RTX 5070 Ti Laptop GPU, 595.79, 12227 MiB, 52, 735 MHz",
+          "powerSchemeGuid": "381b4222-f694-41f0-9685-ff5bb260df2e",
+          "browser": null,
+          "dpr": null,
+          "displayRefreshHz": null,
+          "measuredNetworkMbps": null,
+          "unavailable": "null means unmeasured; CPU synthetic runs do not measure browser, display or network."
+        },
+        "tickMs": {
+          "min": 18.451599999999985,
+          "max": 33.397899999999936,
+          "mean": 20.968473000000014,
+          "p50": 20.885099999999966,
+          "p95": 22.673299999999927,
+          "p99": 23.81840000000011
+        },
+        "roundMeans": [
+          20.78649500000001,
+          21.242493000000014,
+          20.950148999999982,
+          21.065659000000004,
+          20.797568999999985
+        ],
+        "deadlineMisses": 0,
+        "L": {
+          "min": 823269,
+          "max": 920373,
+          "mean": 871028.72,
+          "p50": 870373,
+          "p95": 915373,
+          "p99": 919373
+        },
+        "C": {
+          "min": 823821,
+          "max": 921129,
+          "mean": 871748.76,
+          "p50": 871129,
+          "p95": 916129,
+          "p99": 920129
+        },
+        "D": {
+          "min": 1430,
+          "max": 1802,
+          "mean": 1699.86,
+          "p50": 1756,
+          "p95": 1756,
+          "p99": 1790
+        },
+        "memory": [
+          {
+            "rss": 84275200,
+            "heapTotal": 11853824,
+            "heapUsed": 8371024,
+            "external": 42287815,
+            "arrayBuffers": 39940898
+          },
+          {
+            "rss": 84336640,
+            "heapTotal": 12115968,
+            "heapUsed": 8466816,
+            "external": 42287815,
+            "arrayBuffers": 39940898
+          },
+          {
+            "rss": 84373504,
+            "heapTotal": 8970240,
+            "heapUsed": 6589680,
+            "external": 41643415,
+            "arrayBuffers": 39296498
+          },
+          {
+            "rss": 83869696,
+            "heapTotal": 12115968,
+            "heapUsed": 7779528,
+            "external": 41878411,
+            "arrayBuffers": 39531494
+          },
+          {
+            "rss": 83730432,
+            "heapTotal": 12115968,
+            "heapUsed": 7645360,
+            "external": 41784427,
+            "arrayBuffers": 39437510
+          }
+        ]
+      },
+      "dense": {
+        "sourceHashes": {
+          "src/bots.js": "3dabe6e6c7fda5f32a0b6ea5efcd0b29e3cf8db61ba3d9fdd14413af7db3b9e4",
+          "src/cell-changes.js": "babc47b08024169a7a14b9f2c820ad636938c50d4df3dccfa6162ad0ce419faa",
+          "src/config.js": "4850f86a53b3951b7cc305995513546bba4010ac58df3d4961db0867baf37bf4",
+          "src/dormancy.js": "f0dd6d8de47911a8504908806df77f583991ecaa63eeb46958a6f205fc398889",
+          "src/engine.js": "52d4c1594eefe72f7df4aa4e95e66af3826e742b4487a9f30caee5ded1b8dade",
+          "src/metrics.js": "3f4112b485f35ad711123ba1983ebe2453614e912843c49712215ac3f2aa3cb1",
+          "src/ordered-cells.js": "d784ff7b62b29acb58183e786afec831a9cc8f44a4efd718ead82b904cf5b897",
+          "src/performance-config.js": "ec9ec33116914e835368dd3c5e3b6be4ca88a86d43d943a85bcfa97df6f84605",
+          "src/server.js": "eee7fc2435f7eaf750d090134b67f49958cfa061e5d9d81b4f9f21381961e0e4",
+          "src/spatial-index.js": "d981127ff45ac0124174cba1453e33dc373e2e63727585c1d8eb61ead056e8c8",
+          "src/evolution/backend.js": "bcfe56bf70ed2e03aaa3283c3261852e647bdf06298933242ba06c9c8b1b87f5",
+          "src/evolution/dense.js": "e0f534bf24cee010f4aee3e8ce28cb9ec273c28f924675b21a55f2fc5df6c340",
+          "src/evolution/rule-table.js": "8e3e7f070dc68f0ae41be99e2ee6195aac13f71ef7c132e55786926b66f038fc",
+          "src/evolution/select.js": "8b763c7230ab1647c385b9ea2053747995eb058b7b9b91fe0a7a596a21c88fe3",
+          "src/evolution/sparse.js": "3b1fa083de24a6d5ff27f7719db9af94f844f50ae9fca353798a0c6c3c835e81",
+          "public/cards.js": "bf7a82e78b4f362047aff776b1833d751b742a2a35d87818d160df82718b09a7",
+          "public/cards.json": "7cfbf1add05e53d3bf8a2216194d0f751d250dad601eccd064a37ce6d661a18f",
+          "public/territory.js": "3db4be208c15026c62a85104add4375ebedfbf3e59dcc8de3884e46d8ec00817"
+        },
+        "environment": {
+          "capturedAt": "2026-09-24T06:39:11.940Z",
+          "node": "v24.11.1",
+          "platform": "win32",
+          "os": "10.0.26200",
+          "arch": "x64",
+          "cpu": "13th Gen Intel(R) Core(TM) i9-13900HX",
+          "logicalCores": 32,
+          "memoryBytes": 34124718080,
+          "gpu": "NVIDIA GeForce RTX 5070 Ti Laptop GPU, 595.79, 12227 MiB, 52, 877 MHz",
+          "powerSchemeGuid": "381b4222-f694-41f0-9685-ff5bb260df2e",
+          "browser": null,
+          "dpr": null,
+          "displayRefreshHz": null,
+          "measuredNetworkMbps": null,
+          "unavailable": "null means unmeasured; CPU synthetic runs do not measure browser, display or network."
+        },
+        "tickMs": {
+          "min": 19.157000000000153,
+          "max": 31.729000000000042,
+          "mean": 22.05715679999998,
+          "p50": 21.9362000000001,
+          "p95": 23.83959999999979,
+          "p99": 24.927299999999832
+        },
+        "roundMeans": [
+          22.59857700000001,
+          22.53473700000002,
+          21.956468000000005,
+          22.206155000000003,
+          20.98984699999999
+        ],
+        "deadlineMisses": 0,
+        "L": {
+          "min": 823269,
+          "max": 920373,
+          "mean": 871028.72,
+          "p50": 870373,
+          "p95": 915373,
+          "p99": 919373
+        },
+        "C": {
+          "min": 823821,
+          "max": 921129,
+          "mean": 871748.76,
+          "p50": 871129,
+          "p95": 916129,
+          "p99": 920129
+        },
+        "D": {
+          "min": 1430,
+          "max": 1802,
+          "mean": 1699.86,
+          "p50": 1756,
+          "p95": 1756,
+          "p99": 1790
+        },
+        "memory": [
+          {
+            "rss": 84070400,
+            "heapTotal": 12115968,
+            "heapUsed": 8295672,
+            "external": 42134155,
+            "arrayBuffers": 39787238
+          },
+          {
+            "rss": 84303872,
+            "heapTotal": 11591680,
+            "heapUsed": 7662248,
+            "external": 42126823,
+            "arrayBuffers": 39779906
+          },
+          {
+            "rss": 83927040,
+            "heapTotal": 12115968,
+            "heapUsed": 8109216,
+            "external": 42035563,
+            "arrayBuffers": 39688646
+          },
+          {
+            "rss": 83894272,
+            "heapTotal": 12115968,
+            "heapUsed": 8099920,
+            "external": 42066763,
+            "arrayBuffers": 39719846
+          },
+          {
+            "rss": 84033536,
+            "heapTotal": 12115968,
+            "heapUsed": 7909896,
+            "external": 41925403,
+            "arrayBuffers": 39578486
+          }
+        ]
+      },
+      "improvementPercent": 30.869096174967346
+    },
+    "P04": {
+      "baseline": {
+        "sourceHashes": {
+          "src/bots.js": "3dabe6e6c7fda5f32a0b6ea5efcd0b29e3cf8db61ba3d9fdd14413af7db3b9e4",
+          "src/cell-changes.js": "babc47b08024169a7a14b9f2c820ad636938c50d4df3dccfa6162ad0ce419faa",
+          "src/config.js": "4850f86a53b3951b7cc305995513546bba4010ac58df3d4961db0867baf37bf4",
+          "src/dormancy.js": "f0dd6d8de47911a8504908806df77f583991ecaa63eeb46958a6f205fc398889",
+          "src/engine.js": "58bd6e62550d9c65f3253ab09a2fbecaa57933372554c7e8988d3ae01a6cfb66",
+          "src/ordered-cells.js": "d784ff7b62b29acb58183e786afec831a9cc8f44a4efd718ead82b904cf5b897",
+          "public/cards.js": "bf7a82e78b4f362047aff776b1833d751b742a2a35d87818d160df82718b09a7",
+          "public/cards.json": "7cfbf1add05e53d3bf8a2216194d0f751d250dad601eccd064a37ce6d661a18f",
+          "public/territory.js": "f9dbc462910c299be6423370e462ce5fca306d403c0823c0aa3991ca1c6fd336"
+        },
+        "environment": {
+          "capturedAt": "2026-09-24T06:39:55.843Z",
+          "node": "v24.11.1",
+          "platform": "win32",
+          "os": "10.0.26200",
+          "arch": "x64",
+          "cpu": "13th Gen Intel(R) Core(TM) i9-13900HX",
+          "logicalCores": 32,
+          "memoryBytes": 34124718080,
+          "gpu": "NVIDIA GeForce RTX 5070 Ti Laptop GPU, 595.79, 12227 MiB, 53, 1552 MHz",
+          "powerSchemeGuid": "381b4222-f694-41f0-9685-ff5bb260df2e",
+          "browser": null,
+          "dpr": null,
+          "displayRefreshHz": null,
+          "measuredNetworkMbps": null,
+          "unavailable": "null means unmeasured; CPU synthetic runs do not measure browser, display or network."
+        },
+        "tickMs": {
+          "min": 60.2493000000004,
+          "max": 94.17790000000059,
+          "mean": 63.054141600000015,
+          "p50": 62.50770000000011,
+          "p95": 66.71239999999943,
+          "p99": 70.13599999999951
+        },
+        "roundMeans": [
+          62.84496699999997,
+          62.91999099999998,
+          62.40434799999997,
+          64.88068800000002,
+          62.220714000000044
+        ],
+        "deadlineMisses": 500,
+        "L": {
+          "min": 498939,
+          "max": 500947,
+          "mean": 499936.55,
+          "p50": 499960,
+          "p95": 500644,
+          "p99": 500826
+        },
+        "C": {
+          "min": 997836,
+          "max": 998148,
+          "mean": 997988.43,
+          "p50": 997990,
+          "p95": 998087,
+          "p99": 998140
+        },
+        "D": {
+          "min": 498642,
+          "max": 500709,
+          "mean": 499849.19,
+          "p50": 499847,
+          "p95": 500624,
+          "p99": 500688
+        },
+        "memory": [
+          {
+            "rss": 151031808,
+            "heapTotal": 11591680,
+            "heapUsed": 6624208,
+            "external": 107400317,
+            "arrayBuffers": 105053400
+          },
+          {
+            "rss": 151506944,
+            "heapTotal": 11067392,
+            "heapUsed": 6560944,
+            "external": 107400317,
+            "arrayBuffers": 105053400
+          },
+          {
+            "rss": 152297472,
+            "heapTotal": 11853824,
+            "heapUsed": 6594384,
+            "external": 107400317,
+            "arrayBuffers": 105053400
+          },
+          {
+            "rss": 152489984,
+            "heapTotal": 11067392,
+            "heapUsed": 6534768,
+            "external": 107400317,
+            "arrayBuffers": 105053400
+          },
+          {
+            "rss": 151728128,
+            "heapTotal": 11853824,
+            "heapUsed": 6570032,
+            "external": 107400317,
+            "arrayBuffers": 105053400
+          }
+        ]
+      },
+      "auto": {
+        "sourceHashes": {
+          "src/bots.js": "3dabe6e6c7fda5f32a0b6ea5efcd0b29e3cf8db61ba3d9fdd14413af7db3b9e4",
+          "src/cell-changes.js": "babc47b08024169a7a14b9f2c820ad636938c50d4df3dccfa6162ad0ce419faa",
+          "src/config.js": "4850f86a53b3951b7cc305995513546bba4010ac58df3d4961db0867baf37bf4",
+          "src/dormancy.js": "f0dd6d8de47911a8504908806df77f583991ecaa63eeb46958a6f205fc398889",
+          "src/engine.js": "52d4c1594eefe72f7df4aa4e95e66af3826e742b4487a9f30caee5ded1b8dade",
+          "src/metrics.js": "3f4112b485f35ad711123ba1983ebe2453614e912843c49712215ac3f2aa3cb1",
+          "src/ordered-cells.js": "d784ff7b62b29acb58183e786afec831a9cc8f44a4efd718ead82b904cf5b897",
+          "src/performance-config.js": "ec9ec33116914e835368dd3c5e3b6be4ca88a86d43d943a85bcfa97df6f84605",
+          "src/server.js": "eee7fc2435f7eaf750d090134b67f49958cfa061e5d9d81b4f9f21381961e0e4",
+          "src/spatial-index.js": "d981127ff45ac0124174cba1453e33dc373e2e63727585c1d8eb61ead056e8c8",
+          "src/evolution/backend.js": "bcfe56bf70ed2e03aaa3283c3261852e647bdf06298933242ba06c9c8b1b87f5",
+          "src/evolution/dense.js": "e0f534bf24cee010f4aee3e8ce28cb9ec273c28f924675b21a55f2fc5df6c340",
+          "src/evolution/rule-table.js": "8e3e7f070dc68f0ae41be99e2ee6195aac13f71ef7c132e55786926b66f038fc",
+          "src/evolution/select.js": "8b763c7230ab1647c385b9ea2053747995eb058b7b9b91fe0a7a596a21c88fe3",
+          "src/evolution/sparse.js": "3b1fa083de24a6d5ff27f7719db9af94f844f50ae9fca353798a0c6c3c835e81",
+          "public/cards.js": "bf7a82e78b4f362047aff776b1833d751b742a2a35d87818d160df82718b09a7",
+          "public/cards.json": "7cfbf1add05e53d3bf8a2216194d0f751d250dad601eccd064a37ce6d661a18f",
+          "public/territory.js": "3db4be208c15026c62a85104add4375ebedfbf3e59dcc8de3884e46d8ec00817"
+        },
+        "environment": {
+          "capturedAt": "2026-09-24T06:40:04.250Z",
+          "node": "v24.11.1",
+          "platform": "win32",
+          "os": "10.0.26200",
+          "arch": "x64",
+          "cpu": "13th Gen Intel(R) Core(TM) i9-13900HX",
+          "logicalCores": 32,
+          "memoryBytes": 34124718080,
+          "gpu": "NVIDIA GeForce RTX 5070 Ti Laptop GPU, 595.79, 12227 MiB, 54, 1665 MHz",
+          "powerSchemeGuid": "381b4222-f694-41f0-9685-ff5bb260df2e",
+          "browser": null,
+          "dpr": null,
+          "displayRefreshHz": null,
+          "measuredNetworkMbps": null,
+          "unavailable": "null means unmeasured; CPU synthetic runs do not measure browser, display or network."
+        },
+        "tickMs": {
+          "min": 46.29579999999987,
+          "max": 80.47530000000006,
+          "mean": 48.88617880000001,
+          "p50": 48.23069999999984,
+          "p95": 52.6576,
+          "p99": 57.585599999999886
+        },
+        "roundMeans": [
+          48.43180600000001,
+          48.39913300000005,
+          48.468215999999984,
+          50.398002999999996,
+          48.733736000000015
+        ],
+        "deadlineMisses": 82,
+        "L": {
+          "min": 498939,
+          "max": 500947,
+          "mean": 499936.55,
+          "p50": 499960,
+          "p95": 500644,
+          "p99": 500826
+        },
+        "C": {
+          "min": 997836,
+          "max": 998148,
+          "mean": 997988.43,
+          "p50": 997990,
+          "p95": 998087,
+          "p99": 998140
+        },
+        "D": {
+          "min": 498642,
+          "max": 500709,
+          "mean": 499849.19,
+          "p50": 499847,
+          "p95": 500624,
+          "p99": 500688
+        },
+        "memory": [
+          {
+            "rss": 124104704,
+            "heapTotal": 12115968,
+            "heapUsed": 7840112,
+            "external": 79495939,
+            "arrayBuffers": 77149022
+          },
+          {
+            "rss": 123920384,
+            "heapTotal": 11591680,
+            "heapUsed": 7819232,
+            "external": 79495939,
+            "arrayBuffers": 77149022
+          },
+          {
+            "rss": 152645632,
+            "heapTotal": 11067392,
+            "heapUsed": 6901672,
+            "external": 107494239,
+            "arrayBuffers": 105147322
+          },
+          {
+            "rss": 152371200,
+            "heapTotal": 11591680,
+            "heapUsed": 6847392,
+            "external": 107494239,
+            "arrayBuffers": 105147322
+          },
+          {
+            "rss": 122073088,
+            "heapTotal": 11329536,
+            "heapUsed": 6532320,
+            "external": 77498275,
+            "arrayBuffers": 75151358
+          }
+        ]
+      },
+      "dense": {
+        "sourceHashes": {
+          "src/bots.js": "3dabe6e6c7fda5f32a0b6ea5efcd0b29e3cf8db61ba3d9fdd14413af7db3b9e4",
+          "src/cell-changes.js": "babc47b08024169a7a14b9f2c820ad636938c50d4df3dccfa6162ad0ce419faa",
+          "src/config.js": "4850f86a53b3951b7cc305995513546bba4010ac58df3d4961db0867baf37bf4",
+          "src/dormancy.js": "f0dd6d8de47911a8504908806df77f583991ecaa63eeb46958a6f205fc398889",
+          "src/engine.js": "52d4c1594eefe72f7df4aa4e95e66af3826e742b4487a9f30caee5ded1b8dade",
+          "src/metrics.js": "3f4112b485f35ad711123ba1983ebe2453614e912843c49712215ac3f2aa3cb1",
+          "src/ordered-cells.js": "d784ff7b62b29acb58183e786afec831a9cc8f44a4efd718ead82b904cf5b897",
+          "src/performance-config.js": "ec9ec33116914e835368dd3c5e3b6be4ca88a86d43d943a85bcfa97df6f84605",
+          "src/server.js": "eee7fc2435f7eaf750d090134b67f49958cfa061e5d9d81b4f9f21381961e0e4",
+          "src/spatial-index.js": "d981127ff45ac0124174cba1453e33dc373e2e63727585c1d8eb61ead056e8c8",
+          "src/evolution/backend.js": "bcfe56bf70ed2e03aaa3283c3261852e647bdf06298933242ba06c9c8b1b87f5",
+          "src/evolution/dense.js": "e0f534bf24cee010f4aee3e8ce28cb9ec273c28f924675b21a55f2fc5df6c340",
+          "src/evolution/rule-table.js": "8e3e7f070dc68f0ae41be99e2ee6195aac13f71ef7c132e55786926b66f038fc",
+          "src/evolution/select.js": "8b763c7230ab1647c385b9ea2053747995eb058b7b9b91fe0a7a596a21c88fe3",
+          "src/evolution/sparse.js": "3b1fa083de24a6d5ff27f7719db9af94f844f50ae9fca353798a0c6c3c835e81",
+          "public/cards.js": "bf7a82e78b4f362047aff776b1833d751b742a2a35d87818d160df82718b09a7",
+          "public/cards.json": "7cfbf1add05e53d3bf8a2216194d0f751d250dad601eccd064a37ce6d661a18f",
+          "public/territory.js": "3db4be208c15026c62a85104add4375ebedfbf3e59dcc8de3884e46d8ec00817"
+        },
+        "environment": {
+          "capturedAt": "2026-09-24T06:40:10.737Z",
+          "node": "v24.11.1",
+          "platform": "win32",
+          "os": "10.0.26200",
+          "arch": "x64",
+          "cpu": "13th Gen Intel(R) Core(TM) i9-13900HX",
+          "logicalCores": 32,
+          "memoryBytes": 34124718080,
+          "gpu": "NVIDIA GeForce RTX 5070 Ti Laptop GPU, 595.79, 12227 MiB, 53, 735 MHz",
+          "powerSchemeGuid": "381b4222-f694-41f0-9685-ff5bb260df2e",
+          "browser": null,
+          "dpr": null,
+          "displayRefreshHz": null,
+          "measuredNetworkMbps": null,
+          "unavailable": "null means unmeasured; CPU synthetic runs do not measure browser, display or network."
+        },
+        "tickMs": {
+          "min": 49.56860000000006,
+          "max": 89.17620000000034,
+          "mean": 52.783058800000006,
+          "p50": 51.85959999999977,
+          "p95": 57.17569999999978,
+          "p99": 73.4348
+        },
+        "roundMeans": [
+          52.20330000000003,
+          51.336511000000016,
+          53.671717,
+          54.093088000000016,
+          52.61067800000003
+        ],
+        "deadlineMisses": 480,
+        "L": {
+          "min": 498939,
+          "max": 500947,
+          "mean": 499936.55,
+          "p50": 499960,
+          "p95": 500644,
+          "p99": 500826
+        },
+        "C": {
+          "min": 997836,
+          "max": 998148,
+          "mean": 997988.43,
+          "p50": 997990,
+          "p95": 998087,
+          "p99": 998140
+        },
+        "D": {
+          "min": 498642,
+          "max": 500709,
+          "mean": 499849.19,
+          "p50": 499847,
+          "p95": 500624,
+          "p99": 500688
+        },
+        "memory": [
+          {
+            "rss": 152252416,
+            "heapTotal": 11329536,
+            "heapUsed": 6904888,
+            "external": 107494239,
+            "arrayBuffers": 105147322
+          },
+          {
+            "rss": 152502272,
+            "heapTotal": 11329536,
+            "heapUsed": 6920288,
+            "external": 107494239,
+            "arrayBuffers": 105147322
+          },
+          {
+            "rss": 152317952,
+            "heapTotal": 11329536,
+            "heapUsed": 6930624,
+            "external": 107494239,
+            "arrayBuffers": 105147322
+          },
+          {
+            "rss": 125132800,
+            "heapTotal": 12115968,
+            "heapUsed": 7773432,
+            "external": 79495939,
+            "arrayBuffers": 77149022
+          },
+          {
+            "rss": 152375296,
+            "heapTotal": 11329536,
+            "heapUsed": 6982784,
+            "external": 107494239,
+            "arrayBuffers": 105147322
+          }
+        ]
+      },
+      "improvementPercent": 22.469519749992127
+    }
+  },
+  "visual": {
+    "status": "PASS",
+    "browser": "153.0.8010.53",
+    "comparisons": 188,
+    "sourceHashes": {
+      "renderer.js": "c0017b96e26beb4241bb71a6d05c536067337d4101de9d97fbdfec1f421655bf",
+      "world-texture.js": "f1bc597a8af343b971173a47464a99294e2db9b2f3aa55c9410c7847211ed84f",
+      "minimap-cache.js": "7d8372e7f96ae27ddc3339db7047ff6b5652df9227d8fd500d9fc5f534809a8c",
+      "territory.js": "3db4be208c15026c62a85104add4375ebedfbf3e59dcc8de3884e46d8ec00817"
+    }
+  },
+  "presentation": {
+    "controlled": {
+      "status": "PASS",
+      "burst": [
+        {
+          "generation": 0,
+          "state": 0,
+          "owner": 1
+        },
+        {
+          "generation": 1,
+          "state": 0,
+          "owner": 2
+        },
+        {
+          "generation": 2,
+          "state": 2,
+          "owner": 1
+        },
+        {
+          "generation": 3,
+          "state": 2,
+          "owner": 2
+        },
+        {
+          "generation": 4,
+          "state": 4,
+          "owner": 1
+        },
+        {
+          "generation": 5,
+          "state": 4,
+          "owner": 2
+        }
+      ],
+      "events": [
+        [
+          "presentation.recovery",
+          {
+            "from": -1,
+            "to": 0,
+            "interval": 1
+          }
+        ],
+        [
+          "presentation.recovery",
+          {
+            "from": -1,
+            "to": 10,
+            "interval": 1
+          }
+        ],
+        [
+          "presentation.failure",
+          {
+            "reason": "overflow",
+            "received": 12,
+            "displayed": 10,
+            "queued": 2
+          }
+        ],
+        [
+          "presentation.recovery",
+          {
+            "from": 10,
+            "to": 20,
+            "interval": 2
+          }
+        ],
+        [
+          "presentation.failure",
+          {
+            "reason": "hidden",
+            "received": 20,
+            "displayed": 20,
+            "queued": 0
+          }
+        ],
+        [
+          "presentation.recovery",
+          {
+            "from": 20,
+            "to": 30,
+            "interval": 3
+          }
+        ]
+      ],
+      "previews": [
+        {
+          "name": "initial",
+          "equal": true,
+          "reason": ""
+        },
+        {
+          "name": "energy",
+          "equal": true,
+          "reason": "能量不足"
+        },
+        {
+          "name": "eliminated",
+          "equal": true,
+          "reason": "当前无法部署"
+        },
+        {
+          "name": "node",
+          "equal": true,
+          "reason": ""
+        },
+        {
+          "name": "camera",
+          "equal": true,
+          "reason": ""
+        },
+        {
+          "name": "board",
+          "equal": true,
+          "reason": "位置已被占用"
+        },
+        {
+          "name": "pattern",
+          "equal": true,
+          "reason": "位置已被占用"
+        }
+      ],
+      "cached100CallsMs": 0.2000000011175871,
+      "uncached100CallsMs": 19.09999999962747
+    },
+    "live": {
+      "scope": "20Hz configured WebSocket + actual RAF; observed cadence may differ; 200ms delivery burst; synthetic visibility event; draw submission not physical presentation",
+      "status": "PASS",
+      "normalGenerationsThrough": 118,
+      "observedInputHz": 16.54282523883619,
+      "queueDepthMax": 4,
+      "waitMs": {
+        "min": 0.20000000018626451,
+        "max": 199.29999999981374,
+        "mean": 8.000833333353512,
+        "p50": 2.7999999998137355,
+        "p95": 10.5,
+        "p99": 188
+      },
+      "rafIntervalMs": {
+        "min": 2.899999999999636,
+        "max": 183.2,
+        "mean": 4.375353773584906,
+        "p50": 4.199999999999818,
+        "p95": 4.599999999999454,
+        "p99": 5
+      }
+    }
+  },
+  "crossover": [
+    {
+      "initialPopulation": 100000,
+      "locals": 0,
+      "sparse": {
+        "tickMs": {
+          "min": 2.419000000000011,
+          "max": 3.0480999999999767,
+          "mean": 2.76591666666666,
+          "p50": 2.747199999999964,
+          "p95": 3.0422999999999547,
+          "p99": 3.0480999999999767
+        },
+        "L": {
+          "min": 116000,
+          "max": 145000,
+          "mean": 130500,
+          "p50": 130000,
+          "p95": 144000,
+          "p99": 145000
+        },
+        "C": {
+          "min": 116000,
+          "max": 145000,
+          "mean": 130500,
+          "p50": 130000,
+          "p95": 144000,
+          "p99": 145000
+        },
+        "D": {
+          "min": 1000,
+          "max": 1000,
+          "mean": 1000,
+          "p50": 1000,
+          "p95": 1000,
+          "p99": 1000
+        }
+      },
+      "dense": {
+        "tickMs": {
+          "min": 7.6761000000000195,
+          "max": 9.153300000000002,
+          "mean": 8.281996666666666,
+          "p50": 8.272500000000036,
+          "p95": 8.983699999999999,
+          "p99": 9.153300000000002
+        },
+        "L": {
+          "min": 116000,
+          "max": 145000,
+          "mean": 130500,
+          "p50": 130000,
+          "p95": 144000,
+          "p99": 145000
+        },
+        "C": {
+          "min": 116000,
+          "max": 145000,
+          "mean": 130500,
+          "p50": 130000,
+          "p95": 144000,
+          "p99": 145000
+        },
+        "D": {
+          "min": 1000,
+          "max": 1000,
+          "mean": 1000,
+          "p50": 1000,
+          "p95": 1000,
+          "p99": 1000
+        }
+      }
+    },
+    {
+      "initialPopulation": 100000,
+      "locals": 1,
+      "sparse": {
+        "tickMs": {
+          "min": 2.8903999999999996,
+          "max": 4.039600000000007,
+          "mean": 3.3321433333333395,
+          "p50": 3.1875,
+          "p95": 3.995299999999986,
+          "p99": 4.039600000000007
+        },
+        "L": {
+          "min": 116000,
+          "max": 145000,
+          "mean": 130500,
+          "p50": 130000,
+          "p95": 144000,
+          "p99": 145000
+        },
+        "C": {
+          "min": 116000,
+          "max": 145000,
+          "mean": 130500,
+          "p50": 130000,
+          "p95": 144000,
+          "p99": 145000
+        },
+        "D": {
+          "min": 1000,
+          "max": 1000,
+          "mean": 1000,
+          "p50": 1000,
+          "p95": 1000,
+          "p99": 1000
+        }
+      },
+      "dense": {
+        "tickMs": {
+          "min": 8.878999999999962,
+          "max": 10.3553,
+          "mean": 9.543086666666662,
+          "p50": 9.541600000000017,
+          "p95": 10.200600000000009,
+          "p99": 10.3553
+        },
+        "L": {
+          "min": 116000,
+          "max": 145000,
+          "mean": 130500,
+          "p50": 130000,
+          "p95": 144000,
+          "p99": 145000
+        },
+        "C": {
+          "min": 116000,
+          "max": 145000,
+          "mean": 130500,
+          "p50": 130000,
+          "p95": 144000,
+          "p99": 145000
+        },
+        "D": {
+          "min": 1000,
+          "max": 1000,
+          "mean": 1000,
+          "p50": 1000,
+          "p95": 1000,
+          "p99": 1000
+        }
+      }
+    },
+    {
+      "initialPopulation": 100000,
+      "locals": 8,
+      "sparse": {
+        "tickMs": {
+          "min": 3.0531000000000006,
+          "max": 4.22120000000001,
+          "mean": 3.3725100000000063,
+          "p50": 3.296700000000044,
+          "p95": 3.8520000000000323,
+          "p99": 4.22120000000001
+        },
+        "L": {
+          "min": 116000,
+          "max": 145000,
+          "mean": 130500,
+          "p50": 130000,
+          "p95": 144000,
+          "p99": 145000
+        },
+        "C": {
+          "min": 116000,
+          "max": 145000,
+          "mean": 130500,
+          "p50": 130000,
+          "p95": 144000,
+          "p99": 145000
+        },
+        "D": {
+          "min": 1000,
+          "max": 1000,
+          "mean": 1000,
+          "p50": 1000,
+          "p95": 1000,
+          "p99": 1000
+        }
+      },
+      "dense": {
+        "tickMs": {
+          "min": 8.188199999999995,
+          "max": 9.634200000000021,
+          "mean": 8.786536666666667,
+          "p50": 8.767999999999915,
+          "p95": 9.36669999999998,
+          "p99": 9.634200000000021
+        },
+        "L": {
+          "min": 116000,
+          "max": 145000,
+          "mean": 130500,
+          "p50": 130000,
+          "p95": 144000,
+          "p99": 145000
+        },
+        "C": {
+          "min": 116000,
+          "max": 145000,
+          "mean": 130500,
+          "p50": 130000,
+          "p95": 144000,
+          "p99": 145000
+        },
+        "D": {
+          "min": 1000,
+          "max": 1000,
+          "mean": 1000,
+          "p50": 1000,
+          "p95": 1000,
+          "p99": 1000
+        }
+      }
+    },
+    {
+      "initialPopulation": 300000,
+      "locals": 0,
+      "sparse": {
+        "tickMs": {
+          "min": 6.735400000000027,
+          "max": 7.879199999999969,
+          "mean": 7.353606666666663,
+          "p50": 7.368399999999951,
+          "p95": 7.726200000000006,
+          "p99": 7.879199999999969
+        },
+        "L": {
+          "min": 312791,
+          "max": 341791,
+          "mean": 327291,
+          "p50": 326791,
+          "p95": 340791,
+          "p99": 341791
+        },
+        "C": {
+          "min": 313043,
+          "max": 342043,
+          "mean": 327543,
+          "p50": 327043,
+          "p95": 341043,
+          "p99": 342043
+        },
+        "D": {
+          "min": 1252,
+          "max": 1252,
+          "mean": 1252,
+          "p50": 1252,
+          "p95": 1252,
+          "p99": 1252
+        }
+      },
+      "dense": {
+        "tickMs": {
+          "min": 10.516300000000001,
+          "max": 11.916299999999978,
+          "mean": 11.121329999999999,
+          "p50": 11.072499999999991,
+          "p95": 11.66960000000006,
+          "p99": 11.916299999999978
+        },
+        "L": {
+          "min": 312791,
+          "max": 341791,
+          "mean": 327291,
+          "p50": 326791,
+          "p95": 340791,
+          "p99": 341791
+        },
+        "C": {
+          "min": 313043,
+          "max": 342043,
+          "mean": 327543,
+          "p50": 327043,
+          "p95": 341043,
+          "p99": 342043
+        },
+        "D": {
+          "min": 1252,
+          "max": 1252,
+          "mean": 1252,
+          "p50": 1252,
+          "p95": 1252,
+          "p99": 1252
+        }
+      }
+    },
+    {
+      "initialPopulation": 300000,
+      "locals": 1,
+      "sparse": {
+        "tickMs": {
+          "min": 8.574700000000007,
+          "max": 10.336000000000013,
+          "mean": 9.123290000000006,
+          "p50": 9.07990000000001,
+          "p95": 9.969299999999976,
+          "p99": 10.336000000000013
+        },
+        "L": {
+          "min": 312791,
+          "max": 341791,
+          "mean": 327291,
+          "p50": 326791,
+          "p95": 340791,
+          "p99": 341791
+        },
+        "C": {
+          "min": 313043,
+          "max": 342043,
+          "mean": 327543,
+          "p50": 327043,
+          "p95": 341043,
+          "p99": 342043
+        },
+        "D": {
+          "min": 1252,
+          "max": 1252,
+          "mean": 1252,
+          "p50": 1252,
+          "p95": 1252,
+          "p99": 1252
+        }
+      },
+      "dense": {
+        "tickMs": {
+          "min": 12.385499999999979,
+          "max": 14.038099999999986,
+          "mean": 13.136996666666676,
+          "p50": 13.092200000000048,
+          "p95": 13.876999999999953,
+          "p99": 14.038099999999986
+        },
+        "L": {
+          "min": 312791,
+          "max": 341791,
+          "mean": 327291,
+          "p50": 326791,
+          "p95": 340791,
+          "p99": 341791
+        },
+        "C": {
+          "min": 313043,
+          "max": 342043,
+          "mean": 327543,
+          "p50": 327043,
+          "p95": 341043,
+          "p99": 342043
+        },
+        "D": {
+          "min": 1252,
+          "max": 1252,
+          "mean": 1252,
+          "p50": 1252,
+          "p95": 1252,
+          "p99": 1252
+        }
+      }
+    },
+    {
+      "initialPopulation": 300000,
+      "locals": 8,
+      "sparse": {
+        "tickMs": {
+          "min": 8.266300000000001,
+          "max": 9.55940000000004,
+          "mean": 9.01478666666667,
+          "p50": 9.03690000000006,
+          "p95": 9.535199999999918,
+          "p99": 9.55940000000004
+        },
+        "L": {
+          "min": 312791,
+          "max": 341791,
+          "mean": 327291,
+          "p50": 326791,
+          "p95": 340791,
+          "p99": 341791
+        },
+        "C": {
+          "min": 313043,
+          "max": 342043,
+          "mean": 327543,
+          "p50": 327043,
+          "p95": 341043,
+          "p99": 342043
+        },
+        "D": {
+          "min": 1252,
+          "max": 1252,
+          "mean": 1252,
+          "p50": 1252,
+          "p95": 1252,
+          "p99": 1252
+        }
+      },
+      "dense": {
+        "tickMs": {
+          "min": 13.030499999999961,
+          "max": 15.656599999999969,
+          "mean": 13.668536666666657,
+          "p50": 13.49739999999997,
+          "p95": 14.589200000000005,
+          "p99": 15.656599999999969
+        },
+        "L": {
+          "min": 312791,
+          "max": 341791,
+          "mean": 327291,
+          "p50": 326791,
+          "p95": 340791,
+          "p99": 341791
+        },
+        "C": {
+          "min": 313043,
+          "max": 342043,
+          "mean": 327543,
+          "p50": 327043,
+          "p95": 341043,
+          "p99": 342043
+        },
+        "D": {
+          "min": 1252,
+          "max": 1252,
+          "mean": 1252,
+          "p50": 1252,
+          "p95": 1252,
+          "p99": 1252
+        }
+      }
+    },
+    {
+      "initialPopulation": 500000,
+      "locals": 0,
+      "sparse": {
+        "tickMs": {
+          "min": 11.813400000000001,
+          "max": 12.993600000000015,
+          "mean": 12.449343333333347,
+          "p50": 12.471100000000092,
+          "p95": 12.887800000000084,
+          "p99": 12.993600000000015
+        },
+        "L": {
+          "min": 512791,
+          "max": 541791,
+          "mean": 527291,
+          "p50": 526791,
+          "p95": 540791,
+          "p99": 541791
+        },
+        "C": {
+          "min": 513043,
+          "max": 542043,
+          "mean": 527543,
+          "p50": 527043,
+          "p95": 541043,
+          "p99": 542043
+        },
+        "D": {
+          "min": 1252,
+          "max": 1252,
+          "mean": 1252,
+          "p50": 1252,
+          "p95": 1252,
+          "p99": 1252
+        }
+      },
+      "dense": {
+        "tickMs": {
+          "min": 15.334900000000005,
+          "max": 17.068300000000022,
+          "mean": 16.111773333333343,
+          "p50": 16.040099999999995,
+          "p95": 16.7509,
+          "p99": 17.068300000000022
+        },
+        "L": {
+          "min": 512791,
+          "max": 541791,
+          "mean": 527291,
+          "p50": 526791,
+          "p95": 540791,
+          "p99": 541791
+        },
+        "C": {
+          "min": 513043,
+          "max": 542043,
+          "mean": 527543,
+          "p50": 527043,
+          "p95": 541043,
+          "p99": 542043
+        },
+        "D": {
+          "min": 1252,
+          "max": 1252,
+          "mean": 1252,
+          "p50": 1252,
+          "p95": 1252,
+          "p99": 1252
+        }
+      }
+    },
+    {
+      "initialPopulation": 500000,
+      "locals": 1,
+      "sparse": {
+        "tickMs": {
+          "min": 14.790099999999995,
+          "max": 16.674900000000093,
+          "mean": 15.482373333333348,
+          "p50": 15.402799999999957,
+          "p95": 16.41210000000001,
+          "p99": 16.674900000000093
+        },
+        "L": {
+          "min": 494990,
+          "max": 522666,
+          "mean": 508620.23333333334,
+          "p50": 508789,
+          "p95": 522004,
+          "p99": 522666
+        },
+        "C": {
+          "min": 497414,
+          "max": 525554,
+          "mean": 510976.8333333333,
+          "p50": 510370,
+          "p95": 524308,
+          "p99": 525554
+        },
+        "D": {
+          "min": 1767,
+          "max": 4646,
+          "mean": 2674.266666666667,
+          "p50": 2340,
+          "p95": 4211,
+          "p99": 4646
+        }
+      },
+      "dense": {
+        "tickMs": {
+          "min": 18.1884,
+          "max": 24.82490000000007,
+          "mean": 19.206419999999994,
+          "p50": 18.970799999999997,
+          "p95": 20.022100000000023,
+          "p99": 24.82490000000007
+        },
+        "L": {
+          "min": 494990,
+          "max": 522666,
+          "mean": 508620.23333333334,
+          "p50": 508789,
+          "p95": 522004,
+          "p99": 522666
+        },
+        "C": {
+          "min": 497414,
+          "max": 525554,
+          "mean": 510976.8333333333,
+          "p50": 510370,
+          "p95": 524308,
+          "p99": 525554
+        },
+        "D": {
+          "min": 1767,
+          "max": 4646,
+          "mean": 2674.266666666667,
+          "p50": 2340,
+          "p95": 4211,
+          "p99": 4646
+        }
+      }
+    },
+    {
+      "initialPopulation": 500000,
+      "locals": 8,
+      "sparse": {
+        "tickMs": {
+          "min": 14.185500000000047,
+          "max": 15.958100000000059,
+          "mean": 14.904873333333336,
+          "p50": 14.918099999999981,
+          "p95": 15.949299999999994,
+          "p99": 15.958100000000059
+        },
+        "L": {
+          "min": 470049,
+          "max": 497063,
+          "mean": 483635.5333333333,
+          "p50": 483925,
+          "p95": 496317,
+          "p99": 497063
+        },
+        "C": {
+          "min": 473837,
+          "max": 503373,
+          "mean": 488668.13333333336,
+          "p50": 488089,
+          "p95": 501129,
+          "p99": 503373
+        },
+        "D": {
+          "min": 2460,
+          "max": 13200,
+          "mean": 5615.333333333333,
+          "p50": 4990,
+          "p95": 11330,
+          "p99": 13200
+        }
+      },
+      "dense": {
+        "tickMs": {
+          "min": 17.046600000000012,
+          "max": 19.662200000000098,
+          "mean": 18.30585666666668,
+          "p50": 18.16999999999996,
+          "p95": 19.643800000000056,
+          "p99": 19.662200000000098
+        },
+        "L": {
+          "min": 470049,
+          "max": 497063,
+          "mean": 483635.5333333333,
+          "p50": 483925,
+          "p95": 496317,
+          "p99": 497063
+        },
+        "C": {
+          "min": 473837,
+          "max": 503373,
+          "mean": 488668.13333333336,
+          "p50": 488089,
+          "p95": 501129,
+          "p99": 503373
+        },
+        "D": {
+          "min": 2460,
+          "max": 13200,
+          "mean": 5615.333333333333,
+          "p50": 4990,
+          "p95": 11330,
+          "p99": 13200
+        }
+      }
+    },
+    {
+      "initialPopulation": 800000,
+      "locals": 0,
+      "sparse": {
+        "tickMs": {
+          "min": 18.315699999999993,
+          "max": 19.942800000000034,
+          "mean": 19.33640666666667,
+          "p50": 19.42730000000006,
+          "p95": 19.884199999999964,
+          "p99": 19.942800000000034
+        },
+        "L": {
+          "min": 810151,
+          "max": 835789,
+          "mean": 822877.8666666667,
+          "p50": 822391,
+          "p95": 834875,
+          "p99": 835789
+        },
+        "C": {
+          "min": 810635,
+          "max": 836425,
+          "mean": 823430.2666666667,
+          "p50": 822939,
+          "p95": 835503,
+          "p99": 836425
+        },
+        "D": {
+          "min": 1358,
+          "max": 1550,
+          "mean": 1436.1333333333334,
+          "p50": 1426,
+          "p95": 1538,
+          "p99": 1550
+        }
+      },
+      "dense": {
+        "tickMs": {
+          "min": 19.860300000000052,
+          "max": 21.75229999999999,
+          "mean": 20.821546666666688,
+          "p50": 20.870400000000018,
+          "p95": 21.596400000000017,
+          "p99": 21.75229999999999
+        },
+        "L": {
+          "min": 810151,
+          "max": 835789,
+          "mean": 822877.8666666667,
+          "p50": 822391,
+          "p95": 834875,
+          "p99": 835789
+        },
+        "C": {
+          "min": 810635,
+          "max": 836425,
+          "mean": 823430.2666666667,
+          "p50": 822939,
+          "p95": 835503,
+          "p99": 836425
+        },
+        "D": {
+          "min": 1358,
+          "max": 1550,
+          "mean": 1436.1333333333334,
+          "p50": 1426,
+          "p95": 1538,
+          "p99": 1550
+        }
+      }
+    },
+    {
+      "initialPopulation": 800000,
+      "locals": 1,
+      "sparse": {
+        "tickMs": {
+          "min": 22.96029999999996,
+          "max": 24.857799999999997,
+          "mean": 24.207699999999996,
+          "p50": 24.24440000000004,
+          "p95": 24.796800000000076,
+          "p99": 24.857799999999997
+        },
+        "L": {
+          "min": 790278,
+          "max": 816216,
+          "mean": 803153.6666666666,
+          "p50": 802662,
+          "p95": 815326,
+          "p99": 816216
+        },
+        "C": {
+          "min": 791634,
+          "max": 818060,
+          "mean": 804769.2666666667,
+          "p50": 804218,
+          "p95": 817074,
+          "p99": 818060
+        },
+        "D": {
+          "min": 1422,
+          "max": 1926,
+          "mean": 1665.0666666666666,
+          "p50": 1638,
+          "p95": 1870,
+          "p99": 1926
+        }
+      },
+      "dense": {
+        "tickMs": {
+          "min": 22.14799999999991,
+          "max": 24.203899999999976,
+          "mean": 23.29580333333331,
+          "p50": 23.350799999999936,
+          "p95": 24.129099999999994,
+          "p99": 24.203899999999976
+        },
+        "L": {
+          "min": 790278,
+          "max": 816216,
+          "mean": 803153.6666666666,
+          "p50": 802662,
+          "p95": 815326,
+          "p99": 816216
+        },
+        "C": {
+          "min": 791634,
+          "max": 818060,
+          "mean": 804769.2666666667,
+          "p50": 804218,
+          "p95": 817074,
+          "p99": 818060
+        },
+        "D": {
+          "min": 1422,
+          "max": 1926,
+          "mean": 1665.0666666666666,
+          "p50": 1638,
+          "p95": 1870,
+          "p99": 1926
+        }
+      }
+    },
+    {
+      "initialPopulation": 800000,
+      "locals": 8,
+      "sparse": {
+        "tickMs": {
+          "min": 22.69240000000002,
+          "max": 25.720399999999927,
+          "mean": 23.740996666666643,
+          "p50": 23.545000000000073,
+          "p95": 25.14559999999983,
+          "p99": 25.720399999999927
+        },
+        "L": {
+          "min": 763111,
+          "max": 789369,
+          "mean": 776071.4666666667,
+          "p50": 775523,
+          "p95": 788551,
+          "p99": 789369
+        },
+        "C": {
+          "min": 765993,
+          "max": 793431,
+          "mean": 779540,
+          "p50": 779081,
+          "p95": 792437,
+          "p99": 793431
+        },
+        "D": {
+          "min": 1730,
+          "max": 2670,
+          "mean": 2168.4,
+          "p50": 2174,
+          "p95": 2586,
+          "p99": 2670
+        }
+      },
+      "dense": {
+        "tickMs": {
+          "min": 23.537599999999998,
+          "max": 26.08019999999999,
+          "mean": 24.88880333333335,
+          "p50": 24.951900000000023,
+          "p95": 25.591300000000047,
+          "p99": 26.08019999999999
+        },
+        "L": {
+          "min": 763111,
+          "max": 789369,
+          "mean": 776071.4666666667,
+          "p50": 775523,
+          "p95": 788551,
+          "p99": 789369
+        },
+        "C": {
+          "min": 765993,
+          "max": 793431,
+          "mean": 779540,
+          "p50": 779081,
+          "p95": 792437,
+          "p99": 793431
+        },
+        "D": {
+          "min": 1730,
+          "max": 2670,
+          "mean": 2168.4,
+          "p50": 2174,
+          "p95": 2586,
+          "p99": 2670
+        }
+      }
+    }
+  ],
+  "alternating": {
+    "scope": "P04 forced switch every generation, all samples including switches",
+    "tickMs": {
+      "min": 46.15730000000076,
+      "max": 59.70670000000018,
+      "mean": 49.790254000000026,
+      "p50": 49.72400000000016,
+      "p95": 53.097999999999956,
+      "p99": 58.17530000000079
+    },
+    "deadlineMisses": 46
+  }
+}

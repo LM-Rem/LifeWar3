@@ -730,6 +730,19 @@ function syncSettings() {
 for(const name of ['grid','ranges','motion','sound'])$('#setting-'+name).onchange=e=>{settings[name]=e.target.checked;syncSettings();sound();};
 $('#toggle-sound').onclick=()=>{settings.sound=!settings.sound;syncSettings();sound();};syncSettings();
 
+battlefield.onPresentedState=msg=>onMessage({...msg,type:'presented_state'});
+battlefield.onPresented=generation=>{$('#generation').textContent='GEN '+String(generation).padStart(6,'0');};
+let recoveryTimer;
+function requestPresentationRecovery(){
+  clearTimeout(recoveryTimer);
+  if(document.hidden)return;
+  if(socket?.readyState===WebSocket.OPEN)socket.send(JSON.stringify({type:'resync'}));
+  recoveryTimer=setTimeout(()=>{if(battlefield.presentation.waiting&&!document.hidden&&page==='game')requestPresentationRecovery();},1000);
+}
+battlefield.onRecovery=requestPresentationRecovery;
+battlefield.onPresentationEvent=(name,value)=>{if(name==='presentation.recovery')clearTimeout(recoveryTimer);if(name==='presentation.failure'&&value.reason!=='hidden')toast('画面同步超出当前处理能力，正在恢复最新状态',true);};
+document.addEventListener('visibilitychange',()=>battlefield.presentation.visibility(document.hidden));
+
 async function connect() {
   if(socket?.readyState===WebSocket.OPEN)return;
   if(connectionPromise)return connectionPromise;
@@ -737,13 +750,14 @@ async function connect() {
   connectionPromise=new Promise((resolve,reject)=>{
     const ws=new WebSocket(`${location.protocol==='https:'?'wss:':'ws:'}//${location.host}/ws${browserMetrics ? '?trace=1' : ''}`);socket=ws;ws.binaryType='arraybuffer';
     ws.onopen=()=>{connectionPromise=null;retries=0;$('#connection-status').textContent='已连接 · 局域网服务器';$('#connection-banner').classList.add('hidden');if(session)ws.send(JSON.stringify({type:'resume',...session}));resolve();};
-    ws.onmessage=e=>{if(e.data instanceof ArrayBuffer)battlefield.updatePacket(e.data);else{
+    ws.onmessage=e=>{if(ws!==socket)return;if(e.data instanceof ArrayBuffer)battlefield.receivePacket(e.data);else{
       const traceStart=browserMetrics?browserMetrics.now():0;
       try{onMessage(JSON.parse(e.data));}catch(err){console.error('Message error',err);}
       finally{if(browserMetrics)browserMetrics.duration('json.decodeDispatch.ms',traceStart,battlefield.generation);}
     }};
     ws.onerror=()=>{if(ws.readyState!==WebSocket.OPEN)reject(new Error('无法连接服务器，请确认服务器仍在运行'));};
     ws.onclose=e=>{
+      if(ws!==socket)return;
       connectionPromise=null;$('#connection-status').textContent='服务器连接中断';
       if(e.code===4001){session=null;saveStorage('lifewar.session',null,sessionStorage);toast('此会话已在其他页面恢复',true);showPage('lobby');return;}
       if(page==='game')$('#connection-banner').classList.remove('hidden');
@@ -753,7 +767,7 @@ async function connect() {
   });
   return connectionPromise;
 }
-async function send(message) { try { await connect();socket.send(JSON.stringify(message));return true; }catch(e){toast(e.message,true);return false;} }
+async function send(message) { try { await connect();if(['deploy','play_card'].includes(message.type))browserMetrics?.record('action.generationLag',Math.max(0,battlefield.presentation.received-battlefield.generation),battlefield.generation);socket.send(JSON.stringify(message));return true; }catch(e){toast(e.message,true);return false;} }
 const getName=()=>{const name=$('#commander-name').value.trim()||'指挥官';saveStorage('lifewar.name',name);return name;};
 function onMessage(msg) {
   switch(msg.type){
@@ -771,20 +785,21 @@ function onMessage(msg) {
       if (typeof browserMetrics !== 'undefined' && browserMetrics) browserMetrics.resetEpoch(msg.startedAt);
       state=null;pendingCardPlay=false;shownDraftGen=0;renderCards(true);
       playerId=msg.id;if(msg.rules?.hz)gameHz=msg.rules.hz;if(msg.rules?.baseHP){maxHP=msg.rules.baseHP;battlefield.baseHP=maxHP;}if(msg.rules?.maxEnergy)maxEnergy=msg.rules.maxEnergy;if(msg.rules?.regen)energyRegen=msg.rules.regen;if(msg.rules?.nodeRegen)energyNodeRegen=msg.rules.nodeRegen;if(msg.rules?.playerCells)battlefield.playerCells=msg.rules.playerCells;if(msg.rules?.baseHitRadius)battlefield.baseHitRadius=msg.rules.baseHitRadius;if(msg.rules?.captureTime)battlefield.captureTime=msg.rules.captureTime;startedAt=msg.startedAt||Date.now();battlefield.me=playerId;battlefield.reset();eventIds.clear();resultShown=false;state=null;closeDialogs();showPage('game');renderPatterns();if(selected)selectPattern(selected);sound('capture');break;
-    case 'state':{
+    case 'state':battlefield.receiveState(msg);break;
+    case 'presented_state':{
       const first=!state;
       if(!first&&typeof msg.dormancyThreshold==='number'&&lastDormancyThreshold!==null&&msg.dormancyThreshold<lastDormancyThreshold){
         showDormancyNotice(lastDormancyThreshold,msg.dormancyThreshold);
       }
       if(typeof msg.dormancyThreshold==='number')lastDormancyThreshold=msg.dormancyThreshold;
-      state=msg;battlefield.setState(state);
+      state=msg;
       renderCards();if(msg.cardDraft)showCardDraft(msg.cardDraft);else { $('#open-draft').classList.add('hidden'); if($('#card-draft-dialog').open)$('#card-draft-dialog').close(); }
       if(first)battlefield.focusBase();updateGameHUD();break;
     }
     case 'card_picked': if (msg.playerId === playerId) { $('#open-draft').classList.add('hidden'); if($('#card-draft-dialog').open)$('#card-draft-dialog').close(); } break;
     case 'card_played': if (msg.playerId === playerId) { pendingCardPlay = false; battlefield.cardTarget = null; } break;
     case 'deployed':battlefield.effect(msg.x,msg.y);sound('deploy');if(state){const me=state.players.find(p=>p.id===playerId);if(me)me.energy=Math.max(0,me.energy-msg.cost);}break;
-    case 'error':if(pendingCardPlay){const target=pendingCardPlay.target;pendingCardPlay=false;renderCards(true);battlefield.cardTarget=target;}toast(msg.message,true);break;
+    case 'error':browserMetrics?.record('action.rejectedWithBacklog',Math.max(0,battlefield.presentation.received-battlefield.generation),battlefield.generation);if(pendingCardPlay){const target=pendingCardPlay.target;pendingCardPlay=false;renderCards(true);battlefield.cardTarget=target;}toast(msg.message,true);break;
     case 'pong':latency=Math.max(0,Date.now()-msg.time);$('#ping').textContent=latency+' ms';break;
     case 'resume_failed':session=null;room=null;saveStorage('lifewar.session',null,sessionStorage);if(page==='game'){showPage('lobby');toast('原对局已结束或服务器已重启',true);}renderRoom();break;
     case 'left':session=null;room=null;state=null;saveStorage('lifewar.session',null,sessionStorage);closeDialogs();showPage('lobby');renderRoom();send({type:'list'});break;

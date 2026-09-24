@@ -1,0 +1,906 @@
+{
+  "drawSeconds": [
+    60,
+    180,
+    300,
+    420,
+    540
+  ],
+  "draftSeconds": 30,
+  "lawWarningSeconds": 1,
+  "cards": [
+    {
+      "id": "great_flood",
+      "type": "law",
+      "name": "大爆发",
+      "pool": "early",
+      "desc": "B3/S012345678：已有细胞永生，仅三邻居位置出生。3 秒。",
+      "effect": {
+        "kind": "rule",
+        "birth": [
+          3
+        ],
+        "survival": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "seconds": 3
+      }
+    },
+    {
+      "id": "great_death",
+      "type": "law",
+      "name": "孤岛法则",
+      "pool": "early",
+      "desc": "B3/S0：只有零邻居活细胞存活，三邻居空格出生。3 秒。",
+      "effect": {
+        "kind": "rule",
+        "birth": [
+          3
+        ],
+        "survival": [
+          0
+        ],
+        "seconds": 3
+      }
+    },
+    {
+      "id": "chaos_epoch",
+      "type": "law",
+      "name": "混沌纪元",
+      "pool": "early",
+      "desc": "B36/S23：增加六邻居出生，改变高密度结构的演化。4 秒。",
+      "effect": {
+        "kind": "rule",
+        "birth": [
+          3,
+          6
+        ],
+        "survival": [
+          2,
+          3
+        ],
+        "seconds": 4
+      }
+    },
+    {
+      "id": "silent_law",
+      "type": "law",
+      "name": "寂静法则",
+      "pool": "mid",
+      "desc": "B3/S：所有旧细胞死亡，仅三邻居空格出生。3 秒。",
+      "effect": {
+        "kind": "rule",
+        "birth": [
+          3
+        ],
+        "survival": [],
+        "seconds": 3
+      }
+    },
+    {
+      "id": "collapse",
+      "type": "law",
+      "name": "倒退",
+      "pool": "mid",
+      "desc": "B/S23：没有新生，只有两或三邻居的细胞存活。5 秒。",
+      "effect": {
+        "kind": "rule",
+        "birth": [],
+        "survival": [
+          2,
+          3
+        ],
+        "seconds": 5
+      }
+    },
+    {
+      "id": "void",
+      "type": "law",
+      "name": "虚空",
+      "pool": "late",
+      "desc": "B/S：全场细胞消亡且无法繁殖，基地和领地保留。2 秒。",
+      "effect": {
+        "kind": "rule",
+        "birth": [],
+        "survival": [],
+        "seconds": 2
+      }
+    },
+    {
+      "id": "eternal_flood",
+      "type": "law",
+      "name": "永恒洪水",
+      "pool": "late",
+      "desc": "B12345678/S012345678：有邻居就出生，旧细胞永生，演化不受容量限制。3 秒。",
+      "effect": {
+        "kind": "rule",
+        "birth": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "survival": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "seconds": 3
+      }
+    },
+    {
+      "id": "energy_burst",
+      "type": "buff",
+      "name": "能量爆发",
+      "pool": "early",
+      "desc": "立即获得基础能量上限的 35%，不超过当前上限。",
+      "effect": {
+        "kind": "energy",
+        "fraction": 0.35
+      }
+    },
+    {
+      "id": "energy_full",
+      "type": "buff",
+      "name": "能量涌动",
+      "pool": "late",
+      "desc": "立即回复至当前实际能量上限。",
+      "effect": {
+        "kind": "energy",
+        "full": true
+      }
+    },
+    {
+      "id": "energy_overload",
+      "type": "buff",
+      "name": "过载协议",
+      "pool": "mid",
+      "desc": "能量上限增加基础上限的 25%，并获得基础上限的 35% 能量，持续 20 秒。",
+      "effect": {
+        "kind": "buff",
+        "stat": "maxEnergy",
+        "seconds": 20,
+        "capacityFraction": 0.25,
+        "energyFraction": 0.35
+      }
+    },
+    {
+      "id": "overclock",
+      "type": "buff",
+      "name": "超频",
+      "pool": "early",
+      "desc": "基础与节点能量回复翻倍，持续 30 秒。",
+      "effect": {
+        "kind": "buff",
+        "stat": "regen",
+        "multiplier": 2,
+        "seconds": 30
+      }
+    },
+    {
+      "id": "flash_deploy",
+      "type": "buff",
+      "name": "闪电部署",
+      "pool": "early",
+      "desc": "30 秒内下次部署无视冷却，最多减免基础能量上限的 50%；超出部分正常付费，成功才消耗。",
+      "effect": {
+        "kind": "buff",
+        "stat": "freeDeploy",
+        "seconds": 30,
+        "charges": 1,
+        "discountFraction": 0.5
+      }
+    },
+    {
+      "id": "engineering",
+      "type": "buff",
+      "name": "工程展开",
+      "pool": "mid",
+      "desc": "15 秒内部署费用减半，按整个图案向上取整。",
+      "effect": {
+        "kind": "buff",
+        "stat": "deployCost",
+        "multiplier": 0.5,
+        "seconds": 15
+      }
+    },
+    {
+      "id": "border_drop",
+      "type": "buff",
+      "name": "越界投放",
+      "pool": "mid",
+      "desc": "30 秒内一次部署可跨入与己方领地共享边的中立节点分区；消耗正常能量。",
+      "effect": {
+        "kind": "buff",
+        "stat": "neutralDeploy",
+        "seconds": 30,
+        "charges": 1
+      }
+    },
+    {
+      "id": "rapid_capture",
+      "type": "buff",
+      "name": "快速占领",
+      "pool": "early",
+      "desc": "占领进度推进速度翻倍，持续 30 秒。",
+      "effect": {
+        "kind": "buff",
+        "stat": "capture",
+        "multiplier": 2,
+        "seconds": 30
+      }
+    },
+    {
+      "id": "fortify",
+      "type": "buff",
+      "name": "领地固化",
+      "pool": "mid",
+      "desc": "20 秒内，己方已开始的占领在争夺时仍推进；必须持续有己方细胞接触。",
+      "effect": {
+        "kind": "buff",
+        "stat": "contest",
+        "seconds": 20
+      }
+    },
+    {
+      "id": "shield",
+      "type": "buff",
+      "name": "核心护盾",
+      "pool": "mid",
+      "desc": "核心免疫细胞接触与节点压制伤害 8 秒，接触的敌细胞仍被消耗。",
+      "effect": {
+        "kind": "buff",
+        "stat": "shield",
+        "seconds": 8
+      }
+    },
+    {
+      "id": "repair",
+      "type": "buff",
+      "name": "核心修复",
+      "pool": "early",
+      "desc": "立即修复核心耐久上限的 25%，不超过上限、不能复活。",
+      "effect": {
+        "kind": "repair",
+        "fraction": 0.25
+      }
+    },
+    {
+      "id": "growth",
+      "type": "buff",
+      "name": "增殖协议",
+      "pool": "late",
+      "desc": "部署容量增加 6000，持续 45 秒；只影响部署许可，不限制自然演化。",
+      "effect": {
+        "kind": "buff",
+        "stat": "capacity",
+        "amount": 6000,
+        "seconds": 45
+      }
+    },
+    {
+      "id": "entropy",
+      "type": "buff",
+      "name": "熵减",
+      "pool": "late",
+      "desc": "己方细胞免疫休眠清理 30 秒；仍正常演化、受伤和被净化。",
+      "effect": {
+        "kind": "buff",
+        "stat": "dormancy",
+        "seconds": 30
+      }
+    },
+    {
+      "id": "purge",
+      "type": "item",
+      "name": "净化",
+      "pool": "early",
+      "desc": "清除指定位置半径 20 格的全部细胞，不分敌我。",
+      "effect": {
+        "kind": "purge",
+        "radius": 20
+      }
+    },
+    {
+      "id": "purge_large",
+      "type": "item",
+      "name": "大净化",
+      "pool": "mid",
+      "desc": "清除指定位置半径 30 格的全部细胞，不分敌我。",
+      "effect": {
+        "kind": "purge",
+        "radius": 30
+      }
+    },
+    {
+      "id": "purge_huge",
+      "type": "item",
+      "name": "湮灭",
+      "pool": "late",
+      "desc": "清除指定位置半径 40 格的全部细胞，不分敌我。",
+      "effect": {
+        "kind": "purge",
+        "radius": 40
+      }
+    },
+    {
+      "id": "seed",
+      "type": "item",
+      "name": "播种",
+      "pool": "mid",
+      "desc": "免费播种四艘重型飞船（52 细胞），可越界；不能覆盖细胞、越出地图或进入敌核心保护区。",
+      "effect": {
+        "kind": "seed",
+        "pattern": [
+          [
+            3,
+            0
+          ],
+          [
+            4,
+            0
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            6,
+            1
+          ],
+          [
+            0,
+            2
+          ],
+          [
+            0,
+            3
+          ],
+          [
+            6,
+            3
+          ],
+          [
+            0,
+            4
+          ],
+          [
+            1,
+            4
+          ],
+          [
+            2,
+            4
+          ],
+          [
+            3,
+            4
+          ],
+          [
+            4,
+            4
+          ],
+          [
+            5,
+            4
+          ],
+          [
+            3,
+            10
+          ],
+          [
+            4,
+            10
+          ],
+          [
+            1,
+            11
+          ],
+          [
+            6,
+            11
+          ],
+          [
+            0,
+            12
+          ],
+          [
+            0,
+            13
+          ],
+          [
+            6,
+            13
+          ],
+          [
+            0,
+            14
+          ],
+          [
+            1,
+            14
+          ],
+          [
+            2,
+            14
+          ],
+          [
+            3,
+            14
+          ],
+          [
+            4,
+            14
+          ],
+          [
+            5,
+            14
+          ],
+          [
+            17,
+            0
+          ],
+          [
+            18,
+            0
+          ],
+          [
+            15,
+            1
+          ],
+          [
+            20,
+            1
+          ],
+          [
+            14,
+            2
+          ],
+          [
+            14,
+            3
+          ],
+          [
+            20,
+            3
+          ],
+          [
+            14,
+            4
+          ],
+          [
+            15,
+            4
+          ],
+          [
+            16,
+            4
+          ],
+          [
+            17,
+            4
+          ],
+          [
+            18,
+            4
+          ],
+          [
+            19,
+            4
+          ],
+          [
+            17,
+            10
+          ],
+          [
+            18,
+            10
+          ],
+          [
+            15,
+            11
+          ],
+          [
+            20,
+            11
+          ],
+          [
+            14,
+            12
+          ],
+          [
+            14,
+            13
+          ],
+          [
+            20,
+            13
+          ],
+          [
+            14,
+            14
+          ],
+          [
+            15,
+            14
+          ],
+          [
+            16,
+            14
+          ],
+          [
+            17,
+            14
+          ],
+          [
+            18,
+            14
+          ],
+          [
+            19,
+            14
+          ]
+        ],
+        "radius": 12
+      }
+    },
+    {
+      "id": "nebula",
+      "type": "item",
+      "name": "星云",
+      "pool": "early",
+      "desc": "在指定圆域的空格随机播种己方细胞（25% 密度），可越界；整圈避开敌核心保护区。",
+      "effect": {
+        "kind": "nebula",
+        "radius": 12,
+        "density": 0.25
+      }
+    },
+    {
+      "id": "corrosion",
+      "type": "item",
+      "name": "腐蚀",
+      "pool": "late",
+      "desc": "指定圆域 B/S，5 秒内双方细胞都无法存活或出生。局部法则优先于全局法则。",
+      "effect": {
+        "kind": "localRule",
+        "birth": [],
+        "survival": [],
+        "radius": 24,
+        "seconds": 5
+      }
+    },
+    {
+      "id": "random_law",
+      "name": "概率法则",
+      "pool": "early",
+      "type": "law",
+      "desc": "从带权规则池抽取一种 B/S 法则，选牌时公开实际规则。",
+      "effect": {
+        "kind": "randomRule",
+        "seconds": 4,
+        "variants": [
+          {
+            "birth": [
+              3,
+              8
+            ],
+            "survival": [
+              2,
+              3
+            ],
+            "weight": 30
+          },
+          {
+            "birth": [
+              3,
+              6
+            ],
+            "survival": [
+              2,
+              3
+            ],
+            "weight": 20
+          },
+          {
+            "birth": [
+              3,
+              6,
+              7,
+              8
+            ],
+            "survival": [
+              3,
+              4,
+              6,
+              7,
+              8
+            ],
+            "weight": 15
+          },
+          {
+            "birth": [
+              3
+            ],
+            "survival": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "weight": 15
+          },
+          {
+            "birth": [
+              3,
+              6,
+              8
+            ],
+            "survival": [
+              2,
+              4,
+              5
+            ],
+            "weight": 10
+          },
+          {
+            "birth": [
+              2
+            ],
+            "survival": [
+              0
+            ],
+            "weight": 5
+          },
+          {
+            "birth": [
+              1,
+              3,
+              5,
+              7
+            ],
+            "survival": [
+              1,
+              3,
+              5,
+              7
+            ],
+            "weight": 5
+          }
+        ]
+      }
+    },
+    {
+      "id": "random_epoch",
+      "name": "异变纪元",
+      "pool": "mid",
+      "type": "law",
+      "desc": "从带权规则池抽取一种 B/S 法则，选牌时公开实际规则。",
+      "effect": {
+        "kind": "randomRule",
+        "seconds": 6,
+        "variants": [
+          {
+            "birth": [
+              3,
+              8
+            ],
+            "survival": [
+              2,
+              3
+            ],
+            "weight": 30
+          },
+          {
+            "birth": [
+              3,
+              6
+            ],
+            "survival": [
+              2,
+              3
+            ],
+            "weight": 20
+          },
+          {
+            "birth": [
+              3,
+              6,
+              7,
+              8
+            ],
+            "survival": [
+              3,
+              4,
+              6,
+              7,
+              8
+            ],
+            "weight": 15
+          },
+          {
+            "birth": [
+              3
+            ],
+            "survival": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "weight": 15
+          },
+          {
+            "birth": [
+              3,
+              6,
+              8
+            ],
+            "survival": [
+              2,
+              4,
+              5
+            ],
+            "weight": 10
+          },
+          {
+            "birth": [
+              2
+            ],
+            "survival": [
+              0
+            ],
+            "weight": 5
+          },
+          {
+            "birth": [
+              1,
+              3,
+              5,
+              7
+            ],
+            "survival": [
+              1,
+              3,
+              5,
+              7
+            ],
+            "weight": 5
+          }
+        ]
+      }
+    },
+    {
+      "id": "random_universe",
+      "name": "混沌宇宙",
+      "pool": "late",
+      "type": "law",
+      "desc": "从带权规则池抽取一种 B/S 法则，选牌时公开实际规则。",
+      "effect": {
+        "kind": "randomRule",
+        "seconds": 8,
+        "variants": [
+          {
+            "birth": [
+              3,
+              8
+            ],
+            "survival": [
+              2,
+              3
+            ],
+            "weight": 30
+          },
+          {
+            "birth": [
+              3,
+              6
+            ],
+            "survival": [
+              2,
+              3
+            ],
+            "weight": 20
+          },
+          {
+            "birth": [
+              3,
+              6,
+              7,
+              8
+            ],
+            "survival": [
+              3,
+              4,
+              6,
+              7,
+              8
+            ],
+            "weight": 15
+          },
+          {
+            "birth": [
+              3
+            ],
+            "survival": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "weight": 15
+          },
+          {
+            "birth": [
+              3,
+              6,
+              8
+            ],
+            "survival": [
+              2,
+              4,
+              5
+            ],
+            "weight": 10
+          },
+          {
+            "birth": [
+              2
+            ],
+            "survival": [
+              0
+            ],
+            "weight": 5
+          },
+          {
+            "birth": [
+              1,
+              3,
+              5,
+              7
+            ],
+            "survival": [
+              1,
+              3,
+              5,
+              7
+            ],
+            "weight": 5
+          }
+        ]
+      }
+    },
+    {
+      "id": "inheritance",
+      "name": "阵营同化",
+      "pool": "mid",
+      "type": "law",
+      "desc": "20 秒内，新生细胞只要有己方邻居就归己方；多方同时持有效果时恢复普通归属判定。",
+      "effect": {
+        "kind": "inheritance",
+        "seconds": 20
+      }
+    }
+  ]
+}

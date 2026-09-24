@@ -1,3 +1,7 @@
+import { evolve } from './evolution/backend.js';
+import { BackendSelector } from './evolution/select.js';
+import { LocalRuleIndex } from './evolution/rule-table.js';
+import { CircleIndex } from './spatial-index.js';
 import { OrderedCells } from './ordered-cells.js';
 import { CellChanges } from './cell-changes.js';
 import { generateNodes, createTerritories, canDeployInTerritory, territoryAt, adjacentNeutralTerritories } from '../public/territory.js';
@@ -13,7 +17,7 @@ const dist2 = (a, b, x, y) => (a - x) ** 2 + (b - y) ** 2;
 export class Game {
   // 默认发牌时间唯一来源为 cards.json 的 drawSeconds；cardDrawTimes 为测试用毫秒覆盖值。
   // now：时间源，默认 Date.now；测试可注入假时钟模拟真实时间推进。
-  constructor(members, { random = Math.random, cardDrawTimes = CARD_CONFIG.drawSeconds.map(s => s * 1000), now = Date.now, dormancyMode = process.env.LIFEWAR_DORMANCY ?? 'auto' } = {}) {
+  constructor(members, { random = Math.random, cardDrawTimes = CARD_CONFIG.drawSeconds.map(s => s * 1000), now = Date.now, dormancyMode = process.env.LIFEWAR_DORMANCY ?? 'auto', evolutionMode = process.env.LIFEWAR_EVOLUTION ?? 'auto' } = {}) {
     this.size = RULES.size;
     this.board = new Uint8Array(this.size * this.size);
     this.next = new Uint8Array(this.board.length);
@@ -24,6 +28,9 @@ export class Game {
     this.alive = new OrderedCells(this.board.length);
     this.spareAlive = new OrderedCells(this.board.length);
     this.generation = 0;
+    this.backendSelector = new BackendSelector(evolutionMode);
+    this.localIndex = new LocalRuleIndex(this.size);
+    this.circleIndex = new CircleIndex(this.size);
     this.dormancy = new RegionalCycleDetector(this.size);
     if (!['auto', 'incremental', 'legacy'].includes(dormancyMode)) throw new Error('Invalid dormancy mode');
     this.dormancy.mode = dormancyMode;
@@ -125,59 +132,8 @@ export class Game {
     this.expireCardEffects();
     const evolutionStart = this.metrics ? this.metrics.now() : 0;
     this.generation++;
-    const { board, next, counts, votes, marks, candidates, size } = this;
-    let length = 0;
-    const stamp = this.generation;
-    for (let liveIndex = 0; liveIndex < this.alive.length; liveIndex++) {
-      const key = this.alive.keys[liveIndex], owner = board[key];
-      if (!owner) continue;
-      if (marks[key] !== stamp) { marks[key] = stamp; counts[key] = 0; votes[key] = 0; candidates[length++] = key; }
-      const x = key % size, y = Math.floor(key / size), vote = 1 << ((owner - 1) * 4);
-      for (let dy = -1; dy <= 1; dy++) {
-        if (y + dy < 0 || y + dy >= size) continue;
-        for (let dx = -1; dx <= 1; dx++) {
-          if ((!dx && !dy) || x + dx < 0 || x + dx >= size) continue;
-          const n = key + dy * size + dx;
-          if (marks[n] !== stamp) { marks[n] = stamp; counts[n] = 0; votes[n] = 0; candidates[length++] = n; }
-          counts[n]++; votes[n] += vote;
-        }
-      }
-    }
-    // 当前生效的生命规则：默认 B3/S23，法则卡激活期间读取 ruleOverride
-    let birthSet = this.birthRule, survivalSet = this.survivalRule;
-    if (this.ruleOverride) { birthSet = this.ruleOverride.birth; survivalSet = this.ruleOverride.survival; }
-    this.lastCandidateCount = length; // O(1) diagnostic; never changes candidate order.
-    next.fill(0);
-    const nextAlive = this.spareAlive; nextAlive.length = 0;
-    const totals = [0, 0, 0, 0, 0];
-    const inheritance = this.cards.effects.filter(e => e.stat === 'birthPriority' && e.endsAt > this.now());
-    const priorityOwner = inheritance.length === 1 ? inheritance[0].playerId : 0;
-    for (let i = 0; i < length; i++) {
-      const key = candidates[i], count = counts[key];
-      let owner = board[key];
-      const local = this.localRules.length ? this.localRules.findLast(r => dist2(r.x, r.y, key % size, Math.floor(key / size)) <= r.radius ** 2) : null;
-      if (!owner && !(local?.birth ?? birthSet).has(count)) continue;
-      if (owner && !(local?.survival ?? survivalSet).has(count)) continue;
-      if (!owner) {
-        let max = 0;
-        for (let t = 0; t < 4; t++) {
-          const team = ((t + key + stamp) % 4) + 1, n = (votes[key] >> ((team - 1) * 4)) & 15;
-          if (n > max) { max = n; owner = team; }
-        }
-        if (priorityOwner && ((votes[key] >> ((priorityOwner - 1) * 4)) & 15)) owner = priorityOwner;
-      }
-      if (!owner) continue;
-      next[key] = owner; nextAlive.push(key); totals[owner]++;
-    }
-    let changedCount = 0;
-    for (let i = 0; i < length; i++) if (next[candidates[i]] !== board[candidates[i]]) changedCount++;
-    if (this.dormancy.mode === 'auto' && changedCount > Math.max(256, nextAlive.length / 4)) this.dormancy.dirty = true;
-    for (let i = 0; i < length; i++) {
-      const key = candidates[i];
-      if (next[key] !== board[key]) this.recordChange(key, board[key], next[key], 'evolution');
-    }
-    this.board = next; this.next = board; this.spareAlive = this.alive; this.alive = nextAlive;
-    for (const p of this.players) p.cells = totals[p.id];
+    evolve(this);
+
     if (this.metrics) this.metrics.duration('evolution.ms', evolutionStart, this.generation);
     this.resolveObjectives();
     this.dormancy.update(this, this.currentDormancyGenerations(), RULES.dormancyWarning);
@@ -192,6 +148,10 @@ export class Game {
   }
 
   nearby(x, y, radius, callback) {
+    if (Number.isInteger(x) && Number.isInteger(y) && Number.isInteger(radius) && radius >= 0) {
+      for (const key of this.circleIndex.keys(x,y,radius)) if (this.board[key]) callback(this.board[key],key);
+      return;
+    }
     for (let yy = Math.max(0, y - radius); yy <= Math.min(this.size - 1, y + radius); yy++) {
       for (let xx = Math.max(0, x - radius); xx <= Math.min(this.size - 1, x + radius); xx++) {
         if (dist2(x, y, xx, yy) > radius * radius) continue;

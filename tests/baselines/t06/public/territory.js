@@ -62,25 +62,8 @@ export function createTerritories(players, nodes, size = 1000) {
   });
 }
 
-const territoryGrids=new WeakMap();
-export function invalidateTerritoryIndex(territories){territoryGrids.delete(territories);}
-export function prepareTerritoryIndex(territories,size=1000){
-  const grid=new Int16Array(size*size);grid.fill(-1);
-  for(let key=0;key<grid.length;key++){
-    const x=key%size,y=Math.floor(key/size);let best=Infinity;
-    for(let i=0;i<territories.length;i++){const site=territories[i],d=(site.x-x)**2+(site.y-y)**2;if(d<best){best=d;grid[key]=i;}}
-  }
-  territoryGrids.set(territories,{size,grid,hits:0});return grid;
-}
 export function territoryAt(territories, x, y, size = 1000) {
   if (x < 0 || y < 0 || x >= size || y >= size) return null;
-  if(Number.isInteger(x)&&Number.isInteger(y)) {
-    let cache=territoryGrids.get(territories);
-    if(!cache||cache.size!==size){cache={size,hits:0};territoryGrids.set(territories,cache);}
-    // Build once for repeated deployment/preview queries; small games pay no startup scan.
-    if(!cache.grid&&++cache.hits>=512){prepareTerritoryIndex(territories,size);cache=territoryGrids.get(territories);}
-    if(cache.grid)return territories[cache.grid[y*size+x]]??null;
-  }
   let nearest = null, distance = Infinity;
   // An exact bisector tie belongs to the earlier site. Both clients and server
   // use this same order, so grid cells on shared edges have one owner.
