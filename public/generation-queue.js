@@ -1,9 +1,11 @@
 // A draw consumes at most one packet. Snapshots explicitly start recovery intervals.
+import { decodeBoardPacket } from './board-protocol.js';
 export class GenerationQueue {
   constructor({capacity=32,maxBytes=64*1024*1024,maxAgeMs=500,now=()=>performance.now(),onEvent=()=>{},onRecovery=()=>{}}={}) {
     this.capacity=capacity;this.maxBytes=maxBytes;this.maxAgeMs=maxAgeMs;this.now=now;this.onEvent=onEvent;this.onRecovery=onRecovery;this.reset('initial');
   }
-  reset(epoch) {if(this.packets?.length)this.onEvent('presentation.cancelled',{epoch:this.epoch,reason:'epoch-reset',queued:this.packets.length});this.failures=0;this.lastFailure=null;this.maxDepth=0;this.epoch=epoch;this.packets=[];this.states=[];this.bytes=0;this.received=-1;this.displayed=-1;this.stateGeneration=-1;this.waiting=true;this.interval=0;this.paused=false;this.lastPacket=null;}
+  reset(epoch) {if(this.packets?.length)this.onEvent('presentation.cancelled',{epoch:this.epoch,reason:'epoch-reset',queued:this.packets.length});this.failures=0;this.lastFailure=null;this.maxDepth=0;this.epoch=epoch;this.packets=[];this.states=[];this.bytes=0;this.received=-1;this.displayed=-1;this.stateGeneration=-1;this.waiting=true;this.interval=0;this.paused=false;this.lastPacket=null;this.version=1;this.roomEpoch=null;}
+  configure(version=1,roomEpoch=null) {this.version=version;this.roomEpoch=roomEpoch;}
   fail(reason) {
     this.failures++;this.lastFailure={reason,received:this.received,displayed:this.displayed,queued:this.packets.length};
     this.onEvent('presentation.failure', this.lastFailure);
@@ -16,9 +18,10 @@ export class GenerationQueue {
   }
   packet(buffer,epoch=this.epoch) {
     if(epoch!==this.epoch||this.paused)return false;
-    if(!(buffer instanceof ArrayBuffer)||buffer.byteLength<8||(buffer.byteLength-8)%4){this.fail('invalid-packet');return false;}
-    const view=new DataView(buffer),snapshot=view.getUint32(0,true)===1,generation=view.getUint32(4,true);
-    if(view.getUint32(0,true)>1){this.fail('invalid-type');return false;}
+    let decoded;try{decoded=decodeBoardPacket(buffer);}catch{this.fail('invalid-packet');return false;}
+    if(decoded.version!==this.version){this.fail('protocol-version');return false;}
+    if(decoded.version===2&&decoded.roomEpoch!==this.roomEpoch)return false;
+    const {snapshot,generation}=decoded,bytes=buffer.byteLength+decoded.memoryBytes;
     if(snapshot){
       if(generation<this.displayed||(!this.waiting&&generation<this.received))return false;
       if(!this.waiting&&generation===this.received&&this.samePacket(buffer))return false;
@@ -28,17 +31,18 @@ export class GenerationQueue {
       if(this.waiting)return false;
       if(generation<this.received)return false;
       if(generation===this.received){
-        if(buffer.byteLength===8||this.samePacket(buffer))return false;
+        if(!decoded.entries.length||this.samePacket(buffer))return false;
         this.onEvent('presentation.revision',{generation});
       }
       if(generation>this.received+1){this.fail('generation-gap');return false;}
+      if(decoded.version===2&&decoded.baseGeneration!==this.received){this.fail('base-generation');return false;}
     }
-    if(this.packets.length>=this.capacity||this.bytes+buffer.byteLength>this.maxBytes){this.fail('overflow');return false;}
-    this.received=generation;this.lastPacket=buffer;this.packets.push({buffer,generation,at:this.now(),snapshot});this.bytes+=buffer.byteLength;this.maxDepth=Math.max(this.maxDepth,this.packets.length);return true;
+    if(this.packets.length>=this.capacity||this.bytes+bytes>this.maxBytes){this.fail('overflow');return false;}
+    this.received=generation;this.lastPacket=buffer;this.packets.push({buffer,decoded,bytes,generation,at:this.now(),snapshot});this.bytes+=bytes;this.maxDepth=Math.max(this.maxDepth,this.packets.length);return true;
   }
   samePacket(buffer) {
     if(!this.lastPacket||this.lastPacket.byteLength!==buffer.byteLength)return false;
-    const a=new Uint32Array(this.lastPacket),b=new Uint32Array(buffer);
+    const a=new Uint8Array(this.lastPacket),b=new Uint8Array(buffer);
     for(let i=0;i<a.length;i++)if(a[i]!==b[i])return false;return true;
   }
   state(value,epoch=this.epoch) {
@@ -52,7 +56,7 @@ export class GenerationQueue {
     if(this.paused)return {};
     if(this.packets.length&&this.now()-this.packets[0].at>this.maxAgeMs){this.fail('latency-limit');return {};}
     const packet=this.waiting?undefined:this.packets.shift();
-    if(packet){this.bytes-=packet.buffer.byteLength;this.displayed=packet.generation;}
+    if(packet){this.bytes-=packet.bytes;this.displayed=packet.generation;}
     let state;
     while(this.states.length&&this.states[0].generation<=this.displayed&&this.packets[0]?.generation!==this.displayed){state=this.states.shift();this.stateGeneration=state.generation;}
     return {packet,state,waitMs:packet?this.now()-packet.at:0};

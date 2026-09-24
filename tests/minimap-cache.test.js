@@ -28,8 +28,8 @@ test('dense invalidation retains background storage and safely transitions to lo
     cache.beginPacket(field,2,true);field.cells.clear();field.cells.set(999999,2);
     draw();assert.deepEqual(drawn,[[999999,2]]);assert.equal(backgrounds,1);
     field.state.players.push({x:1,y:2,eliminated:false});draw();assert.equal(backgrounds,2);
-    assert.equal(resizes,4,'ownership/state invalidation retains backing storage');
-    field.minimap.width=197;draw();assert.equal(resizes,8);assert.equal(backgrounds,3);
+    assert.equal(resizes,6,'ownership/state invalidation retains backing storage, including tile scratch');
+    field.minimap.width=197;draw();assert.equal(resizes,10);assert.equal(backgrounds,3);
     assert.ok(bases>=6);
   } finally {globalThis.document=originalDocument;}
 });

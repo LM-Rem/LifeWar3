@@ -1,4 +1,5 @@
 import { GenerationQueue } from './generation-queue.js';
+import { decodeBoardPacket, orderedBoardEntries } from './board-protocol.js';
 import { WorldTexture } from './world-texture.js';
 import { MinimapCache } from './minimap-cache.js';
 import { BASE_HIT_RADIUS, createTerritories, territoryOwner, canDeployInTerritory, territoryAt, adjacentNeutralTerritories } from './territory.js';
@@ -50,13 +51,17 @@ export class Battlefield {
   }
   reset() { this.presentation.reset(++this.presentationEpoch); this.presentation.visibility(document.hidden); this.boardRevision++; this.previewCache=null; this.cells.clear(); this.board.fill(0); this.texture.reset(); this.texture.flush(); this.minimapCache.invalidate(); this.effects = []; this.state = null; this.territories = []; this.generation = 0; this.keys.clear(); this.cameraTarget = null; }
   receivePacket(buffer,epoch=this.presentation.epoch) {
-    if(browserMetrics&&buffer.byteLength>=8)browserMetrics.record('receivedGeneration',buffer.byteLength,new DataView(buffer).getUint32(4,true));
-    return this.presentation.packet(buffer,epoch);
+    const start=browserMetrics?browserMetrics.now():0,accepted=this.presentation.packet(buffer,epoch);
+    if(browserMetrics){browserMetrics.duration('packet.validateDecode.ms',start,this.presentation.received);if(accepted)browserMetrics.record('receivedGeneration',buffer.byteLength,this.presentation.received);}
+    return accepted;
   }
   receiveState(state,epoch=this.presentation.epoch) {return this.presentation.state(state,epoch);}
   presentNext() {
     const {packet,state,waitMs}=this.presentation.take();
-    if(packet){this.updatePacket(packet.buffer);browserMetrics?.record('presentation.wait.ms',waitMs,this.generation);}
+    if(packet){
+      try{this.updatePacket(packet.buffer,packet.decoded);}catch{this.presentation.displayed=this.generation;this.presentation.fail('board-baseline');return;}
+      browserMetrics?.record('presentation.wait.ms',waitMs,this.generation);
+    }
     if(state){this.setState(state);this.onPresentedState?.(state);}
     browserMetrics?.record('presentation.queueDepth',this.presentation.packets.length,this.generation);
     return packet;
@@ -66,18 +71,19 @@ export class Battlefield {
     this.state = state;
     this.extraLand = state.players.find(p => p.id === this.me)?.neutralDeploy ? adjacentNeutralTerritories(this.territories, state.players, state.nodes, this.me) : [];
   }
-  updatePacket(buffer) {
+  updatePacket(buffer,decoded) {
     const traceStart = browserMetrics ? browserMetrics.now() : 0;
-    const view = new DataView(buffer);
+    decoded??=decodeBoardPacket(buffer);
+    const entries=orderedBoardEntries(decoded,this.board);
     this.boardRevision++;
     if (browserMetrics) {
-      if (view.getUint32(0, true) === 1) browserMetrics.record('snapshot', 1, view.getUint32(4, true));
+      if (decoded.snapshot) browserMetrics.record('snapshot', 1, decoded.generation);
     }
-    if (view.getUint32(0, true) === 1) { this.cells.clear(); this.board.fill(0); this.texture.reset(); this.minimapCache.invalidate(); }
-    this.minimapCache.beginPacket(this, (view.byteLength - 8) / 4, view.getUint32(0, true) === 1);
-    this.generation = view.getUint32(4, true);
-    for (let i = 8; i < view.byteLength; i += 4) {
-      const value = view.getUint32(i, true), owner = Math.floor(value / 1000000), key = value % 1000000, x=key%1000, y=Math.floor(key/1000);
+    if (decoded.snapshot) { this.cells.clear(); this.board.fill(0); this.texture.reset(); this.minimapCache.invalidate(); }
+    this.minimapCache.beginPacket(this, entries.length, decoded.snapshot);
+    this.generation = decoded.generation;
+    for (const value of entries) {
+      const owner = Math.floor(value / 1000000), key = value % 1000000;
       this.minimapCache.change(key, this.board[key], owner);
       this.board[key] = owner;
       if (owner) { this.cells.set(key,owner); this.texture.set(key,owner); }

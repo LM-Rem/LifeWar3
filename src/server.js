@@ -36,7 +36,8 @@ const readBody = req => new Promise((resolve, reject) => {
   req.on('error', reject);
 });
 
-export function createServer({ port = Number(process.env.PORT) || 3000, host = '0.0.0.0', trace = performanceConfig().enabled } = {}) {
+export function createServer({ port = Number(process.env.PORT) || 3000, host = '0.0.0.0', trace = performanceConfig().enabled, boardProtocol = Number(process.env.LIFEWAR_BOARD_PROTOCOL ?? 1) } = {}) {
+  if(![1,2].includes(boardProtocol))throw new Error('Invalid LIFEWAR_BOARD_PROTOCOL');
   const metrics = trace ? new PerformanceMetrics({ capacity: performanceConfig().capacity }) : null;
   const eventLoop = metrics ? startEventLoopMetrics() : null;
   const rooms = new Map();
@@ -177,9 +178,21 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
     return { type: 'room', code: room.code, host: room.host, status: room.game?.status || 'lobby', players: room.members.map(m => ({ id: m.id, name: m.name, ready: m.ready, bot: m.bot, connected: !!m.ws || m.bot })), capacity: 4 };
   }
   function broadcastRoom(room) { for (const m of room.members) send(m.ws, roomView(room)); }
+  let nextRoomEpoch=randomBytes(4).readUInt32LE(0)||1;
+  function boardPacket(ws,room,snapshot=false,cache=new Map()) {
+    const ordered=ws.v2NeedsOrdered;
+    const key=`${ws.boardVersion}:${snapshot}:${!!ordered}`;
+    if(!cache.has(key))cache.set(key,ws.boardVersion===2
+      ?room.game.packetV2({roomEpoch:room.epoch,baseGeneration:room.boardGeneration,previous:room.broadcastBoard,snapshot,forceOrdered:ordered})
+      :room.game.packet(snapshot));
+    return cache.get(key);
+  }
+  function started(ws,room,id) {send(ws,{type:'started',id,rules:RULES,startedAt:room.startedAt,roomEpoch:room.epoch,boardProtocol:ws?.boardVersion??1});}
   function sendBoard(ws, room, packet, snapshot = false) {
     const game = room.game, start = metrics ? metrics.now() : 0;
     ws.send(packet);
+    ws.v2NeedsOrdered=snapshot;
+    if(snapshot)ws.needsSnapshot=false;
     if (metrics) {
       const stream = `${room.code}/${ws.member?.id ?? 0}`, epoch = String(room.startedAt);
       metrics.record('sentGeneration', packet.byteLength, game.generation, stream, epoch);
@@ -213,7 +226,7 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
     ws.room = room; ws.member = member; member.ws = ws; member.offlineGen = null;
     send(ws, { type: 'welcome', id: member.id, token: member.token, code: room.code });
     broadcastRoom(room);
-    if (room.game) { send(ws, { type: 'started', id: member.id, rules: RULES, startedAt: room.startedAt }); send(ws, room.game.state(member.id)); sendBoard(ws, room, room.game.packet(true), true); }
+    if (room.game) { started(ws,room,member.id); send(ws, room.game.state(member.id)); sendBoard(ws, room, boardPacket(ws,room,true), true); }
     updateLists();
   }
   function start(room) {
@@ -221,14 +234,17 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
     room.members.forEach((m, i) => { m.id = i + 1; });
     room.host = hostMember.id;
     room.game = new Game(room.members); room.startedGen = serverGen; room.startedAt = room.game.startedAt; room.lastActiveGen = serverGen; room.finishedBroadcast = false;
+    room.epoch=nextRoomEpoch;nextRoomEpoch=(nextRoomEpoch+1)>>>0||1;
+    room.broadcastBoard=boardProtocol===2?room.game.board.slice():null;room.boardGeneration=room.game.generation;
     if (metrics) instrumentGame(room.game, metrics, room.code);
-    for (const m of room.members) { send(m.ws, { type: 'started', id: m.id, rules: RULES, startedAt: room.startedAt }); send(m.ws, room.game.state(m.id)); if (m.ws?.readyState === WebSocket.OPEN) sendBoard(m.ws, room, room.game.packet(true), true); }
+    const snapshots=new Map();
+    for (const m of room.members) { started(m.ws,room,m.id); send(m.ws, room.game.state(m.id)); if (m.ws?.readyState === WebSocket.OPEN) sendBoard(m.ws, room, boardPacket(m.ws,room,true,snapshots), true); }
     broadcastRoom(room); updateLists();
   }
   wss.on('connection', ws => {
-    ws.alive = true; ws.budget = 40; ws.refillAt = Date.now();
+    ws.alive = true; ws.budget = 40; ws.refillAt = Date.now();ws.boardVersion=1;
     ws.on('pong', () => { ws.alive = true; });
-    send(ws, { type: 'hello', version: '1.0.0' }); lobbyList(ws);
+    send(ws, { type: 'hello', version: '1.0.0',boardProtocols:boardProtocol===2?[1,2]:[1] }); lobbyList(ws);
     ws.on('error', () => {});
     ws.on('message', (raw, isBinary) => {
       ws.budget = Math.min(40, ws.budget + (Date.now() - ws.refillAt) / 100); ws.refillAt = Date.now();
@@ -238,6 +254,11 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
       const room = ws.room, member = ws.member;
       const fail = message => send(ws, { type: 'error', message });
       switch (msg.type) {
+        case 'protocol': {
+          if(room)return fail('请在加入战区前协商协议');
+          if(msg.version!==1&&(msg.version!==2||boardProtocol!==2))return fail('不支持的棋盘协议版本');
+          ws.boardVersion=msg.version;send(ws,{type:'protocol',version:ws.boardVersion});return;
+        }
         case 'ping': return send(ws, { type: 'pong', time: msg.time });
         case 'list': return lobbyList(ws);
         case 'create': {
@@ -272,7 +293,7 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
           if (!room?.game || !member || (ws.lastResyncAt && Date.now()-ws.lastResyncAt<1000)) return;
           if(ws.bufferedAmount>262144){ws.needsSnapshot=true;return;}
           ws.lastResyncAt=Date.now();
-          sendBoard(ws,room,room.game.packet(true),true);send(ws,room.game.state(member.id));return;
+          sendBoard(ws,room,boardPacket(ws,room,true),true);send(ws,room.game.state(member.id));return;
         }
         case 'leave': unlink(ws, true); send(ws, { type: 'left' }); return;
         case 'ready': if (room && !room.game) { member.ready = !member.ready; broadcastRoom(room); } return;
@@ -350,15 +371,16 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
         if (room.finishedBroadcast) continue;
         broadcastRoom(room); updateLists();
       }
-      const packet = game.packet();
+      const packets=new Map();
       for (const m of room.members) {
         const ws=m.ws;
         if (ws?.readyState !== WebSocket.OPEN) continue;
         if (ws.bufferedAmount > 262144) { ws.needsSnapshot = true; if (metrics) metrics.record('backpressureSkip', ws.bufferedAmount, game.generation, `${room.code}/${m.id}`, String(room.startedAt)); continue; }
-        sendBoard(ws, room, ws.needsSnapshot ? game.packet(true) : packet, !!ws.needsSnapshot); ws.needsSnapshot = false;
+        sendBoard(ws, room, boardPacket(ws,room,!!ws.needsSnapshot,packets), !!ws.needsSnapshot); ws.needsSnapshot = false;
         if (game.generation % Math.max(1, Math.round(RULES.hz / 5)) === 0 || game.status === 'finished') send(ws, { ...game.state(m.id), tickMs: Math.round((room.tickMs || 0) * 100) / 100 }); // 状态推送保持约 5Hz，与 hz 解耦
       }
-      game.changes.clear();
+      if(room.broadcastBoard)for(let i=0;i<game.changes.size;i++){const key=game.changes.order[i];room.broadcastBoard[key]=game.changes.owners[key];}
+      room.boardGeneration=game.generation;game.changes.clear();
       if (metrics) metrics.record('tick.ms', metrics.now() - tickStart, game.generation, room.code, String(room.startedAt));
       if (game.status === 'finished') room.finishedBroadcast = true;
     }

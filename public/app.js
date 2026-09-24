@@ -744,15 +744,18 @@ battlefield.onPresentationEvent=(name,value)=>{if(name==='presentation.recovery'
 document.addEventListener('visibilitychange',()=>battlefield.presentation.visibility(document.hidden));
 
 async function connect() {
-  if(socket?.readyState===WebSocket.OPEN)return;
   if(connectionPromise)return connectionPromise;
+  if(socket?.readyState===WebSocket.OPEN)return;
   clearTimeout(reconnectTimer);
   connectionPromise=new Promise((resolve,reject)=>{
     const ws=new WebSocket(`${location.protocol==='https:'?'wss:':'ws:'}//${location.host}/ws${browserMetrics ? '?trace=1' : ''}`);socket=ws;ws.binaryType='arraybuffer';
-    ws.onopen=()=>{connectionPromise=null;retries=0;$('#connection-status').textContent='已连接 · 局域网服务器';$('#connection-banner').classList.add('hidden');if(session)ws.send(JSON.stringify({type:'resume',...session}));resolve();};
+    ws.onopen=()=>{retries=0;$('#connection-status').textContent='已连接 · 局域网服务器';$('#connection-banner').classList.add('hidden');};
     ws.onmessage=e=>{if(ws!==socket)return;if(e.data instanceof ArrayBuffer)battlefield.receivePacket(e.data);else{
       const traceStart=browserMetrics?browserMetrics.now():0;
-      try{onMessage(JSON.parse(e.data));}catch(err){console.error('Message error',err);}
+      try{const msg=JSON.parse(e.data);if(msg.type==='hello'){
+        if(msg.boardProtocols?.includes(2))ws.send(JSON.stringify({type:'protocol',version:2}));
+        if(session)ws.send(JSON.stringify({type:'resume',...session}));connectionPromise=null;resolve();
+      }onMessage(msg);}catch(err){console.error('Message error',err);}
       finally{if(browserMetrics)browserMetrics.duration('json.decodeDispatch.ms',traceStart,battlefield.generation);}
     }};
     ws.onerror=()=>{if(ws.readyState!==WebSocket.OPEN)reject(new Error('无法连接服务器，请确认服务器仍在运行'));};
@@ -784,7 +787,7 @@ function onMessage(msg) {
     case 'started':
       if (typeof browserMetrics !== 'undefined' && browserMetrics) browserMetrics.resetEpoch(msg.startedAt);
       state=null;pendingCardPlay=false;shownDraftGen=0;renderCards(true);
-      playerId=msg.id;if(msg.rules?.hz)gameHz=msg.rules.hz;if(msg.rules?.baseHP){maxHP=msg.rules.baseHP;battlefield.baseHP=maxHP;}if(msg.rules?.maxEnergy)maxEnergy=msg.rules.maxEnergy;if(msg.rules?.regen)energyRegen=msg.rules.regen;if(msg.rules?.nodeRegen)energyNodeRegen=msg.rules.nodeRegen;if(msg.rules?.playerCells)battlefield.playerCells=msg.rules.playerCells;if(msg.rules?.baseHitRadius)battlefield.baseHitRadius=msg.rules.baseHitRadius;if(msg.rules?.captureTime)battlefield.captureTime=msg.rules.captureTime;startedAt=msg.startedAt||Date.now();battlefield.me=playerId;battlefield.reset();eventIds.clear();resultShown=false;state=null;closeDialogs();showPage('game');renderPatterns();if(selected)selectPattern(selected);sound('capture');break;
+      playerId=msg.id;if(msg.rules?.hz)gameHz=msg.rules.hz;if(msg.rules?.baseHP){maxHP=msg.rules.baseHP;battlefield.baseHP=maxHP;}if(msg.rules?.maxEnergy)maxEnergy=msg.rules.maxEnergy;if(msg.rules?.regen)energyRegen=msg.rules.regen;if(msg.rules?.nodeRegen)energyNodeRegen=msg.rules.nodeRegen;if(msg.rules?.playerCells)battlefield.playerCells=msg.rules.playerCells;if(msg.rules?.baseHitRadius)battlefield.baseHitRadius=msg.rules.baseHitRadius;if(msg.rules?.captureTime)battlefield.captureTime=msg.rules.captureTime;startedAt=msg.startedAt||Date.now();battlefield.me=playerId;battlefield.reset();battlefield.presentation.configure(msg.boardProtocol??1,msg.roomEpoch);eventIds.clear();resultShown=false;state=null;closeDialogs();showPage('game');renderPatterns();if(selected)selectPattern(selected);sound('capture');break;
     case 'state':battlefield.receiveState(msg);break;
     case 'presented_state':{
       const first=!state;

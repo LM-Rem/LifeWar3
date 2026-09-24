@@ -16,7 +16,9 @@
     "test:browser:equivalence": "node tests/browser/render-equivalence.mjs",
     "test:browser:presentation": "node tests/browser/generation-presentation.mjs",
     "test:browser:live": "node tests/browser/live-presentation.mjs",
-    "benchmark:minimap": "node tests/performance/minimap-dense.mjs"
+    "benchmark:minimap": "node tests/performance/minimap-dense.mjs",
+    "benchmark:protocol": "node tests/performance/protocol-v2.mjs",
+    "test:browser:protocol": "node tests/browser/protocol-v2.mjs"
   },
   "dependencies": {
     "ws": "^8.18.0"

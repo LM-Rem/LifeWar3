@@ -1,0 +1,555 @@
+{
+  "environment": {
+    "capturedAt": "2026-09-24T13:46:34.579Z",
+    "node": "v24.11.1",
+    "platform": "win32",
+    "os": "10.0.26200",
+    "arch": "x64",
+    "cpu": "13th Gen Intel(R) Core(TM) i9-13900HX",
+    "logicalCores": 32,
+    "memoryBytes": 34124718080,
+    "gpu": "NVIDIA GeForce RTX 5070 Ti Laptop GPU, 595.79, 12227 MiB, 50, 682 MHz",
+    "powerSchemeGuid": "381b4222-f694-41f0-9685-ff5bb260df2e",
+    "browser": null,
+    "dpr": null,
+    "displayRefreshHz": null,
+    "measuredNetworkMbps": null,
+    "unavailable": "null means unmeasured; CPU synthetic runs do not measure browser, display or network."
+  },
+  "rules": {
+    "size": 1000,
+    "hz": 20,
+    "dormancyGenerations": 200,
+    "dormancyWarning": 10,
+    "minDormancyGenerations": 20,
+    "dormancyDecayPerMinute": 20,
+    "nodeCountMin": 12,
+    "nodeCountMax": 16,
+    "baseHitRadius": 32,
+    "captureRadius": 16,
+    "captureTime": 160,
+    "captureDecay": 0.05,
+    "maxEnergy": 1000,
+    "regen": 0.4,
+    "nodeRegen": 0.2,
+    "baseHP": 100,
+    "nodeDamageStartSeconds": 600,
+    "nodeDamagePerSecond": 0.1,
+    "playerCells": 6000,
+    "deployCooldown": 1,
+    "disconnectGenerations": 900,
+    "roomIdleGenerations": 900
+  },
+  "sourceHashes": {
+    "src/engine.js": "d0517b0d543a4d3044dc0e5d0009a19b7b8061f8dfdd0b4f7bab9a8e79b613b0",
+    "src/server.js": "5f913e31b7db6a0f2b433e5e8656f8dd8bdad3c43abfbaf780a8179e4a4f21ab",
+    "public/board-protocol.js": "009d1f143d1385030033e7b2e537ae547603037533d505d231aaba8fe4746c0d",
+    "public/generation-queue.js": "6e917bc8c53bfcdc48e776a7a6d94bae2839db4150aa4d2c694294f51e59391f",
+    "public/renderer.js": "78eb0e9072004b52d523e60100069bcd9087b24c61880d435d2fd471235003ff",
+    "public/app.js": "7d8edf0b8111b2305ff74d065e3b1d8dff8a7341919912d106e837bd1887417b",
+    "public/minimap-cache.js": "4260a177e797ca3bf1f5d75187ec3f4084fa5434a7b92ec778ca284771a5b747"
+  },
+  "scope": "5 interleaved rounds in one Node process, 3 warmup + 10 samples each; encode + validated decode/order + board/Map apply, no evolution, Canvas or network latency; synthetic high population, not legal gameplay duration; throughput includes unmasked WebSocket framing and private state JSON at 20/5Hz, excludes TCP/TLS",
+  "defaultProtocol": 1,
+  "v2OptIn": "LIFEWAR_BOARD_PROTOCOL=2",
+  "functionalValidation": "PASS",
+  "denseRealtimeAcceptance": "NOT PASSED",
+  "results": [
+    {
+      "name": "empty",
+      "D": 0,
+      "birthFraction": 0,
+      "snapshot": false,
+      "v1": {
+        "bytes": 8,
+        "encoding": "v1",
+        "encodeMs": {
+          "mean": 0.012848000000000113,
+          "p95": 0.006199999999999761,
+          "max": 0.5046999999999997,
+          "samples": 50
+        },
+        "decodeOrderMs": {
+          "mean": 0.0030380000000003802,
+          "p95": 0.014400000000001967,
+          "max": 0.03849999999999909,
+          "samples": 50
+        },
+        "applyMs": {
+          "mean": 0.00034399999999983776,
+          "p95": 0.0006999999999948159,
+          "max": 0.0020000000000024443,
+          "samples": 50
+        },
+        "totalMs": {
+          "mean": 0.01623000000000033,
+          "p95": 0.04260000000000019,
+          "max": 0.5093000000000032,
+          "samples": 50
+        },
+        "fourClientBytesPerSecondAt20Hz": 42180
+      },
+      "v2": {
+        "bytes": 32,
+        "encoding": 0,
+        "encodeMs": {
+          "mean": 0.022950000000000016,
+          "p95": 0.03960000000000008,
+          "max": 0.8528999999999982,
+          "samples": 50
+        },
+        "decodeOrderMs": {
+          "mean": 0.0028599999999997295,
+          "p95": 0.012999999999998124,
+          "max": 0.02729999999999677,
+          "samples": 50
+        },
+        "applyMs": {
+          "mean": 0.00031800000000018256,
+          "p95": 0.001100000000000989,
+          "max": 0.001300000000000523,
+          "samples": 50
+        },
+        "totalMs": {
+          "mean": 0.02612799999999993,
+          "p95": 0.04140000000000299,
+          "max": 0.8695000000000022,
+          "samples": 50
+        },
+        "fourClientBytesPerSecondAt20Hz": 44100
+      },
+      "packetReductionPercent": -300,
+      "stateBytes": [
+        2065,
+        2065,
+        2065,
+        2065
+      ]
+    },
+    {
+      "name": "sparse",
+      "D": 1000,
+      "birthFraction": 0,
+      "snapshot": false,
+      "v1": {
+        "bytes": 4008,
+        "encoding": "v1",
+        "encodeMs": {
+          "mean": 0.04221799999999945,
+          "p95": 0.024500000000003297,
+          "max": 1.5589999999999975,
+          "samples": 50
+        },
+        "decodeOrderMs": {
+          "mean": 0.014378000000000384,
+          "p95": 0.03900000000000148,
+          "max": 0.056199999999989814,
+          "samples": 50
+        },
+        "applyMs": {
+          "mean": 0.02630200000000002,
+          "p95": 0.05299999999999727,
+          "max": 0.12100000000000932,
+          "samples": 50
+        },
+        "totalMs": {
+          "mean": 0.08289799999999986,
+          "p95": 0.11410000000000764,
+          "max": 1.658600000000007,
+          "samples": 50
+        },
+        "fourClientBytesPerSecondAt20Hz": 362500
+      },
+      "v2": {
+        "bytes": 3032,
+        "encoding": 0,
+        "encodeMs": {
+          "mean": 0.056100000000000136,
+          "p95": 0.13339999999999463,
+          "max": 0.2985999999999933,
+          "samples": 50
+        },
+        "decodeOrderMs": {
+          "mean": 0.048953999999999664,
+          "p95": 0.08080000000001064,
+          "max": 0.1641000000000048,
+          "samples": 50
+        },
+        "applyMs": {
+          "mean": 0.032016000000000135,
+          "p95": 0.054099999999991155,
+          "max": 0.06310000000000571,
+          "samples": 50
+        },
+        "totalMs": {
+          "mean": 0.13706999999999994,
+          "p95": 0.24450000000000216,
+          "max": 0.40439999999999543,
+          "samples": 50
+        },
+        "fourClientBytesPerSecondAt20Hz": 284420
+      },
+      "packetReductionPercent": 24.35129740518962,
+      "stateBytes": [
+        2073,
+        2073,
+        2073,
+        2073
+      ]
+    },
+    {
+      "name": "dense-owner",
+      "D": 800000,
+      "birthFraction": 0,
+      "snapshot": false,
+      "v1": {
+        "bytes": 3200008,
+        "encoding": "v1",
+        "encodeMs": {
+          "mean": 1.275668000000012,
+          "p95": 1.6556000000000495,
+          "max": 1.7897000000011758,
+          "samples": 50
+        },
+        "decodeOrderMs": {
+          "mean": 2.327631999999944,
+          "p95": 4.172500000000582,
+          "max": 4.382399999998597,
+          "samples": 50
+        },
+        "applyMs": {
+          "mean": 32.044353999999984,
+          "p95": 36.355899999999565,
+          "max": 55.344600000000355,
+          "samples": 50
+        },
+        "totalMs": {
+          "mean": 35.647653999999946,
+          "p95": 41.453300000001036,
+          "max": 58.900800000000345,
+          "samples": 50
+        },
+        "fourClientBytesPerSecondAt20Hz": 256043220
+      },
+      "v2": {
+        "bytes": 1013702,
+        "encoding": 1,
+        "encodeMs": {
+          "mean": 16.15088999999988,
+          "p95": 25.866500000000087,
+          "max": 30.87599999999975,
+          "samples": 50
+        },
+        "decodeOrderMs": {
+          "mean": 18.08026600000002,
+          "p95": 28.498799999999846,
+          "max": 30.210399999999936,
+          "samples": 50
+        },
+        "applyMs": {
+          "mean": 43.39142999999994,
+          "p95": 46.964500000000044,
+          "max": 50.04330000000027,
+          "samples": 50
+        },
+        "totalMs": {
+          "mean": 77.62258599999984,
+          "p95": 89.0616,
+          "max": 91.07560000000012,
+          "samples": 50
+        },
+        "fourClientBytesPerSecondAt20Hz": 81138740
+      },
+      "packetReductionPercent": 68.32189169527076,
+      "stateBytes": [
+        2085,
+        2085,
+        2085,
+        2085
+      ]
+    },
+    {
+      "name": "mixed-churn",
+      "D": 500000,
+      "birthFraction": 0.5,
+      "snapshot": false,
+      "v1": {
+        "bytes": 2000008,
+        "encoding": "v1",
+        "encodeMs": {
+          "mean": 0.840878000000339,
+          "p95": 1.110000000000582,
+          "max": 1.15400000000227,
+          "samples": 50
+        },
+        "decodeOrderMs": {
+          "mean": 1.5822019999999248,
+          "p95": 3.032599999998638,
+          "max": 3.2796999999991385,
+          "samples": 50
+        },
+        "applyMs": {
+          "mean": 25.38148600000015,
+          "p95": 32.15419999999722,
+          "max": 33.159999999999854,
+          "samples": 50
+        },
+        "totalMs": {
+          "mean": 27.804566000000413,
+          "p95": 34.29569999999876,
+          "max": 35.52140000000145,
+          "samples": 50
+        },
+        "fourClientBytesPerSecondAt20Hz": 160043220
+      },
+      "v2": {
+        "bytes": 1500032,
+        "encoding": 0,
+        "encodeMs": {
+          "mean": 5.06353200000005,
+          "p95": 6.048600000001898,
+          "max": 6.71049999999741,
+          "samples": 50
+        },
+        "decodeOrderMs": {
+          "mean": 5.876582000000126,
+          "p95": 8.915899999999965,
+          "max": 9.269200000002456,
+          "samples": 50
+        },
+        "applyMs": {
+          "mean": 25.652028000000136,
+          "p95": 31.531300000002375,
+          "max": 34.701600000000326,
+          "samples": 50
+        },
+        "totalMs": {
+          "mean": 36.592142000000315,
+          "p95": 42.760400000002846,
+          "max": 46.2445000000007,
+          "samples": 50
+        },
+        "fourClientBytesPerSecondAt20Hz": 120045140
+      },
+      "packetReductionPercent": 24.998700005199982,
+      "stateBytes": [
+        2085,
+        2085,
+        2085,
+        2085
+      ]
+    },
+    {
+      "name": "all-births",
+      "D": 500000,
+      "birthFraction": 1,
+      "snapshot": false,
+      "v1": {
+        "bytes": 2000008,
+        "encoding": "v1",
+        "encodeMs": {
+          "mean": 0.8229540000002453,
+          "p95": 1.0472999999983585,
+          "max": 1.2933000000011816,
+          "samples": 50
+        },
+        "decodeOrderMs": {
+          "mean": 1.5746179999999004,
+          "p95": 3.013999999999214,
+          "max": 3.4629000000022643,
+          "samples": 50
+        },
+        "applyMs": {
+          "mean": 27.921366000000198,
+          "p95": 36.518700000000536,
+          "max": 37.15869999999995,
+          "samples": 50
+        },
+        "totalMs": {
+          "mean": 30.318938000000344,
+          "p95": 38.60940000000119,
+          "max": 39.42239999999947,
+          "samples": 50
+        },
+        "fourClientBytesPerSecondAt20Hz": 160043220
+      },
+      "v2": {
+        "bytes": 1500032,
+        "encoding": 0,
+        "encodeMs": {
+          "mean": 5.344496000000145,
+          "p95": 6.427199999998265,
+          "max": 6.710500000001048,
+          "samples": 50
+        },
+        "decodeOrderMs": {
+          "mean": 5.866219999999958,
+          "p95": 8.671999999998661,
+          "max": 8.900700000001962,
+          "samples": 50
+        },
+        "applyMs": {
+          "mean": 28.068468000000067,
+          "p95": 38.420900000000984,
+          "max": 38.8211999999985,
+          "samples": 50
+        },
+        "totalMs": {
+          "mean": 39.27918400000017,
+          "p95": 49.70230000000083,
+          "max": 50.60280000000057,
+          "samples": 50
+        },
+        "fourClientBytesPerSecondAt20Hz": 120045140
+      },
+      "packetReductionPercent": 24.998700005199982,
+      "stateBytes": [
+        2085,
+        2085,
+        2085,
+        2085
+      ]
+    },
+    {
+      "name": "snapshot",
+      "D": 500000,
+      "birthFraction": 1,
+      "snapshot": true,
+      "v1": {
+        "bytes": 2000008,
+        "encoding": "v1",
+        "encodeMs": {
+          "mean": 7.279596000000019,
+          "p95": 10.60989999999947,
+          "max": 13.344900000000052,
+          "samples": 50
+        },
+        "decodeOrderMs": {
+          "mean": 1.5962979999998788,
+          "p95": 3.289199999999255,
+          "max": 3.4817999999977474,
+          "samples": 50
+        },
+        "applyMs": {
+          "mean": 26.647600000000022,
+          "p95": 29.81000000000131,
+          "max": 31.549599999998463,
+          "samples": 50
+        },
+        "totalMs": {
+          "mean": 35.52349399999992,
+          "p95": 39.993099999999686,
+          "max": 41.87039999999979,
+          "samples": 50
+        },
+        "fourClientBytesPerSecondAt20Hz": null
+      },
+      "v2": {
+        "bytes": 1500032,
+        "encoding": 0,
+        "encodeMs": {
+          "mean": 6.566923999999999,
+          "p95": 8.5041999999994,
+          "max": 11.992600000001403,
+          "samples": 50
+        },
+        "decodeOrderMs": {
+          "mean": 5.991360000000277,
+          "p95": 8.868800000000192,
+          "max": 9.234800000001997,
+          "samples": 50
+        },
+        "applyMs": {
+          "mean": 26.827065999999686,
+          "p95": 30.524099999998725,
+          "max": 32.68890000000101,
+          "samples": 50
+        },
+        "totalMs": {
+          "mean": 39.38534999999996,
+          "p95": 44.57610000000204,
+          "max": 46.832800000000134,
+          "samples": 50
+        },
+        "fourClientBytesPerSecondAt20Hz": null
+      },
+      "packetReductionPercent": 24.998700005199982,
+      "stateBytes": [
+        2085,
+        2085,
+        2085,
+        2085
+      ]
+    }
+  ],
+  "verification": {
+    "tests": 130,
+    "passed": 130,
+    "pixelComparisons": 276,
+    "orderedMapComparisons": 32,
+    "negotiatedVersions": [
+      2,
+      1
+    ],
+    "resumeVersions": [
+      2,
+      1
+    ],
+    "network": {
+      "status": "PASS",
+      "scope": "real four-client loopback sends, includes WebSocket frame headers and JSON; synthetic 16,384-change workload, deterministic server bufferedAmount injection for recovery, not a network throughput capacity certification",
+      "clients": [
+        {
+          "version": 1,
+          "verifiedMessages": 17,
+          "binaryBytes": 983330,
+          "v1EquivalentBytes": 983330,
+          "jsonBytes": 19835,
+          "messages": 17,
+          "totalBytes": 1003165,
+          "v1EquivalentTotalBytes": 1003165
+        },
+        {
+          "version": 2,
+          "verifiedMessages": 18,
+          "binaryBytes": 446231,
+          "v1EquivalentBytes": 1039510,
+          "jsonBytes": 21993,
+          "messages": 18,
+          "totalBytes": 468224,
+          "v1EquivalentTotalBytes": 1061503
+        },
+        {
+          "version": 1,
+          "verifiedMessages": 17,
+          "binaryBytes": 983330,
+          "v1EquivalentBytes": 983330,
+          "jsonBytes": 19835,
+          "messages": 17,
+          "totalBytes": 1003165,
+          "v1EquivalentTotalBytes": 1003165
+        },
+        {
+          "version": 2,
+          "verifiedMessages": 13,
+          "binaryBytes": 328688,
+          "v1EquivalentBytes": 711744,
+          "jsonBytes": 15620,
+          "messages": 13,
+          "totalBytes": 344308,
+          "v1EquivalentTotalBytes": 727364
+        }
+      ]
+    },
+    "live": {
+      "scope": "20Hz configured WebSocket + actual RAF; observed cadence may differ; 200ms delivery burst; synthetic visibility event; draw submission not physical presentation",
+      "configuredProtocol": 2,
+      "normalGenerationsThrough": 117,
+      "observedInputHz": 16.525023607174017,
+      "queueDepthMax": 4,
+      "waitMaxMs": 197.09999999962747,
+      "normalFailures": 0
+    }
+  },
+  "rawArtifacts": "artifacts/performance/t13/"
+}

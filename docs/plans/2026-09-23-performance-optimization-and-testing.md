@@ -10,7 +10,7 @@
 
 **状态：** 2026-09-23 编制；仅新增本方案文档，未执行实现、安装、部署或提交。
 
-**执行进度（2026-09-23）：** T01–T04 已实施并完成阶段验证，详见 [实施结果](../performance/t01-t04-results.md)。T05/T06/T10/T11 已于 2026-09-24 实施并完成本地阶段验证，详见 [本阶段结果](../performance/t05-t11-results.md)；T07/T08/T12 已于 2026-09-24 实施并完成本地功能验证，详见 [本阶段结果](../performance/t07-t12-results.md)；dense 未通过默认晋级门槛，T12 实时认证未全部达标。T09、T13–T17 未执行；上文“状态”为本方案编制时记录。密集场景尚未满足最终20Hz性能门槛，不将阶段完成解释为全项目认证通过。
+**执行进度（2026-09-23）：** T01–T04 已实施并完成阶段验证，详见 [实施结果](../performance/t01-t04-results.md)。T05/T06/T10/T11 已于 2026-09-24 实施并完成本地阶段验证，详见 [本阶段结果](../performance/t05-t11-results.md)；T07/T08/T12 已于 2026-09-24 实施并完成本地功能验证，详见 [本阶段结果](../performance/t07-t12-results.md)；dense 未通过默认晋级门槛，T12 实时认证未全部达标。T13 已实现并完成阶段功能验证，v2 默认晋级门槛未通过，详见 [T13 结果](../performance/t13-results.md)。T09、T14–T17 未执行；上文“状态”为本方案编制时记录。密集场景尚未满足最终20Hz性能门槛，不将阶段完成解释为全项目认证通过。
 
 **依据：** [前期分析](../性能优化与CUDA可行性分析.md)、当前工作区 README、config.json、src/engine.js、src/dormancy.js、src/server.js、src/bots.js、public/renderer.js、public/app.js、public/territory.js 和 tests/。
 
@@ -392,6 +392,8 @@ CPU 优化阶段保留现有 Game.step 的同步调用方式；在 worker/CUDA �
 **门槛：** 主验收范围内每代都有独立 draw 提交、队列稳定、输入延迟达标。状态对齐属于为了满足不跳代约束新增的调度行为，须专门做交互回归，不与像素缓存收益混算。
 
 ### T13：逐代自适应无损协议（M5）
+
+**2026-09-24 实施状态：** 已实现 v2 协商、ordered24/瓦片编码、有序新生与恢复校验，并完成阶段功能测试。密集编解码与全链路实时门槛未全部达标，默认保留 v1，`LIFEWAR_BOARD_PROTOCOL=2` 显式启用。详见 [实施及测试结果](../performance/t13-results.md)。T14–T17 仍未执行。
 
 **修改：** `src/engine.js`、`src/server.js`、`public/app.js`、`public/renderer.js`。  
 **新增：** `public/board-protocol.js`、`tests/protocol-v2.test.js`、`tests/network-load.test.js`。

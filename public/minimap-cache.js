@@ -41,15 +41,20 @@ export class MinimapCache {
       this.invalid = false; this.full = true;
     }
     const c = this.context;
-    if (this.full || this.dirty.size > this.side ** 2 / 2) {
+    let work=0;for(const tile of this.dirty)work+=this.members?.[tile]?.size??0;
+    if (this.full || this.dirty.size > this.side ** 2 / 2 || work > field.cells.size) {
       c.drawImage(this.background, 0, 0);
       if (field.state) { for (const [key, owner] of field.cells) paintCell(c, key, owner); paintBases(c); }
     } else for (const tile of this.dirty) {
       const x = tile % this.side * 16, y = Math.floor(tile / this.side) * 16, width = Math.min(16,w-x), height = Math.min(16,w-y);
-      c.save(); c.beginPath(); c.rect(x,y,width,height); c.clip();
-      c.drawImage(this.background,0,0);
-      if (field.state) { for (const key of this.members[tile]) paintCell(c,key,field.cells.get(key)); paintBases(c); }
-      c.restore();
+      // Clipping individual fractional fillRects can change edge coverage in
+      // Canvas. Rasterize at original world-to-minimap coordinates, then copy
+      // the integer opaque tile. This keeps the baseline primitive geometry.
+      this.scratch??=document.createElement('canvas');
+      if(this.scratch.width!==w||this.scratch.height!==w)this.scratch.width=this.scratch.height=w;
+      const tileContext=this.scratch.getContext('2d');tileContext.drawImage(this.background,0,0);
+      if (field.state) { for (const key of this.members[tile]) paintCell(tileContext,key,field.cells.get(key)); paintBases(tileContext); }
+      c.drawImage(this.scratch,x,y,width,height,x,y,width,height);
     }
     this.full = false; this.dirty.clear(); field.mctx.drawImage(this.canvas,0,0);
   }

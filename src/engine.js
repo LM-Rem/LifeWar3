@@ -1,4 +1,5 @@
 import { evolve } from './evolution/backend.js';
+import { encodeBoardV2 } from '../public/board-protocol.js';
 import { BackendSelector } from './evolution/select.js';
 import { LocalRuleIndex } from './evolution/rule-table.js';
 import { CircleIndex } from './spatial-index.js';
@@ -412,6 +413,12 @@ export class Game {
     return { ok: true };
   }
 
+
+  packetV2({roomEpoch,baseGeneration,previous,snapshot=false,forceOrdered=false}) {
+    return encodeBoardV2({keys:snapshot?this.alive.keys.subarray(0,this.alive.length):this.changes.order.subarray(0,this.changes.size),
+      ownerAt:snapshot?key=>this.board[key]:key=>this.changes.owners[key],board:this.board,previous,
+      generation:this.generation,roomEpoch,baseGeneration,snapshot,forceOrdered});
+  }
 
   packet(snapshot = false) {
     const length = snapshot ? this.alive.length : this.changes.size;
