@@ -15,7 +15,8 @@
     "test:browser:smoke": "node tests/performance/browser-smoke.mjs",
     "test:browser:equivalence": "node tests/browser/render-equivalence.mjs",
     "test:browser:presentation": "node tests/browser/generation-presentation.mjs",
-    "test:browser:live": "node tests/browser/live-presentation.mjs"
+    "test:browser:live": "node tests/browser/live-presentation.mjs",
+    "benchmark:minimap": "node tests/performance/minimap-dense.mjs"
   },
   "dependencies": {
     "ws": "^8.18.0"

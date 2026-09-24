@@ -1,0 +1,8 @@
+{
+  "commit": "0dad0ec3fb0a6388951aadd033ce6a1c326c1e4e",
+  "description": "Frozen renderer and minimap before T11 dense redraw follow-up; other imports are shared with current and unchanged in this task.",
+  "files": {
+    "renderer.js": "c0017b96e26beb4241bb71a6d05c536067337d4101de9d97fbdfec1f421655bf",
+    "minimap-cache.js": "7d8372e7f96ae27ddc3339db7047ff6b5652df9227d8fd500d9fc5f534809a8c"
+  }
+}

@@ -7,6 +7,7 @@ export const COLORS = ['#67f5d1', '#ff796c', '#ac98ff', '#f4cc75'];
 const TAU = Math.PI * 2;
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 const hexAlpha = (color, opacity) => color + Math.round(opacity * 255).toString(16).padStart(2, '0');
+const MINIMAP_COLORS = COLORS.map(color => hexAlpha(color, .65));
 
 export function drawPattern(canvas, cells, color = COLORS[0]) {
   const ctx = canvas.getContext('2d'), w = canvas.width, h = canvas.height;
@@ -307,6 +308,8 @@ export class Battlefield {
   }
   drawMinimap(){
     const c=this.mctx,w=this.minimap.width,s=w/1000;
+    // Each replay starts after background/base painting may have changed fillStyle.
+    let lastCellOwner=0;
     this.minimapCache.draw(this, c => {
       c.fillStyle='#08141a';c.fillRect(0,0,w,w);c.strokeStyle='#213942';c.lineWidth=.5;
       for(let i=1;i<5;i++){c.beginPath();c.moveTo(i*w/5,0);c.lineTo(i*w/5,w);c.moveTo(0,i*w/5);c.lineTo(w,i*w/5);c.stroke();}
@@ -316,8 +319,10 @@ export class Battlefield {
       }
     }, c => {
       for(const p of this.state.players){c.fillStyle=p.eliminated?'#33434a':COLORS[p.id-1];c.fillRect(p.x*s-2.5,p.y*s-2.5,5,5);}
+      lastCellOwner=0;
     }, (c,key,owner) => {
-      c.fillStyle=hexAlpha(COLORS[owner-1],.65);c.fillRect(key%1000*s,Math.floor(key/1000)*s,1,1);
+      if (lastCellOwner !== owner) c.fillStyle=MINIMAP_COLORS[owner-1];
+      lastCellOwner=owner;c.fillRect(key%1000*s,Math.floor(key/1000)*s,1,1);
     });
     c.strokeStyle='#b2e7d799';c.lineWidth=1;const vw=this.width/this.camera.zoom*s,vh=this.height/this.camera.zoom*s;c.strokeRect(this.camera.x*s-vw/2,this.camera.y*s-vh/2,vw,vh);
   }

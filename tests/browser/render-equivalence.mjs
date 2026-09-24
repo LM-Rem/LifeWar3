@@ -48,6 +48,14 @@ try {
     }
     state.nodes[0].owner=3;state.players[0].eliminated=true;f.setState(state);await capture('ownership');
     mini.width=mini.height=197;await capture('resize');f.reset();await capture('reset');f.setState(state);f.updatePacket(packet([[999999,4],[0,1]],true));await capture('reconnect');
+    // Dense cache reuse, consecutive same colors, and both sides of the index threshold.
+    const mono=Array.from({length:100000},(_,i)=>[(i*7919)%1000000,2]);
+    f.updatePacket(packet(mono,true));await capture('monochrome');
+    f.updatePacket(packet([[0,2],[999999,2],[500500,2]]));await capture('same-owner-multiple-tiles');
+    f.updatePacket(packet(mono.slice(0,4096).map(([k])=>[k,3])));await capture('threshold4096');
+    f.updatePacket(packet(mono.slice(0,4097).map(([k])=>[k,1])));await capture('threshold4097');
+    f.updatePacket(packet(mono));f.updatePacket(packet([[0,0],[999999,4],[0,2]]));await capture('dense-then-small');
+    f.updatePacket(packet(mono,true));f.updatePacket(packet([[0,0],[999999,2]]));await capture('snapshot-then-small');
     return {hashes,timings};
    },structuredClone(state));results[label].push({dpr,...result});await page.close();
   }

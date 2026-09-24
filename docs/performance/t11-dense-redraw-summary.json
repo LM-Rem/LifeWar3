@@ -1,0 +1,382 @@
+{
+  "status": "PASS",
+  "scope": "headless Canvas submission and forced PNG completion; includes encoding cost; not physical frame rate",
+  "warmup": 2,
+  "measuredPerRound": 10,
+  "rounds": 5,
+  "baselineCommit": "0dad0ec3fb0a6388951aadd033ce6a1c326c1e4e",
+  "sourceHashes": {
+    "renderer.js": "90508cb2749ba3ca8bcca10f839ae04172606dc8f720a01248d42138551c166b",
+    "minimap-cache.js": "38686272d717be2f05d3ad6014fde8d61d80cc6c15e469749ff0695cfd172eb0",
+    "world-texture.js": "f1bc597a8af343b971173a47464a99294e2db9b2f3aa55c9410c7847211ed84f",
+    "territory.js": "3db4be208c15026c62a85104add4375ebedfbf3e59dcc8de3884e46d8ec00817"
+  },
+  "baselineHashes": {
+    "renderer.js": "c0017b96e26beb4241bb71a6d05c536067337d4101de9d97fbdfec1f421655bf",
+    "minimap-cache.js": "7d8372e7f96ae27ddc3339db7047ff6b5652df9227d8fd500d9fc5f534809a8c"
+  },
+  "environment": {
+    "capturedAt": "2026-09-24T13:10:28.150Z",
+    "node": "v24.11.1",
+    "platform": "win32",
+    "os": "10.0.26200",
+    "arch": "x64",
+    "cpu": "13th Gen Intel(R) Core(TM) i9-13900HX",
+    "logicalCores": 32,
+    "memoryBytes": 34124718080,
+    "gpu": "NVIDIA GeForce RTX 5070 Ti Laptop GPU, 595.79, 12227 MiB, 45, 547 MHz",
+    "powerSchemeGuid": "381b4222-f694-41f0-9685-ff5bb260df2e",
+    "browser": "153.0.8010.53",
+    "dpr": null,
+    "displayRefreshHz": null,
+    "measuredNetworkMbps": null,
+    "unavailable": "null means unmeasured; CPU synthetic runs do not measure browser, display or network."
+  },
+  "summary": [
+    {
+      "L": 100000,
+      "D": 100000,
+      "owners": 4,
+      "baseline": {
+        "applyMs": {
+          "mean": 5.4040000000968575,
+          "p95": 6,
+          "p99": 6.300000000745058,
+          "max": 6.300000000745058,
+          "samples": 50
+        },
+        "miniSubmitMs": {
+          "mean": 20.2939999999851,
+          "p95": 22.300000000745058,
+          "p99": 24,
+          "max": 24,
+          "samples": 50
+        },
+        "submitMs": {
+          "mean": 25.698000000081958,
+          "p95": 28.200000001117587,
+          "p99": 30.300000000745058,
+          "max": 30.300000000745058,
+          "samples": 50
+        },
+        "completedMs": {
+          "mean": 61.5179999999702,
+          "p95": 70.09999999962747,
+          "p99": 72.09999999962747,
+          "max": 72.09999999962747,
+          "samples": 50
+        },
+        "stableMs": {
+          "mean": 0.003600000005215406,
+          "p95": 0.00400000000372529,
+          "p99": 0.00400000000372529,
+          "max": 0.00400000000372529,
+          "samples": 5
+        }
+      },
+      "current": {
+        "applyMs": {
+          "mean": 5.316000000163913,
+          "p95": 6.100000001490116,
+          "p99": 6.5,
+          "max": 6.5,
+          "samples": 50
+        },
+        "miniSubmitMs": {
+          "mean": 14.693999999985099,
+          "p95": 16.100000001490116,
+          "p99": 16.699999999254942,
+          "max": 16.699999999254942,
+          "samples": 50
+        },
+        "submitMs": {
+          "mean": 20.010000000149013,
+          "p95": 22.200000001117587,
+          "p99": 23.199999999254942,
+          "max": 23.199999999254942,
+          "samples": 50
+        },
+        "completedMs": {
+          "mean": 55.002000000141564,
+          "p95": 60.80000000074506,
+          "p99": 63,
+          "max": 63,
+          "samples": 50
+        },
+        "stableMs": {
+          "mean": 0.0029999999962747096,
+          "p95": 0.0030000000074505806,
+          "p99": 0.0030000000074505806,
+          "max": 0.0030000000074505806,
+          "samples": 5
+        }
+      },
+      "completedImprovementPercent": 10.592021846990784
+    },
+    {
+      "L": 500000,
+      "D": 100000,
+      "owners": 4,
+      "baseline": {
+        "applyMs": {
+          "mean": 10.2539999999851,
+          "p95": 11.5,
+          "p99": 12.900000000372529,
+          "max": 12.900000000372529,
+          "samples": 50
+        },
+        "miniSubmitMs": {
+          "mean": 204.43599999997764,
+          "p95": 229.40000000037253,
+          "p99": 230.59999999962747,
+          "max": 230.59999999962747,
+          "samples": 50
+        },
+        "submitMs": {
+          "mean": 214.68999999996274,
+          "p95": 240.59999999962747,
+          "p99": 242.30000000074506,
+          "max": 242.30000000074506,
+          "samples": 50
+        },
+        "completedMs": {
+          "mean": 259.00000000003723,
+          "p95": 291.19999999925494,
+          "p99": 295.3999999985099,
+          "max": 295.3999999985099,
+          "samples": 50
+        },
+        "stableMs": {
+          "mean": 0.0023999999985098845,
+          "p95": 0.0030000000074505806,
+          "p99": 0.0030000000074505806,
+          "max": 0.0030000000074505806,
+          "samples": 5
+        }
+      },
+      "current": {
+        "applyMs": {
+          "mean": 10.434000000096857,
+          "p95": 11.799999998882413,
+          "p99": 11.900000000372529,
+          "max": 11.900000000372529,
+          "samples": 50
+        },
+        "miniSubmitMs": {
+          "mean": 175.3980000000447,
+          "p95": 201.09999999962747,
+          "p99": 205.80000000074506,
+          "max": 205.80000000074506,
+          "samples": 50
+        },
+        "submitMs": {
+          "mean": 185.83200000014156,
+          "p95": 211.59999999962747,
+          "p99": 217.60000000149012,
+          "max": 217.60000000149012,
+          "samples": 50
+        },
+        "completedMs": {
+          "mean": 232.7760000000149,
+          "p95": 257.30000000074506,
+          "p99": 265.3999999985099,
+          "max": 265.3999999985099,
+          "samples": 50
+        },
+        "stableMs": {
+          "mean": 0.003,
+          "p95": 0.0030000000074505806,
+          "p99": 0.0030000000074505806,
+          "max": 0.0030000000074505806,
+          "samples": 5
+        }
+      },
+      "completedImprovementPercent": 10.125096525103693
+    },
+    {
+      "L": 500000,
+      "D": 500000,
+      "owners": 4,
+      "baseline": {
+        "applyMs": {
+          "mean": 29.910000000074504,
+          "p95": 32.59999999962747,
+          "p99": 34.5,
+          "max": 34.5,
+          "samples": 50
+        },
+        "miniSubmitMs": {
+          "mean": 209.96399999987335,
+          "p95": 234,
+          "p99": 236.60000000149012,
+          "max": 236.60000000149012,
+          "samples": 50
+        },
+        "submitMs": {
+          "mean": 239.87399999994784,
+          "p95": 267,
+          "p99": 268.80000000074506,
+          "max": 268.80000000074506,
+          "samples": 50
+        },
+        "completedMs": {
+          "mean": 290.08800000008193,
+          "p95": 320.90000000037253,
+          "p99": 326.30000000074506,
+          "max": 326.30000000074506,
+          "samples": 50
+        },
+        "stableMs": {
+          "mean": 0.002599999997764826,
+          "p95": 0.00400000000372529,
+          "p99": 0.00400000000372529,
+          "max": 0.00400000000372529,
+          "samples": 5
+        }
+      },
+      "current": {
+        "applyMs": {
+          "mean": 29.75400000009686,
+          "p95": 32.5,
+          "p99": 33.20000000111759,
+          "max": 33.20000000111759,
+          "samples": 50
+        },
+        "miniSubmitMs": {
+          "mean": 179.7280000001192,
+          "p95": 202.2000000011176,
+          "p99": 206.5,
+          "max": 206.5,
+          "samples": 50
+        },
+        "submitMs": {
+          "mean": 209.48200000021606,
+          "p95": 234.2000000011176,
+          "p99": 238.60000000149012,
+          "max": 238.60000000149012,
+          "samples": 50
+        },
+        "completedMs": {
+          "mean": 255.5500000000745,
+          "p95": 279.19999999925494,
+          "p99": 283.7000000011176,
+          "max": 283.7000000011176,
+          "samples": 50
+        },
+        "stableMs": {
+          "mean": 0.0021999999955296516,
+          "p95": 0.002999999988824129,
+          "p99": 0.002999999988824129,
+          "max": 0.002999999988824129,
+          "samples": 5
+        }
+      },
+      "completedImprovementPercent": 11.906042304403375
+    },
+    {
+      "L": 500000,
+      "D": 500000,
+      "owners": 1,
+      "baseline": {
+        "applyMs": {
+          "mean": 29.1539999999851,
+          "p95": 31.600000001490116,
+          "p99": 33.5,
+          "max": 33.5,
+          "samples": 50
+        },
+        "miniSubmitMs": {
+          "mean": 201.04600000005215,
+          "p95": 227.30000000074506,
+          "p99": 232.69999999925494,
+          "max": 232.69999999925494,
+          "samples": 50
+        },
+        "submitMs": {
+          "mean": 230.20000000003725,
+          "p95": 257.5,
+          "p99": 263.2999999988824,
+          "max": 263.2999999988824,
+          "samples": 50
+        },
+        "completedMs": {
+          "mean": 294.3920000000298,
+          "p95": 327.30000000074506,
+          "p99": 336.09999999962747,
+          "max": 336.09999999962747,
+          "samples": 50
+        },
+        "stableMs": {
+          "mean": 0.002600000005215407,
+          "p95": 0.0030000000074505806,
+          "p99": 0.0030000000074505806,
+          "max": 0.0030000000074505806,
+          "samples": 5
+        }
+      },
+      "current": {
+        "applyMs": {
+          "mean": 29.33399999976158,
+          "p95": 31.40000000037253,
+          "p99": 31.699999999254942,
+          "max": 31.699999999254942,
+          "samples": 50
+        },
+        "miniSubmitMs": {
+          "mean": 160.28800000015647,
+          "p95": 182.5,
+          "p99": 183.09999999962747,
+          "max": 183.09999999962747,
+          "samples": 50
+        },
+        "submitMs": {
+          "mean": 189.62199999991805,
+          "p95": 212.19999999925494,
+          "p99": 213.5,
+          "max": 213.5,
+          "samples": 50
+        },
+        "completedMs": {
+          "mean": 248.9620000000298,
+          "p95": 271,
+          "p99": 283.40000000037253,
+          "max": 283.40000000037253,
+          "samples": 50
+        },
+        "stableMs": {
+          "mean": 0.001600000001490116,
+          "p95": 0.002000000011175871,
+          "p99": 0.002000000011175871,
+          "max": 0.002000000011175871,
+          "samples": 5
+        }
+      },
+      "completedImprovementPercent": 15.431805212096583
+    }
+  ],
+  "verification": {
+    "unitTests": {
+      "passed": 123,
+      "failed": 0,
+      "log": "artifacts/performance/t11-dense/tests.txt"
+    },
+    "visual": {
+      "status": "PASS",
+      "comparisons": 212,
+      "browser": "153.0.8010.53",
+      "sourceHashes": {
+        "renderer.js": "90508cb2749ba3ca8bcca10f839ae04172606dc8f720a01248d42138551c166b",
+        "world-texture.js": "f1bc597a8af343b971173a47464a99294e2db9b2f3aa55c9410c7847211ed84f",
+        "minimap-cache.js": "38686272d717be2f05d3ad6014fde8d61d80cc6c15e469749ff0695cfd172eb0",
+        "territory.js": "3db4be208c15026c62a85104add4375ebedfbf3e59dcc8de3884e46d8ec00817"
+      }
+    },
+    "presentation": {
+      "status": "PASS",
+      "draws": 10,
+      "previews": 7,
+      "scope": "controlled RAF and actual Canvas submission, not physical display certification"
+    }
+  },
+  "rawReport": "artifacts/performance/t11-dense/benchmark/report.json"
+}

@@ -359,6 +359,8 @@ CPU 优化阶段保留现有 Game.step 的同步调用方式；在 worker/CUDA �
 
 ### T11：保持叠色的小地图缓存（M3）
 
+**2026-09-24 续优化：** 已拆分背景与细胞合成失效、复用 Canvas 存储、缓存颜色并跳过连续同色设置。五轮对照与 212 项像素检查见 [密集重绘续优化报告](../performance/t11-dense-redraw-results.md)。密集场景仍未达到 33ms，不改变本项像素及调度要求。
+
 **修改：** `public/renderer.js` 的 drawMinimap/updatePacket/setState。  
 **新增：** `public/minimap-cache.js`、`tests/browser/minimap.spec.js`。
 
