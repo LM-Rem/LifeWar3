@@ -33,14 +33,22 @@ export function encodeBoardV2({keys,ownerAt,board,previous,generation,baseGenera
   let p=HEADER_BYTES;
   if(!encoding){for(const key of keys){write24(v,p,key+ownerAt(key)*PACK);p+=3;}return buffer;}
   v.setUint16(p,tiles.length,true);p+=4;
-  const offsets=new Uint32Array(TILE_COUNT);let represented=0;
+  const offsets=new Uint32Array(TILE_COUNT),bytes=new Uint8Array(buffer);let represented=0,sparse=false;
   for(const tile of tiles){
     const dense=counts[tile]>512;
     v.setUint16(p,tile,true);v.setUint16(p+2,dense?0x8000:counts[tile],true);p+=4;
-    if(dense){for(let local=0;local<1024;local++)v.setUint8(p++,validLocal(tile,local)?board[keyOf(tile,local)]:0);represented+=Math.min(32,1000-(tile%32)*32)*Math.min(32,1000-(tile>>>5)*32);}
-    else{offsets[tile]=p;p+=counts[tile]*2;represented+=counts[tile];}
+    if(dense){
+      const x=(tile&31)*32,y=(tile>>>5)*32,width=Math.min(32,1000-x),height=Math.min(32,1000-y);
+      // ArrayBuffer starts zeroed, including the right/bottom padding.
+      for(let row=0;row<height;row++){const key=(y+row)*1000+x;bytes.set(board.subarray(key,key+width),p+row*32);}
+      p+=1024;represented+=width*height;
+    }
+    else{sparse=true;offsets[tile]=p;p+=counts[tile]*2;represented+=counts[tile];}
   }
-  for(const key of keys){const tile=tileOf(key),owner=ownerAt(key);if(counts[tile]<=512){v.setUint16(offsets[tile],localOf(key)+owner*1024,true);offsets[tile]+=2;}if(!previous[key]&&owner){write24(v,p,key);p+=3;}}
+  if(sparse||births)for(const key of keys){
+    if(sparse){const tile=tileOf(key);if(counts[tile]<=512){v.setUint16(offsets[tile],localOf(key)+ownerAt(key)*1024,true);offsets[tile]+=2;}}
+    if(births&&!previous[key]&&ownerAt(key)){write24(v,p,key);p+=3;}
+  }
   v.setUint32(24,represented,true);return buffer;
 }
 
@@ -80,7 +88,16 @@ export function decodeBoardPacket(buffer) {
       check(tile<TILE_COUNT&&!seenTiles[tile],'tile duplicate');seenTiles[tile]=1;
       if(mode===0x8000){
         check(p+1024<=buffer.byteLength,'dense truncation');
-        for(let local=0;local<1024;local++){const owner=v.getUint8(p++);check(owner<=4,'owner');if(validLocal(tile,local))add(keyOf(tile,local),owner);else check(owner===0,'padding');}
+        const x=(tile&31)*32,y=(tile>>>5)*32,width=Math.min(32,1000-x),height=Math.min(32,1000-y);
+        check(n+width*height<=count,'entry');
+        for(let row=0;row<32;row++){
+          const key=(y+row)*1000+x,validWidth=row<height?width:0;
+          for(let col=0;col<validWidth;col++){
+            const owner=v.getUint8(p++);check(owner<=4,'owner');
+            if(seen)seen[key+col]=owner+1;entries[n++]=key+col+owner*CELL_COUNT;
+          }
+          for(let col=validWidth;col<32;col++)check(v.getUint8(p++)===0,'padding');
+        }
       }else{
         check(mode>0&&mode<=1024&&p+mode*2<=buffer.byteLength,'sparse count');
         seenLocals.fill(0);
@@ -100,7 +117,8 @@ export function decodeBoardPacket(buffer) {
 export function orderedBoardEntries(packet,board) {
   if(packet.encoding!==1)return packet.entries;
   let births=0,n=0;const result=new Uint32Array(packet.entries.length);
-  for(const value of packet.entries){const key=value%CELL_COUNT,owner=Math.floor(value/CELL_COUNT);
+  // Indexed traversal avoids iterator overhead in million-entry dense packets.
+  for(let i=0;i<packet.entries.length;i++){const value=packet.entries[i],key=value%CELL_COUNT,owner=(value/CELL_COUNT)>>>0;
     if(owner&&!board[key]){check((packet.insertionFlags?.[key]??0)>8,'missing insertion');births++;}
     else{check((packet.insertionFlags?.[key]??0)<=8,'unexpected insertion');if(board[key]!==owner)result[n++]=value;}
   }

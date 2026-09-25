@@ -18,7 +18,10 @@
     "test:browser:live": "node tests/browser/live-presentation.mjs",
     "benchmark:minimap": "node tests/performance/minimap-dense.mjs",
     "benchmark:protocol": "node tests/performance/protocol-v2.mjs",
-    "test:browser:protocol": "node tests/browser/protocol-v2.mjs"
+    "test:browser:protocol": "node tests/browser/protocol-v2.mjs",
+    "benchmark:minimap:batching": "node tests/performance/minimap-batching.mjs",
+    "benchmark:codec:compare": "node tests/performance/codec-compare.mjs",
+    "benchmark:e2e": "node tests/performance/end-to-end.mjs"
   },
   "dependencies": {
     "ws": "^8.18.0"

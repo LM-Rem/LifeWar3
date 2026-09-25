@@ -84,6 +84,9 @@ export class Battlefield {
     this.generation = decoded.generation;
     for (const value of entries) {
       const owner = Math.floor(value / 1000000), key = value % 1000000;
+      // No-op entries (including dense tile padding on the board) must not
+      // write Map/texture or invalidate a local minimap contribution.
+      if (this.board[key] === owner) continue;
       this.minimapCache.change(key, this.board[key], owner);
       this.board[key] = owner;
       if (owner) { this.cells.set(key,owner); this.texture.set(key,owner); }

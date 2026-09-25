@@ -14,6 +14,8 @@
 
 **依据：** [前期分析](../性能优化与CUDA可行性分析.md)、当前工作区 README、config.json、src/engine.js、src/dormancy.js、src/server.js、src/bots.js、public/renderer.js、public/app.js、public/territory.js 和 tests/。
 
+**2026-09-25 续工作：** 评估了连续同色与不重叠保序路径批绘，均未满足严格像素一致，未采用；T13 按行编解码及无效写入优化已实现。本轮补充初始版／当前 v1／当前 v2 的四浏览器本地全链路对照，结果与限制见 [续优化和 A/B 报告](../performance/2026-09-25-render-codec-ab.md)。这不是 T17 发布认证，密集重绘与严格连续呈现问题仍须保留为未解决项。
+
 本文文件路径均相对于项目根目录 `D:\Desktop\Project\LifeWar3`。拟新增文件会明确标为“新增”。
 
 ---
