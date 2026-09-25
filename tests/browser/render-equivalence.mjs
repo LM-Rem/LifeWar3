@@ -56,6 +56,15 @@ try {
     f.updatePacket(packet(mono.slice(0,4097).map(([k])=>[k,1])));await capture('threshold4097');
     f.updatePacket(packet(mono));f.updatePacket(packet([[0,0],[999999,4],[0,2]]));await capture('dense-then-small');
     f.updatePacket(packet(mono,true));f.updatePacket(packet([[0,0],[999999,2]]));await capture('snapshot-then-small');
+    // Background style changes with a live contributor index: every territory,
+    // base elimination/restoration and all viewer stroke styles, at both DPRs.
+    for(let i=0;i<state.nodes.length;i++){
+      f.updatePacket(packet([[500500,2]]));state.nodes[i].owner=(i%4)+1;f.setState(state);await capture(`indexed-node-${i}`);
+    }
+    for(let i=0;i<state.players.length;i++)for(const eliminated of [true,false]){
+      f.updatePacket(packet([[500500,2]]));state.players[i].eliminated=eliminated;f.setState(state);await capture(`indexed-base-${i}-${eliminated}`);
+    }
+    for(const me of [1,2,3,4]){f.updatePacket(packet([[500500,2]]));f.me=me;await capture(`indexed-me-${me}`);}
     return {hashes,timings};
    },structuredClone(state));results[label].push({dpr,...result});await page.close();
   }

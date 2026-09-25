@@ -1,4 +1,3 @@
-import {territoryOwner} from './territory.js';
 // Cache the opaque composition, preserving fractional 1x1 strokes and Map order.
 export class MinimapCache {
   constructor() { this.invalid = true; this.dirty = new Set(); }
@@ -35,40 +34,18 @@ export class MinimapCache {
       this.dirty.add(tile);
     }
   }
-  dirtyBounds(left, top, right, bottom) {
-    for(let ty=Math.max(0,Math.floor(top/16));ty<=Math.min(this.side-1,Math.floor(bottom/16));ty++)
-      for(let tx=Math.max(0,Math.floor(left/16));tx<=Math.min(this.side-1,Math.floor(right/16));tx++)this.dirty.add(ty*this.side+tx);
-  }
   draw(field, paintBackground, paintBases, paintCell) {
     const w = field.minimap.width;
     const signature = JSON.stringify([field.me, field.state?.nodes.map(n => [n.x,n.y,n.owner]), field.state?.players.map(p => [p.x,p.y,p.eliminated])]);
-    const geometry = JSON.stringify([field.state?.nodes.map(n=>[n.id,n.x,n.y]),field.state?.players.map(p=>[p.id,p.x,p.y])]);
-    const geometryChanged=this.invalid||this.width!==w||this.geometry!==geometry||this.territories!==field.territories;
-    if (geometryChanged || this.signature !== signature) {
-      const styles=field.state?field.territories.map(t=>{const owner=territoryOwner(t,field.state.players,field.state.nodes);return `${owner}/${owner===field.me}`;}):[];
-      const nodes=field.state?.nodes.map(n=>n.owner)??[],bases=field.state?.players.map(p=>!!p.eliminated)??[];
-      if(!geometryChanged&&this.indexed&&!this.full){
-        // Repaint complete primitives on the existing scratch canvas, then copy
-        // integer tiles. The 4px margin covers .65px strokes, default miter limit
-        // 10 and antialias coverage. Geometry changes always take the full path.
-        field.territories.forEach((region,i)=>{
-          if(styles[i]===this.regionStyles[i]||!region.polygon.length)return;
-          const xs=region.polygon.map(p=>p[0]*this.scale),ys=region.polygon.map(p=>p[1]*this.scale);
-          this.dirtyBounds(Math.min(...xs)-4,Math.min(...ys)-4,Math.max(...xs)+4,Math.max(...ys)+4);
-        });
-        field.state.nodes.forEach((n,i)=>{if(nodes[i]!==this.nodeStyles[i])this.dirtyBounds(n.x*this.scale-2,n.y*this.scale-2,n.x*this.scale+2,n.y*this.scale+2);});
-        field.state.players.forEach((p,i)=>{if(bases[i]!==this.baseStyles[i])this.dirtyBounds(p.x*this.scale-3,p.y*this.scale-3,p.x*this.scale+3,p.y*this.scale+3);});
-      }else this.full=true;
-      this.regionStyles=styles;this.nodeStyles=nodes;this.baseStyles=bases;this.geometry=geometry;
+    if (this.invalid || this.width !== w || this.signature !== signature || this.territories !== field.territories) {
       this.width = w; this.scale = w / 1000; this.side = Math.ceil(w / 16); this.signature = signature; this.territories = field.territories;
       this.canvas ??= document.createElement('canvas');
       if (this.canvas.width !== w || this.canvas.height !== w) this.canvas.width = this.canvas.height = w;
-      this.context = this.canvas.getContext('2d');
-      if(geometryChanged){this.indexed=false;this.members=null;}
+      this.context = this.canvas.getContext('2d'); this.indexed = false; this.members = null;
       this.background ??= document.createElement('canvas');
       if (this.background.width !== w || this.background.height !== w) this.background.width = this.background.height = w;
       paintBackground(this.background.getContext('2d'));
-      this.invalid = false;
+      this.invalid = false; this.full = true;
     }
     const c = this.context;
     let work=0;for(const tile of this.dirty)work+=this.members?.[tile]?.size??0;

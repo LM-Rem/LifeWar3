@@ -24,7 +24,9 @@
     "benchmark:e2e": "node tests/performance/end-to-end.mjs",
     "benchmark:scheduler": "node tests/performance/scheduler.mjs",
     "benchmark:scheduler:e2e": "node tests/performance/scheduler-e2e.mjs",
-    "benchmark:minimap:profile": "node tests/performance/minimap-profile.mjs"
+    "benchmark:minimap:profile": "node tests/performance/minimap-profile.mjs",
+    "benchmark:minimap:background": "node tests/performance/minimap-background.mjs",
+    "benchmark:minimap:layers": "node tests/performance/minimap-layers.mjs"
   },
   "dependencies": {
     "ws": "^8.18.0"

@@ -34,3 +34,18 @@ test('dense invalidation retains background storage and safely transitions to lo
     assert.ok(bases>=6);
   } finally {globalThis.document=originalDocument;}
 });
+
+test('ownership replays only affected tiles and retains ordered contributors; geometry resets them',()=>{
+ const originalDocument=globalThis.document,context={drawImage(){}};
+ globalThis.document={createElement:()=>({width:180,height:180,getContext:()=>context})};
+ try{
+  const cache=new MinimapCache(),field={minimap:{width:180},mctx:context,me:1,
+   state:{nodes:[{id:0,x:10,y:10,owner:0}],players:[]},
+   territories:[{kind:'node',id:0,polygon:[[0,0],[50,0],[50,50],[0,50]]}],cells:new Map([[0,1],[999999,2]])};
+  let drawn=[];const draw=()=>{drawn=[];cache.draw(field,()=>{},()=>{},(c,k)=>drawn.push(k));};
+  draw();cache.beginPacket(field,1,false);const members=cache.members;
+  field.state.nodes[0].owner=1;draw();assert.deepEqual(drawn,[0]);assert.equal(cache.members,members);
+  field.me=2;draw();assert.deepEqual(drawn,[0]);assert.equal(cache.members,members);
+  field.state.nodes[0].x=20;draw();assert.deepEqual(drawn,[0,999999]);assert.equal(cache.members,null);
+ }finally{globalThis.document=originalDocument;}
+});

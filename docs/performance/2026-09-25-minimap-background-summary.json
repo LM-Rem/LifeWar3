@@ -1,0 +1,1071 @@
+{
+  "environment": {
+    "capturedAt": "2026-09-25T13:08:01.073Z",
+    "node": "v24.11.1",
+    "platform": "win32",
+    "os": "10.0.26200",
+    "arch": "x64",
+    "cpu": "13th Gen Intel(R) Core(TM) i9-13900HX",
+    "logicalCores": 32,
+    "memoryBytes": 34124718080,
+    "gpu": "NVIDIA GeForce RTX 5070 Ti Laptop GPU, 595.79, 12227 MiB, 58, 765 MHz",
+    "powerSchemeGuid": "381b4222-f694-41f0-9685-ff5bb260df2e",
+    "browser": "153.0.8010.53",
+    "dpr": null,
+    "displayRefreshHz": null,
+    "measuredNetworkMbps": null,
+    "unavailable": "null means unmeasured; CPU synthetic runs do not measure browser, display or network."
+  },
+  "sourceHashes": {
+    "public/minimap-cache.js": "56a51349fbf3f6471de738dd2b1fa6e7d6892a0157660e90553a4b390b7d3cbc",
+    "public/renderer.js": "a0b671777fd5a1bf67c1e2444c9f197263850f2c1713978f67c094ab4660648d"
+  },
+  "baselineHash": "838d86bc3768696ff46f919e9eb2529b0b0c796bcd82f9e4e24c862cab2f7609",
+  "scope": "Controlled state transitions; completion includes PNG encoding, not pure GPU time. No ambient RAF. Whole-state geometry changes intentionally fall back.",
+  "pixelMatch": true,
+  "backgroundPixelPairs": 108,
+  "rows": [
+    {
+      "name": "mono",
+      "step": "unindexed-node",
+      "baseline": {
+        "packetMs": 0,
+        "submitMs": 264.3999999985099,
+        "completionMs": 76.5,
+        "totalMs": 340.8999999985099,
+        "indexRetained": false
+      },
+      "current": {
+        "packetMs": 0,
+        "submitMs": 258.69999999552965,
+        "completionMs": 73.10000000149012,
+        "totalMs": 331.79999999701977,
+        "indexRetained": false
+      }
+    },
+    {
+      "name": "mono",
+      "step": "index",
+      "baseline": {
+        "packetMs": 72.90000000596046,
+        "submitMs": 0.10000000149011612,
+        "completionMs": 1.6000000014901161,
+        "totalMs": 1.7000000029802322,
+        "indexRetained": true
+      },
+      "current": {
+        "packetMs": 70.89999999850988,
+        "submitMs": 0.10000000149011612,
+        "completionMs": 1.1000000014901161,
+        "totalMs": 1.2999999970197678,
+        "indexRetained": true
+      }
+    },
+    {
+      "name": "mono",
+      "step": "node",
+      "baseline": {
+        "packetMs": 0,
+        "submitMs": 258.70000000298023,
+        "completionMs": 71.5,
+        "totalMs": 330.20000000298023,
+        "indexRetained": false
+      },
+      "current": {
+        "packetMs": 0,
+        "submitMs": 74,
+        "completionMs": 53.19999999552965,
+        "totalMs": 127.80000000447035,
+        "indexRetained": true
+      }
+    },
+    {
+      "name": "mono",
+      "step": "eliminate",
+      "baseline": {
+        "packetMs": 57.20000000298023,
+        "submitMs": 254.70000000298023,
+        "completionMs": 75,
+        "totalMs": 327.80000000447035,
+        "indexRetained": false
+      },
+      "current": {
+        "packetMs": 0,
+        "submitMs": 58.19999999552965,
+        "completionMs": 23.399999998509884,
+        "totalMs": 82.5,
+        "indexRetained": true
+      }
+    },
+    {
+      "name": "mono",
+      "step": "restore",
+      "baseline": {
+        "packetMs": 55.70000000298023,
+        "submitMs": 254.70000000298023,
+        "completionMs": 72.20000000298023,
+        "totalMs": 326.6000000014901,
+        "indexRetained": false
+      },
+      "current": {
+        "packetMs": 0,
+        "submitMs": 55.899999998509884,
+        "completionMs": 26,
+        "totalMs": 83.29999999701977,
+        "indexRetained": true
+      }
+    },
+    {
+      "name": "mono",
+      "step": "me",
+      "baseline": {
+        "packetMs": 56.600000001490116,
+        "submitMs": 256.29999999701977,
+        "completionMs": 73,
+        "totalMs": 329.6000000014901,
+        "indexRetained": false
+      },
+      "current": {
+        "packetMs": 0.10000000149011612,
+        "submitMs": 171.09999999403954,
+        "completionMs": 67.5,
+        "totalMs": 238.59999999403954,
+        "indexRetained": true
+      }
+    },
+    {
+      "name": "mono",
+      "step": "move-node",
+      "baseline": {
+        "packetMs": 0,
+        "submitMs": 255.39999999850988,
+        "completionMs": 73.20000000298023,
+        "totalMs": 332.6000000014901,
+        "indexRetained": false
+      },
+      "current": {
+        "packetMs": 0,
+        "submitMs": 271.8999999985099,
+        "completionMs": 64,
+        "totalMs": 332.6000000014901,
+        "indexRetained": false
+      }
+    },
+    {
+      "name": "mono",
+      "step": "move-back",
+      "baseline": {
+        "packetMs": 0,
+        "submitMs": 257.69999999552965,
+        "completionMs": 73,
+        "totalMs": 330.69999999552965,
+        "indexRetained": false
+      },
+      "current": {
+        "packetMs": 0,
+        "submitMs": 262.79999999701977,
+        "completionMs": 71.5,
+        "totalMs": 335.3999999985099,
+        "indexRetained": false
+      }
+    },
+    {
+      "name": "mono",
+      "step": "many-nodes",
+      "baseline": {
+        "packetMs": 55,
+        "submitMs": 259.79999999701977,
+        "completionMs": 66.60000000149012,
+        "totalMs": 326.3999999985099,
+        "indexRetained": false
+      },
+      "current": {
+        "packetMs": 59.5,
+        "submitMs": 255.10000000149012,
+        "completionMs": 75.69999999552965,
+        "totalMs": 330.79999999701977,
+        "indexRetained": true
+      }
+    },
+    {
+      "name": "mono",
+      "step": "dense-background",
+      "baseline": {
+        "packetMs": 95.79999999701977,
+        "submitMs": 255.60000000149012,
+        "completionMs": 74.5,
+        "totalMs": 330.1000000014901,
+        "indexRetained": false
+      },
+      "current": {
+        "packetMs": 75.39999999850988,
+        "submitMs": 266.09999999403954,
+        "completionMs": 73.60000000149012,
+        "totalMs": 339.69999999552965,
+        "indexRetained": false
+      }
+    },
+    {
+      "name": "mono",
+      "step": "reindex",
+      "baseline": {
+        "packetMs": 56.79999999701977,
+        "submitMs": 4.4000000059604645,
+        "completionMs": 5.199999995529652,
+        "totalMs": 9.600000001490116,
+        "indexRetained": true
+      },
+      "current": {
+        "packetMs": 56.899999998509884,
+        "submitMs": 3.2999999970197678,
+        "completionMs": 4.4000000059604645,
+        "totalMs": 8,
+        "indexRetained": true
+      }
+    },
+    {
+      "name": "mono",
+      "step": "edge-base",
+      "baseline": {
+        "packetMs": 0,
+        "submitMs": 251.5,
+        "completionMs": 71.39999999850988,
+        "totalMs": 322.70000000298023,
+        "indexRetained": false
+      },
+      "current": {
+        "packetMs": 0,
+        "submitMs": 261.8999999985099,
+        "completionMs": 69.19999999552965,
+        "totalMs": 331.09999999403954,
+        "indexRetained": false
+      }
+    },
+    {
+      "name": "four",
+      "step": "unindexed-node",
+      "baseline": {
+        "packetMs": 0,
+        "submitMs": 119.29999999701977,
+        "completionMs": 72.10000000149012,
+        "totalMs": 191.39999999850988,
+        "indexRetained": false
+      },
+      "current": {
+        "packetMs": 0,
+        "submitMs": 121.80000000447035,
+        "completionMs": 71.29999999701977,
+        "totalMs": 187.70000000298023,
+        "indexRetained": false
+      }
+    },
+    {
+      "name": "four",
+      "step": "index",
+      "baseline": {
+        "packetMs": 40.70000000298023,
+        "submitMs": 0,
+        "completionMs": 2.100000001490116,
+        "totalMs": 2.100000001490116,
+        "indexRetained": true
+      },
+      "current": {
+        "packetMs": 43.19999999552965,
+        "submitMs": 0,
+        "completionMs": 2,
+        "totalMs": 2,
+        "indexRetained": true
+      }
+    },
+    {
+      "name": "four",
+      "step": "node",
+      "baseline": {
+        "packetMs": 0,
+        "submitMs": 124.79999999701977,
+        "completionMs": 65.5,
+        "totalMs": 190.70000000298023,
+        "indexRetained": false
+      },
+      "current": {
+        "packetMs": 0,
+        "submitMs": 48,
+        "completionMs": 19.899999998509884,
+        "totalMs": 67.89999999850988,
+        "indexRetained": true
+      }
+    },
+    {
+      "name": "four",
+      "step": "eliminate",
+      "baseline": {
+        "packetMs": 45.899999998509884,
+        "submitMs": 122.40000000596046,
+        "completionMs": 67.19999999552965,
+        "totalMs": 189.60000000149012,
+        "indexRetained": false
+      },
+      "current": {
+        "packetMs": 0,
+        "submitMs": 25.799999997019768,
+        "completionMs": 17,
+        "totalMs": 43.600000001490116,
+        "indexRetained": true
+      }
+    },
+    {
+      "name": "four",
+      "step": "restore",
+      "baseline": {
+        "packetMs": 39.29999999701977,
+        "submitMs": 124.20000000298023,
+        "completionMs": 69,
+        "totalMs": 190.60000000149012,
+        "indexRetained": false
+      },
+      "current": {
+        "packetMs": 0,
+        "submitMs": 23.600000001490116,
+        "completionMs": 21.30000000447035,
+        "totalMs": 44,
+        "indexRetained": true
+      }
+    },
+    {
+      "name": "four",
+      "step": "me",
+      "baseline": {
+        "packetMs": 39.20000000298023,
+        "submitMs": 134,
+        "completionMs": 66.60000000149012,
+        "totalMs": 196.20000000298023,
+        "indexRetained": false
+      },
+      "current": {
+        "packetMs": 0,
+        "submitMs": 78.60000000149012,
+        "completionMs": 54.100000001490116,
+        "totalMs": 127.29999999701977,
+        "indexRetained": true
+      }
+    },
+    {
+      "name": "four",
+      "step": "move-node",
+      "baseline": {
+        "packetMs": 0,
+        "submitMs": 129.10000000149012,
+        "completionMs": 70.70000000298023,
+        "totalMs": 200.30000000447035,
+        "indexRetained": false
+      },
+      "current": {
+        "packetMs": 0,
+        "submitMs": 122.39999999850988,
+        "completionMs": 67.79999999701977,
+        "totalMs": 190.19999999552965,
+        "indexRetained": false
+      }
+    },
+    {
+      "name": "four",
+      "step": "move-back",
+      "baseline": {
+        "packetMs": 0,
+        "submitMs": 116.60000000149012,
+        "completionMs": 80.39999999850988,
+        "totalMs": 198.10000000149012,
+        "indexRetained": false
+      },
+      "current": {
+        "packetMs": 0,
+        "submitMs": 122.69999999552965,
+        "completionMs": 64.10000000149012,
+        "totalMs": 186.79999999701977,
+        "indexRetained": false
+      }
+    },
+    {
+      "name": "four",
+      "step": "many-nodes",
+      "baseline": {
+        "packetMs": 40.399999998509884,
+        "submitMs": 122.10000000149012,
+        "completionMs": 70.89999999850988,
+        "totalMs": 193,
+        "indexRetained": false
+      },
+      "current": {
+        "packetMs": 41.19999999552965,
+        "submitMs": 126.60000000149012,
+        "completionMs": 64.5,
+        "totalMs": 191.10000000149012,
+        "indexRetained": true
+      }
+    },
+    {
+      "name": "four",
+      "step": "dense-background",
+      "baseline": {
+        "packetMs": 65.39999999850988,
+        "submitMs": 121,
+        "completionMs": 71.39999999850988,
+        "totalMs": 192.10000000149012,
+        "indexRetained": false
+      },
+      "current": {
+        "packetMs": 61.399999998509884,
+        "submitMs": 119.60000000149012,
+        "completionMs": 70.70000000298023,
+        "totalMs": 190.30000000447035,
+        "indexRetained": false
+      }
+    },
+    {
+      "name": "four",
+      "step": "reindex",
+      "baseline": {
+        "packetMs": 42.69999999552965,
+        "submitMs": 1.8000000044703484,
+        "completionMs": 3.5,
+        "totalMs": 5.399999998509884,
+        "indexRetained": true
+      },
+      "current": {
+        "packetMs": 42.600000001490116,
+        "submitMs": 1.6000000014901161,
+        "completionMs": 4,
+        "totalMs": 5.600000001490116,
+        "indexRetained": true
+      }
+    },
+    {
+      "name": "four",
+      "step": "edge-base",
+      "baseline": {
+        "packetMs": 0,
+        "submitMs": 126.5,
+        "completionMs": 68.89999999850988,
+        "totalMs": 193.89999999850988,
+        "indexRetained": false
+      },
+      "current": {
+        "packetMs": 0,
+        "submitMs": 122.30000000447035,
+        "completionMs": 74.79999999701977,
+        "totalMs": 189.70000000298023,
+        "indexRetained": false
+      }
+    },
+    {
+      "name": "fractional",
+      "step": "unindexed-node",
+      "baseline": {
+        "packetMs": 0,
+        "submitMs": 16.5,
+        "completionMs": 29.5,
+        "totalMs": 44.69999999552965,
+        "indexRetained": false
+      },
+      "current": {
+        "packetMs": 0,
+        "submitMs": 22.30000000447035,
+        "completionMs": 30,
+        "totalMs": 48.80000000447035,
+        "indexRetained": false
+      }
+    },
+    {
+      "name": "fractional",
+      "step": "index",
+      "baseline": {
+        "packetMs": 6.799999997019768,
+        "submitMs": 0,
+        "completionMs": 1.8999999985098839,
+        "totalMs": 1.8999999985098839,
+        "indexRetained": true
+      },
+      "current": {
+        "packetMs": 6.5999999940395355,
+        "submitMs": 0,
+        "completionMs": 2.3000000044703484,
+        "totalMs": 2.3000000044703484,
+        "indexRetained": true
+      }
+    },
+    {
+      "name": "fractional",
+      "step": "node",
+      "baseline": {
+        "packetMs": 0,
+        "submitMs": 16,
+        "completionMs": 28.80000000447035,
+        "totalMs": 44,
+        "indexRetained": false
+      },
+      "current": {
+        "packetMs": 0,
+        "submitMs": 4.600000001490116,
+        "completionMs": 7.700000002980232,
+        "totalMs": 12.299999997019768,
+        "indexRetained": true
+      }
+    },
+    {
+      "name": "fractional",
+      "step": "eliminate",
+      "baseline": {
+        "packetMs": 6.5,
+        "submitMs": 16,
+        "completionMs": 28.299999997019768,
+        "totalMs": 43.399999998509884,
+        "indexRetained": false
+      },
+      "current": {
+        "packetMs": 0,
+        "submitMs": 4.100000001490116,
+        "completionMs": 7.399999998509884,
+        "totalMs": 11.800000004470348,
+        "indexRetained": true
+      }
+    },
+    {
+      "name": "fractional",
+      "step": "restore",
+      "baseline": {
+        "packetMs": 6.300000004470348,
+        "submitMs": 15.199999995529652,
+        "completionMs": 27.5,
+        "totalMs": 42.79999999701977,
+        "indexRetained": false
+      },
+      "current": {
+        "packetMs": 0,
+        "submitMs": 4.399999998509884,
+        "completionMs": 7.399999998509884,
+        "totalMs": 11.799999997019768,
+        "indexRetained": true
+      }
+    },
+    {
+      "name": "fractional",
+      "step": "me",
+      "baseline": {
+        "packetMs": 5.899999998509884,
+        "submitMs": 15.200000002980232,
+        "completionMs": 28,
+        "totalMs": 43.20000000298023,
+        "indexRetained": false
+      },
+      "current": {
+        "packetMs": 0,
+        "submitMs": 11.700000002980232,
+        "completionMs": 16.600000001490116,
+        "totalMs": 28.30000000447035,
+        "indexRetained": true
+      }
+    },
+    {
+      "name": "fractional",
+      "step": "move-node",
+      "baseline": {
+        "packetMs": 0,
+        "submitMs": 15.400000005960464,
+        "completionMs": 29.399999998509884,
+        "totalMs": 44.80000000447035,
+        "indexRetained": false
+      },
+      "current": {
+        "packetMs": 0,
+        "submitMs": 15.800000004470348,
+        "completionMs": 31.299999997019768,
+        "totalMs": 47.20000000298023,
+        "indexRetained": false
+      }
+    },
+    {
+      "name": "fractional",
+      "step": "move-back",
+      "baseline": {
+        "packetMs": 0,
+        "submitMs": 15.200000002980232,
+        "completionMs": 29.100000001490116,
+        "totalMs": 43.5,
+        "indexRetained": false
+      },
+      "current": {
+        "packetMs": 0,
+        "submitMs": 16,
+        "completionMs": 28,
+        "totalMs": 44.30000000447035,
+        "indexRetained": false
+      }
+    },
+    {
+      "name": "fractional",
+      "step": "many-nodes",
+      "baseline": {
+        "packetMs": 5.899999998509884,
+        "submitMs": 15.399999998509884,
+        "completionMs": 28.5,
+        "totalMs": 43.399999998509884,
+        "indexRetained": false
+      },
+      "current": {
+        "packetMs": 6.5,
+        "submitMs": 16.30000000447035,
+        "completionMs": 27.69999999552965,
+        "totalMs": 44,
+        "indexRetained": true
+      }
+    },
+    {
+      "name": "fractional",
+      "step": "dense-background",
+      "baseline": {
+        "packetMs": 8.100000001490116,
+        "submitMs": 15.200000002980232,
+        "completionMs": 29.299999997019768,
+        "totalMs": 44.5,
+        "indexRetained": false
+      },
+      "current": {
+        "packetMs": 9.899999998509884,
+        "submitMs": 16.100000001490116,
+        "completionMs": 27.100000001490116,
+        "totalMs": 42.80000000447035,
+        "indexRetained": false
+      }
+    },
+    {
+      "name": "fractional",
+      "step": "reindex",
+      "baseline": {
+        "packetMs": 5.9000000059604645,
+        "submitMs": 0.29999999701976776,
+        "completionMs": 3,
+        "totalMs": 3.3000000044703484,
+        "indexRetained": true
+      },
+      "current": {
+        "packetMs": 6.699999995529652,
+        "submitMs": 0.20000000298023224,
+        "completionMs": 2.5,
+        "totalMs": 2.7000000029802322,
+        "indexRetained": true
+      }
+    },
+    {
+      "name": "fractional",
+      "step": "edge-base",
+      "baseline": {
+        "packetMs": 0,
+        "submitMs": 14.700000002980232,
+        "completionMs": 28.399999998509884,
+        "totalMs": 43.69999999552965,
+        "indexRetained": false
+      },
+      "current": {
+        "packetMs": 0,
+        "submitMs": 16.399999998509884,
+        "completionMs": 29.099999994039536,
+        "totalMs": 44.899999998509884,
+        "indexRetained": false
+      }
+    }
+  ],
+  "layers": {
+    "browser": "153.0.8010.53",
+    "pixelMatch": false,
+    "scope": "Transparent cell layer then source-over composition versus original per-cell background composition; exact RGBA comparison.",
+    "results": [
+      {
+        "width": 180,
+        "owners": 1,
+        "bg": "#08141a",
+        "differentChannels": 12371,
+        "maxError": 2
+      },
+      {
+        "width": 180,
+        "owners": 1,
+        "bg": "#345167",
+        "differentChannels": 12152,
+        "maxError": 2
+      },
+      {
+        "width": 180,
+        "owners": 4,
+        "bg": "#08141a",
+        "differentChannels": 12124,
+        "maxError": 2
+      },
+      {
+        "width": 180,
+        "owners": 4,
+        "bg": "#345167",
+        "differentChannels": 12219,
+        "maxError": 2
+      },
+      {
+        "width": 197,
+        "owners": 1,
+        "bg": "#08141a",
+        "differentChannels": 12452,
+        "maxError": 2
+      },
+      {
+        "width": 197,
+        "owners": 1,
+        "bg": "#345167",
+        "differentChannels": 12691,
+        "maxError": 2
+      },
+      {
+        "width": 197,
+        "owners": 4,
+        "bg": "#08141a",
+        "differentChannels": 12468,
+        "maxError": 2
+      },
+      {
+        "width": 197,
+        "owners": 4,
+        "bg": "#345167",
+        "differentChannels": 12460,
+        "maxError": 2
+      },
+      {
+        "width": 360,
+        "owners": 1,
+        "bg": "#08141a",
+        "differentChannels": 8746,
+        "maxError": 1
+      },
+      {
+        "width": 360,
+        "owners": 1,
+        "bg": "#345167",
+        "differentChannels": 7761,
+        "maxError": 1
+      },
+      {
+        "width": 360,
+        "owners": 4,
+        "bg": "#08141a",
+        "differentChannels": 8697,
+        "maxError": 1
+      },
+      {
+        "width": 360,
+        "owners": 4,
+        "bg": "#345167",
+        "differentChannels": 8018,
+        "maxError": 1
+      }
+    ]
+  },
+  "dense": {
+    "variant": "current-v1",
+    "scenario": "P03",
+    "clients": 1,
+    "dpr": 1,
+    "generations": 100,
+    "warmup": 100,
+    "warmBoardHash": "3af13354037bac6772dc8a1b956889786813c79052afadfc5d3b8ff33dded665",
+    "finalBoardHash": "98682edb5d1c41371128b56b907b6c45b87631acd884eece645d8a515ebc6d43",
+    "tickMs": {
+      "min": 24.139600000000428,
+      "max": 36.42230000000018,
+      "mean": 26.823134000000017,
+      "p50": 26.851700000000164,
+      "p95": 28.928499999999985,
+      "p99": 30.34569999999985
+    },
+    "stepMs": {
+      "min": 23.9984000000004,
+      "max": 35.91980000000012,
+      "mean": 26.628324,
+      "p50": 26.69260000000031,
+      "p95": 28.6895999999997,
+      "p99": 30.117299999999886
+    },
+    "L": {
+      "min": 891373,
+      "max": 990373,
+      "mean": 940873,
+      "p50": 940373,
+      "p95": 985373,
+      "p99": 989373
+    },
+    "D": {
+      "min": 1756,
+      "max": 1756,
+      "mean": 1756,
+      "p50": 1756,
+      "p95": 1756,
+      "p99": 1756
+    },
+    "deadlineMisses": 0,
+    "elapsedMs": 5020.5599999999995,
+    "observedHz": 19.918096786015905,
+    "wireBytes": 809968,
+    "wireBytesPerSecond": 161330.2101757573,
+    "wireBytesPerGeneration": 8099.68,
+    "snapshotCount": 0,
+    "serverMemory": {
+      "generation": 200,
+      "rss": 215781376,
+      "heapTotal": 125755392,
+      "heapUsed": 65811560,
+      "external": 50269158,
+      "arrayBuffers": 46337297
+    },
+    "clientMetrics": [
+      {
+        "frameMs": {
+          "min": 0.09999999403953552,
+          "max": 353.19999999552965,
+          "mean": 2.3402402402872258,
+          "p50": 0.29999999701976776,
+          "p95": 12.400000005960464,
+          "p99": 21.899999998509884
+        },
+        "rafMs": {
+          "min": 3.6000000000001364,
+          "max": 349.89999999999964,
+          "mean": 7.545045045045045,
+          "p50": 4.2000000000000455,
+          "p95": 24.90000000000009,
+          "p99": 37.5
+        },
+        "decodeMs": {
+          "min": 0,
+          "max": 0.10000000149011612,
+          "mean": 0.026000000089406967,
+          "p50": 0,
+          "p95": 0.10000000149011612,
+          "p99": 0.10000000149011612
+        },
+        "applyMs": {
+          "min": 0.3999999985098839,
+          "max": 65.10000000149012,
+          "mean": 1.388888889114664,
+          "p50": 0.7000000029802322,
+          "p95": 1,
+          "p99": 65.10000000149012
+        },
+        "minimapMs": {
+          "min": 0,
+          "max": 352.29999999701977,
+          "mean": 10.271311475544191,
+          "p50": 6.300000004470348,
+          "p95": 21,
+          "p99": 23.5
+        },
+        "queuePeak": 7,
+        "queueDepth": {
+          "min": 0,
+          "max": 6,
+          "mean": 0.057057057057057055,
+          "p50": 0,
+          "p95": 0,
+          "p99": 3
+        },
+        "undrawnGenerations": 0,
+        "missingGenerations": 0,
+        "failures": 0,
+        "heap": {
+          "usedSize": 44381728,
+          "totalSize": 75264000,
+          "embedderHeapUsedSize": 18417528,
+          "backingStorageSize": 5791493
+        },
+        "visibility": "visible"
+      }
+    ],
+    "scheduler": {
+      "mode": "deadline",
+      "intervalMs": {
+        "min": 44.88389999999981,
+        "max": 64.33500000000004,
+        "mean": 50.01100303030303,
+        "p50": 47.06959999999981,
+        "p95": 62.9413999999997,
+        "p99": 64.33500000000004
+      },
+      "latenessMs": {
+        "min": 0.32769999999982247,
+        "max": 15.88799999999992,
+        "mean": 8.461481818181948,
+        "p50": 8.521300000000338,
+        "p95": 15.502900000000409,
+        "p99": 15.88799999999992
+      },
+      "rebaseMs": 0,
+      "cpuMs": 3141,
+      "eventLoopP99Ms": 61.472767,
+      "measuredDriftMs": 4.3890999999994165
+    },
+    "steadyHz": 19.9944827345521,
+    "realtimePass": false
+  },
+  "ordinary": {
+    "variant": "current-v1",
+    "scenario": "P01",
+    "clients": 1,
+    "dpr": 1,
+    "generations": 100,
+    "warmup": 100,
+    "warmBoardHash": "436cacb62eaf46a205b141aedac4f7ccdbe262a93e9fd2e462febbc0c1c1c643",
+    "finalBoardHash": "436cacb62eaf46a205b141aedac4f7ccdbe262a93e9fd2e462febbc0c1c1c643",
+    "tickMs": {
+      "min": 1.1601999999993495,
+      "max": 8.356500000000096,
+      "mean": 1.5621689999999966,
+      "p50": 1.4014000000001943,
+      "p95": 1.9367999999999483,
+      "p99": 4.458100000000059
+    },
+    "stepMs": {
+      "min": 1.0455999999994674,
+      "max": 8.136700000000019,
+      "mean": 1.4016420000000016,
+      "p50": 1.2378000000001066,
+      "p95": 1.7280000000000655,
+      "p99": 4.085400000000163
+    },
+    "L": {
+      "min": 24000,
+      "max": 24000,
+      "mean": 24000,
+      "p50": 24000,
+      "p95": 24000,
+      "p99": 24000
+    },
+    "D": {
+      "min": 0,
+      "max": 0,
+      "mean": 0,
+      "p50": 0,
+      "p95": 0,
+      "p99": 0
+    },
+    "deadlineMisses": 0,
+    "elapsedMs": 4983.4588,
+    "observedHz": 20.066384415578995,
+    "wireBytes": 55781,
+    "wireBytesPerSecond": 11193.229890854118,
+    "wireBytesPerGeneration": 557.81,
+    "snapshotCount": 0,
+    "serverMemory": {
+      "generation": 200,
+      "rss": 165085184,
+      "heapTotal": 121528320,
+      "heapUsed": 57499792,
+      "external": 43369890,
+      "arrayBuffers": 39438029
+    },
+    "clientMetrics": [
+      {
+        "frameMs": {
+          "min": 0.09999999403953552,
+          "max": 0.8000000044703484,
+          "mean": 0.23485763590201106,
+          "p50": 0.20000000298023224,
+          "p95": 0.3999999985098839,
+          "p99": 0.6999999955296516
+        },
+        "rafMs": {
+          "min": 2.699999999999818,
+          "max": 66.5,
+          "mean": 4.220639032815199,
+          "p50": 4.199999999999818,
+          "p95": 4.599999999999909,
+          "p99": 5
+        },
+        "decodeMs": {
+          "min": 0,
+          "max": 0.10000000149011612,
+          "mean": 0.009000000059604645,
+          "p50": 0,
+          "p95": 0.10000000149011612,
+          "p99": 0.10000000149011612
+        },
+        "applyMs": {
+          "min": 0,
+          "max": 0.10000000149011612,
+          "mean": 0.004040404025352363,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0.10000000149011612
+        },
+        "minimapMs": {
+          "min": 0,
+          "max": 0.10000000149011612,
+          "mean": 0.011805555627991756,
+          "p50": 0,
+          "p95": 0.10000000149011612,
+          "p99": 0.10000000149011612
+        },
+        "queuePeak": 1,
+        "queueDepth": {
+          "min": 0,
+          "max": 0,
+          "mean": 0,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "undrawnGenerations": 0,
+        "missingGenerations": 0,
+        "failures": 0,
+        "heap": {
+          "usedSize": 3804260,
+          "totalSize": 8646656,
+          "embedderHeapUsedSize": 30768144,
+          "backingStorageSize": 5213727
+        },
+        "visibility": "visible"
+      }
+    ],
+    "scheduler": {
+      "mode": "deadline",
+      "intervalMs": {
+        "min": 44.839100000000144,
+        "max": 63.57639999999992,
+        "mean": 50.05901515151515,
+        "p50": 47.03819999999996,
+        "p95": 62.728799999999865,
+        "p99": 63.57639999999992
+      },
+      "latenessMs": {
+        "min": 0.2379000000000815,
+        "max": 16.416000000000167,
+        "mean": 8.001395959596213,
+        "p50": 8.055900000000292,
+        "p95": 15.185100000000148,
+        "p99": 16.416000000000167
+      },
+      "rebaseMs": 0,
+      "cpuMs": 266,
+      "eventLoopP99Ms": 33.144831,
+      "measuredDriftMs": 9.242400000000089
+    },
+    "steadyHz": 19.977269096417828,
+    "realtimePass": true
+  },
+  "verification": {
+    "unitTests": 146,
+    "failures": 0,
+    "originalCanvas": 312,
+    "protocolCanvas": 64,
+    "orderedMap": 32
+  },
+  "limitations": [
+    "Three controlled A/B rounds; live ordinary and dense checks have one run each.",
+    "Headless loopback, no physical presentation/LAN/soak certification.",
+    "Background benchmark totalMs excludes preceding packet/index work and includes PNG encoding.",
+    "Large background changes still require full ordered cell replay."
+  ]
+}
