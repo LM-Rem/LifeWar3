@@ -1,0 +1,961 @@
+{
+  "scope": "Local synthetic full-chain A/B; NOT release certification. Median of per-run/client quantiles, never a pooled p99. Queue maximum is sampled after frames, not an arrival peak. Different recovery streams prohibit interpreting wire rate ratios as compression ratios.",
+  "sourceManifests": {
+    "initial": {
+      "src/bots.js": "6d7021a627309cdbe01ffb7a3787a64be25d281340d201866b2c1937c4939a33",
+      "src/config.js": "4850f86a53b3951b7cc305995513546bba4010ac58df3d4961db0867baf37bf4",
+      "src/dormancy.js": "fa49b97878e59323e228ce6fb40947edb75c131a6e34ad7d9470a52d052bd8f5",
+      "src/engine.js": "95671df1c93d1844d2cc99be2994daded7b123c92846a4dba83230b7401ec821",
+      "src/server.js": "a191049c9fd091793814afea16d180b35fdf1705ae82977d70984ecb3ecf2013",
+      "public/app.js": "59f42bd7938af63cde4c44cef5927985579a4b9b746f34236e384996ce89ba5e",
+      "public/cards.js": "bf7a82e78b4f362047aff776b1833d751b742a2a35d87818d160df82718b09a7",
+      "public/cards.json": "7cfbf1add05e53d3bf8a2216194d0f751d250dad601eccd064a37ce6d661a18f",
+      "public/library.js": "bbd952f87be550fca28d17261c7393a2edd60b4bc35f47d9aac9892bed81ffe7",
+      "public/patterns.js": "66d555cd204e45dcacad911aa59583d83c9d24c09de6c5e598efab0199e13ba5",
+      "public/patterns.json": "240be60e57e6e001456ee8ee871f99ae985a1c5717ebd908e34929d4a89e1ff1",
+      "public/renderer.js": "277c353b0bb36df9f43e8b53fe533a1ac501525f95cf90cd1b99cd74902a7caa",
+      "public/territory.js": "f9dbc462910c299be6423370e462ce5fca306d403c0823c0aa3991ca1c6fd336"
+    },
+    "current-v1": {
+      "src/bots.js": "3dabe6e6c7fda5f32a0b6ea5efcd0b29e3cf8db61ba3d9fdd14413af7db3b9e4",
+      "src/cell-changes.js": "babc47b08024169a7a14b9f2c820ad636938c50d4df3dccfa6162ad0ce419faa",
+      "src/config.js": "4850f86a53b3951b7cc305995513546bba4010ac58df3d4961db0867baf37bf4",
+      "src/dormancy.js": "f0dd6d8de47911a8504908806df77f583991ecaa63eeb46958a6f205fc398889",
+      "src/engine.js": "da701a2cc9e5a058c69a9c6511e098f8d10cc6b3d41c34bdaec84b976ba18cbb",
+      "src/metrics.js": "3f4112b485f35ad711123ba1983ebe2453614e912843c49712215ac3f2aa3cb1",
+      "src/ordered-cells.js": "d784ff7b62b29acb58183e786afec831a9cc8f44a4efd718ead82b904cf5b897",
+      "src/performance-config.js": "ec9ec33116914e835368dd3c5e3b6be4ca88a86d43d943a85bcfa97df6f84605",
+      "src/server.js": "5f913e31b7db6a0f2b433e5e8656f8dd8bdad3c43abfbaf780a8179e4a4f21ab",
+      "src/spatial-index.js": "d981127ff45ac0124174cba1453e33dc373e2e63727585c1d8eb61ead056e8c8",
+      "src/evolution/backend.js": "416082ebda219cb4c2460c3ffc982bb5000511b24f43fe8ebd6d9c371c3792db",
+      "src/evolution/dense.js": "c89ff5908a3734ca84404bf173f07d38f238a08543e3232d22364c4e0c117237",
+      "src/evolution/frontier.js": "5ea913553522b084e1f1e89c7aae4147fd2277a47d99968fec2edce17afa6aff",
+      "src/evolution/rule-table.js": "2334ba7ec5dc933949ed0defea4d0ba9347ea0f6bed5d6a676996e378ba6a729",
+      "src/evolution/select.js": "eb34e2b894ba565de34b3c2d17df3188335fd5fcb05a4eb9e9984dce3e58a5bf",
+      "src/evolution/sparse.js": "3b1fa083de24a6d5ff27f7719db9af94f844f50ae9fca353798a0c6c3c835e81",
+      "public/app.js": "7d8edf0b8111b2305ff74d065e3b1d8dff8a7341919912d106e837bd1887417b",
+      "public/board-protocol.js": "d403a32b7426a2a1527f254808c19d68afbede375714531c60c2402c6f197d20",
+      "public/cards.js": "bf7a82e78b4f362047aff776b1833d751b742a2a35d87818d160df82718b09a7",
+      "public/cards.json": "7cfbf1add05e53d3bf8a2216194d0f751d250dad601eccd064a37ce6d661a18f",
+      "public/generation-queue.js": "6e917bc8c53bfcdc48e776a7a6d94bae2839db4150aa4d2c694294f51e59391f",
+      "public/library.js": "bbd952f87be550fca28d17261c7393a2edd60b4bc35f47d9aac9892bed81ffe7",
+      "public/minimap-cache.js": "4260a177e797ca3bf1f5d75187ec3f4084fa5434a7b92ec778ca284771a5b747",
+      "public/patterns.js": "66d555cd204e45dcacad911aa59583d83c9d24c09de6c5e598efab0199e13ba5",
+      "public/patterns.json": "240be60e57e6e001456ee8ee871f99ae985a1c5717ebd908e34929d4a89e1ff1",
+      "public/performance-metrics.js": "cfa5ad084dd0e797e193053e305783d9decf676e48e3356465bc3c14bb46bc67",
+      "public/renderer.js": "a0b671777fd5a1bf67c1e2444c9f197263850f2c1713978f67c094ab4660648d",
+      "public/territory.js": "3db4be208c15026c62a85104add4375ebedfbf3e59dcc8de3884e46d8ec00817",
+      "public/world-texture.js": "f1bc597a8af343b971173a47464a99294e2db9b2f3aa55c9410c7847211ed84f"
+    },
+    "current-v2": {
+      "src/bots.js": "3dabe6e6c7fda5f32a0b6ea5efcd0b29e3cf8db61ba3d9fdd14413af7db3b9e4",
+      "src/cell-changes.js": "babc47b08024169a7a14b9f2c820ad636938c50d4df3dccfa6162ad0ce419faa",
+      "src/config.js": "4850f86a53b3951b7cc305995513546bba4010ac58df3d4961db0867baf37bf4",
+      "src/dormancy.js": "f0dd6d8de47911a8504908806df77f583991ecaa63eeb46958a6f205fc398889",
+      "src/engine.js": "da701a2cc9e5a058c69a9c6511e098f8d10cc6b3d41c34bdaec84b976ba18cbb",
+      "src/metrics.js": "3f4112b485f35ad711123ba1983ebe2453614e912843c49712215ac3f2aa3cb1",
+      "src/ordered-cells.js": "d784ff7b62b29acb58183e786afec831a9cc8f44a4efd718ead82b904cf5b897",
+      "src/performance-config.js": "ec9ec33116914e835368dd3c5e3b6be4ca88a86d43d943a85bcfa97df6f84605",
+      "src/server.js": "5f913e31b7db6a0f2b433e5e8656f8dd8bdad3c43abfbaf780a8179e4a4f21ab",
+      "src/spatial-index.js": "d981127ff45ac0124174cba1453e33dc373e2e63727585c1d8eb61ead056e8c8",
+      "src/evolution/backend.js": "416082ebda219cb4c2460c3ffc982bb5000511b24f43fe8ebd6d9c371c3792db",
+      "src/evolution/dense.js": "c89ff5908a3734ca84404bf173f07d38f238a08543e3232d22364c4e0c117237",
+      "src/evolution/frontier.js": "5ea913553522b084e1f1e89c7aae4147fd2277a47d99968fec2edce17afa6aff",
+      "src/evolution/rule-table.js": "2334ba7ec5dc933949ed0defea4d0ba9347ea0f6bed5d6a676996e378ba6a729",
+      "src/evolution/select.js": "eb34e2b894ba565de34b3c2d17df3188335fd5fcb05a4eb9e9984dce3e58a5bf",
+      "src/evolution/sparse.js": "3b1fa083de24a6d5ff27f7719db9af94f844f50ae9fca353798a0c6c3c835e81",
+      "public/app.js": "7d8edf0b8111b2305ff74d065e3b1d8dff8a7341919912d106e837bd1887417b",
+      "public/board-protocol.js": "d403a32b7426a2a1527f254808c19d68afbede375714531c60c2402c6f197d20",
+      "public/cards.js": "bf7a82e78b4f362047aff776b1833d751b742a2a35d87818d160df82718b09a7",
+      "public/cards.json": "7cfbf1add05e53d3bf8a2216194d0f751d250dad601eccd064a37ce6d661a18f",
+      "public/generation-queue.js": "6e917bc8c53bfcdc48e776a7a6d94bae2839db4150aa4d2c694294f51e59391f",
+      "public/library.js": "bbd952f87be550fca28d17261c7393a2edd60b4bc35f47d9aac9892bed81ffe7",
+      "public/minimap-cache.js": "4260a177e797ca3bf1f5d75187ec3f4084fa5434a7b92ec778ca284771a5b747",
+      "public/patterns.js": "66d555cd204e45dcacad911aa59583d83c9d24c09de6c5e598efab0199e13ba5",
+      "public/patterns.json": "240be60e57e6e001456ee8ee871f99ae985a1c5717ebd908e34929d4a89e1ff1",
+      "public/performance-metrics.js": "cfa5ad084dd0e797e193053e305783d9decf676e48e3356465bc3c14bb46bc67",
+      "public/renderer.js": "a0b671777fd5a1bf67c1e2444c9f197263850f2c1713978f67c094ab4660648d",
+      "public/territory.js": "3db4be208c15026c62a85104add4375ebedfbf3e59dcc8de3884e46d8ec00817",
+      "public/world-texture.js": "f1bc597a8af343b971173a47464a99294e2db9b2f3aa55c9410c7847211ed84f"
+    }
+  },
+  "codecHashes": {
+    "tests/baselines/t13-codec/board-protocol.js": "009d1f143d1385030033e7b2e537ae547603037533d505d231aaba8fe4746c0d",
+    "public/board-protocol.js": "d403a32b7426a2a1527f254808c19d68afbede375714531c60c2402c6f197d20",
+    "tests/performance/codec-compare.mjs": "622adbbf4f4ae23ec7249c5a3cbe3606303d1be8a0cde8a3f7f43f951596d125"
+  },
+  "summary": [
+    {
+      "dpr": 1,
+      "scenario": "P01",
+      "variant": "initial",
+      "rounds": 3,
+      "tickP95Median": 4.061400000000049,
+      "tickP99PerRound": [
+        5.070399999998699,
+        4.831400000000031,
+        4.680400000000191
+      ],
+      "tickMax": 9.291199999999662,
+      "deadlineMisses": 0,
+      "hzMedian": 16.203769531517423,
+      "frameP95Median": 6.300000000046566,
+      "frameP99Worst": 8.400000000139698,
+      "rafP99Worst": 46,
+      "queueMax": null,
+      "undrawn": 1,
+      "missing": 0,
+      "recoveries": 0,
+      "wireMBPerSecondMedian": 0.036153850578721676,
+      "wireBytesPerGenerationMedian": 2231.32,
+      "rssMiBMedian": 193.22265625,
+      "clientHeapMiBMedian": 3.3130531311035156,
+      "pass": false
+    },
+    {
+      "dpr": 1,
+      "scenario": "P01",
+      "variant": "current-v1",
+      "rounds": 3,
+      "tickP95Median": 2.135200000000623,
+      "tickP99PerRound": [
+        2.5361000000002605,
+        2.40930000000003,
+        2.659099999999853
+      ],
+      "tickMax": 8.502399999999852,
+      "deadlineMisses": 0,
+      "hzMedian": 16.170026143213168,
+      "frameP95Median": 0.39999999990686774,
+      "frameP99Worst": 0.5,
+      "rafP99Worst": 8.400000000000546,
+      "queueMax": 0,
+      "undrawn": 0,
+      "missing": 0,
+      "recoveries": 0,
+      "wireMBPerSecondMedian": 0.036078562330737224,
+      "wireBytesPerGenerationMedian": 2231.28,
+      "rssMiBMedian": 161.58203125,
+      "clientHeapMiBMedian": 4.148456573486328,
+      "pass": false
+    },
+    {
+      "dpr": 1,
+      "scenario": "P01",
+      "variant": "current-v2",
+      "rounds": 3,
+      "tickP95Median": 2.0835000000006403,
+      "tickP99PerRound": [
+        2.9366999999992913,
+        3.059400000000096,
+        3.5549999999998363
+      ],
+      "tickMax": 8.492799999999988,
+      "deadlineMisses": 0,
+      "hzMedian": 16.256137951927546,
+      "frameP95Median": 0.39999999990686774,
+      "frameP99Worst": 0.5,
+      "rafP99Worst": 8.5,
+      "queueMax": 0,
+      "undrawn": 0,
+      "missing": 0,
+      "recoveries": 0,
+      "wireMBPerSecondMedian": 0.03783388522379809,
+      "wireBytesPerGenerationMedian": 2327.36,
+      "rssMiBMedian": 116.07421875,
+      "clientHeapMiBMedian": 4.896636962890625,
+      "pass": false
+    },
+    {
+      "dpr": 1,
+      "scenario": "P03",
+      "variant": "initial",
+      "rounds": 3,
+      "tickP95Median": 103.78530000000319,
+      "tickP99PerRound": [
+        112.02419999999984,
+        109.49750000000131,
+        108.50340000000142
+      ],
+      "tickMax": 132.1931000000004,
+      "deadlineMisses": 300,
+      "hzMedian": 10.661563104347373,
+      "frameP95Median": 1487.8999999999069,
+      "frameP99Worst": 1566.8999999999069,
+      "rafP99Worst": 1633.300000000001,
+      "queueMax": null,
+      "undrawn": 1109,
+      "missing": 0,
+      "recoveries": 0,
+      "wireMBPerSecondMedian": 0.34542099778008134,
+      "wireBytesPerGenerationMedian": 32398.64,
+      "rssMiBMedian": 519.50390625,
+      "clientHeapMiBMedian": 30.67171859741211,
+      "pass": false
+    },
+    {
+      "dpr": 1,
+      "scenario": "P03",
+      "variant": "current-v1",
+      "rounds": 3,
+      "tickP95Median": 34.665499999999156,
+      "tickP99PerRound": [
+        38.25069999999869,
+        36.35189999999966,
+        38.72429999999986
+      ],
+      "tickMax": 52.41329999999925,
+      "deadlineMisses": 1,
+      "hzMedian": 16.464362730458475,
+      "frameP95Median": 67.30000000004657,
+      "frameP99Worst": 1568.9000000001397,
+      "rafP99Worst": 1567,
+      "queueMax": 26,
+      "undrawn": 710,
+      "missing": 0,
+      "recoveries": 32,
+      "wireMBPerSecondMedian": 7.443513528363254,
+      "wireBytesPerGenerationMedian": 454110.36,
+      "rssMiBMedian": 222.58203125,
+      "clientHeapMiBMedian": 62.9276123046875,
+      "pass": false
+    },
+    {
+      "dpr": 1,
+      "scenario": "P03",
+      "variant": "current-v2",
+      "rounds": 3,
+      "tickP95Median": 33.945599999999104,
+      "tickP99PerRound": [
+        35.70969999999943,
+        38.539199999999255,
+        37.649499999999534
+      ],
+      "tickMax": 42.06909999999971,
+      "deadlineMisses": 0,
+      "hzMedian": 16.384650512045727,
+      "frameP95Median": 44.199999999953434,
+      "frameP99Worst": 1601.8999999999069,
+      "rafP99Worst": 1599.7000000000007,
+      "queueMax": 24,
+      "undrawn": 727,
+      "missing": 0,
+      "recoveries": 31,
+      "wireMBPerSecondMedian": 5.106315834930045,
+      "wireBytesPerGenerationMedian": 312030.23,
+      "rssMiBMedian": 203.0234375,
+      "clientHeapMiBMedian": 62.85434341430664,
+      "pass": false
+    },
+    {
+      "dpr": 1,
+      "scenario": "P04",
+      "variant": "initial",
+      "rounds": 3,
+      "tickP95Median": 164.51989999999932,
+      "tickP99PerRound": [
+        169.56289999999717,
+        177.2270000000026,
+        188.1251000000011
+      ],
+      "tickMax": 195.78999999999905,
+      "deadlineMisses": 300,
+      "hzMedian": 6.662945722418163,
+      "frameP95Median": 889.4000000001397,
+      "frameP99Worst": 1151.3000000000466,
+      "rafP99Worst": 2095.7000000000007,
+      "queueMax": null,
+      "undrawn": 0,
+      "missing": 1188,
+      "recoveries": 12,
+      "wireMBPerSecondMedian": 2.1314463533458192,
+      "wireBytesPerGenerationMedian": 319895.5,
+      "rssMiBMedian": 502.6484375,
+      "clientHeapMiBMedian": 30.704078674316406,
+      "pass": false
+    },
+    {
+      "dpr": 1,
+      "scenario": "P04",
+      "variant": "current-v1",
+      "rounds": 3,
+      "tickP95Median": 75.54650000000038,
+      "tickP99PerRound": [
+        79.5109999999986,
+        81.13360000000102,
+        79.49669999999969
+      ],
+      "tickMax": 89.64710000000014,
+      "deadlineMisses": 300,
+      "hzMedian": 14.967634809707404,
+      "frameP95Median": 622.6000000000931,
+      "frameP99Worst": 975.0999999998603,
+      "rafP99Worst": 975,
+      "queueMax": 3,
+      "undrawn": 362,
+      "missing": 727,
+      "recoveries": 87,
+      "wireMBPerSecondMedian": 46.479642598676044,
+      "wireBytesPerGenerationMedian": 3081082.3,
+      "rssMiBMedian": 275.34765625,
+      "clientHeapMiBMedian": 9.12356948852539,
+      "pass": false
+    },
+    {
+      "dpr": 1,
+      "scenario": "P04",
+      "variant": "current-v2",
+      "rounds": 3,
+      "tickP95Median": 94.61149999999907,
+      "tickP99PerRound": [
+        103.71959999999854,
+        106.95750000000044,
+        99.18029999999999
+      ],
+      "tickMax": 109.60469999999987,
+      "deadlineMisses": 300,
+      "hzMedian": 12.947506277922107,
+      "frameP95Median": 659,
+      "frameP99Worst": 875.6999999999534,
+      "rafP99Worst": 879.2999999999997,
+      "queueMax": 2,
+      "undrawn": 373,
+      "missing": 696,
+      "recoveries": 103,
+      "wireMBPerSecondMedian": 32.459836093397705,
+      "wireBytesPerGenerationMedian": 2506909.01,
+      "rssMiBMedian": 273.92578125,
+      "clientHeapMiBMedian": 9.482929229736328,
+      "pass": false
+    },
+    {
+      "dpr": 2,
+      "scenario": "P01",
+      "variant": "initial",
+      "rounds": 3,
+      "tickP95Median": 3.98720000000003,
+      "tickP99PerRound": [
+        4.712999999999738,
+        6.094900000000052,
+        5.913299999999708
+      ],
+      "tickMax": 10.453300000000127,
+      "deadlineMisses": 0,
+      "hzMedian": 16.105313028420355,
+      "frameP95Median": 6.699999999953434,
+      "frameP99Worst": 8.599999999860302,
+      "rafP99Worst": 71.1,
+      "queueMax": null,
+      "undrawn": 4,
+      "missing": 0,
+      "recoveries": 0,
+      "wireMBPerSecondMedian": 0.03593675127909604,
+      "wireBytesPerGenerationMedian": 2231.24,
+      "rssMiBMedian": 191.91796875,
+      "clientHeapMiBMedian": 3.556488037109375,
+      "pass": false
+    },
+    {
+      "dpr": 2,
+      "scenario": "P01",
+      "variant": "current-v1",
+      "rounds": 3,
+      "tickP95Median": 2.2537999999999556,
+      "tickP99PerRound": [
+        3.522799999999961,
+        2.939300000000003,
+        2.6397000000001754
+      ],
+      "tickMax": 9.796699999999873,
+      "deadlineMisses": 0,
+      "hzMedian": 16.189928847529306,
+      "frameP95Median": 0.39999999990686774,
+      "frameP99Worst": 0.5,
+      "rafP99Worst": 8.900000000000091,
+      "queueMax": 0,
+      "undrawn": 0,
+      "missing": 0,
+      "recoveries": 0,
+      "wireMBPerSecondMedian": 0.03612555963322299,
+      "wireBytesPerGenerationMedian": 2231.24,
+      "rssMiBMedian": 161.5546875,
+      "clientHeapMiBMedian": 3.3568992614746094,
+      "pass": false
+    },
+    {
+      "dpr": 2,
+      "scenario": "P01",
+      "variant": "current-v2",
+      "rounds": 3,
+      "tickP95Median": 2.2717000000011467,
+      "tickP99PerRound": [
+        2.6059000000000196,
+        3.793699999999262,
+        3.587000000000444
+      ],
+      "tickMax": 8.282500000000027,
+      "deadlineMisses": 0,
+      "hzMedian": 16.173011109807387,
+      "frameP95Median": 0.39999999990686774,
+      "frameP99Worst": 0.5,
+      "rafP99Worst": 8.5,
+      "queueMax": 0,
+      "undrawn": 0,
+      "missing": 0,
+      "recoveries": 0,
+      "wireMBPerSecondMedian": 0.037637831454743746,
+      "wireBytesPerGenerationMedian": 2327.28,
+      "rssMiBMedian": 161.72265625,
+      "clientHeapMiBMedian": 2.9067459106445312,
+      "pass": false
+    },
+    {
+      "dpr": 2,
+      "scenario": "P03",
+      "variant": "initial",
+      "rounds": 3,
+      "tickP95Median": 106.78480000000127,
+      "tickP99PerRound": [
+        104.61669999999867,
+        112.29959999999846,
+        116.12380000000121
+      ],
+      "tickMax": 116.89429999999993,
+      "deadlineMisses": 300,
+      "hzMedian": 10.690315240398837,
+      "frameP95Median": 1510.3999999999069,
+      "frameP99Worst": 1600.7999999998137,
+      "rafP99Worst": 1662.6000000000004,
+      "queueMax": null,
+      "undrawn": 1108,
+      "missing": 0,
+      "recoveries": 0,
+      "wireMBPerSecondMedian": 0.3463525301854146,
+      "wireBytesPerGenerationMedian": 32398.72,
+      "rssMiBMedian": 537.796875,
+      "clientHeapMiBMedian": 16.083816528320312,
+      "pass": false
+    },
+    {
+      "dpr": 2,
+      "scenario": "P03",
+      "variant": "current-v1",
+      "rounds": 3,
+      "tickP95Median": 34.52689999999893,
+      "tickP99PerRound": [
+        36.40909999999894,
+        36.34479999999985,
+        36.44500000000153
+      ],
+      "tickMax": 38.5012999999999,
+      "deadlineMisses": 0,
+      "hzMedian": 16.47346640182165,
+      "frameP95Median": 74.39999999990687,
+      "frameP99Worst": 1595.3000000000466,
+      "rafP99Worst": 1596,
+      "queueMax": 8,
+      "undrawn": 728,
+      "missing": 0,
+      "recoveries": 32,
+      "wireMBPerSecondMedian": 6.824849229069778,
+      "wireBytesPerGenerationMedian": 414772.95,
+      "rssMiBMedian": 208.34765625,
+      "clientHeapMiBMedian": 69.46694564819336,
+      "pass": false
+    },
+    {
+      "dpr": 2,
+      "scenario": "P03",
+      "variant": "current-v2",
+      "rounds": 3,
+      "tickP95Median": 35.699500000000626,
+      "tickP99PerRound": [
+        39.19660000000022,
+        40.223399999999856,
+        37.90979999999945
+      ],
+      "tickMax": 41.47770000000037,
+      "deadlineMisses": 0,
+      "hzMedian": 16.500285215680098,
+      "frameP95Median": 82.5,
+      "frameP99Worst": 1649.7999999998137,
+      "rafP99Worst": 1454.1999999999998,
+      "queueMax": 8,
+      "undrawn": 755,
+      "missing": 0,
+      "recoveries": 35,
+      "wireMBPerSecondMedian": 6.10622589916778,
+      "wireBytesPerGenerationMedian": 370067.9,
+      "rssMiBMedian": 196.40625,
+      "clientHeapMiBMedian": 90.31775665283203,
+      "pass": false
+    },
+    {
+      "dpr": 2,
+      "scenario": "P04",
+      "variant": "initial",
+      "rounds": 3,
+      "tickP95Median": 174.33290000000125,
+      "tickP99PerRound": [
+        177.85519999999815,
+        187.96380000000136,
+        158.3250999999982
+      ],
+      "tickMax": 206.78989999999976,
+      "deadlineMisses": 300,
+      "hzMedian": 6.471841709210289,
+      "frameP95Median": 899,
+      "frameP99Worst": 1240.5999999996275,
+      "rafP99Worst": 1100,
+      "queueMax": null,
+      "undrawn": 0,
+      "missing": 1188,
+      "recoveries": 12,
+      "wireMBPerSecondMedian": 2.070743546399177,
+      "wireBytesPerGenerationMedian": 319962.02,
+      "rssMiBMedian": 478.73046875,
+      "clientHeapMiBMedian": 15.793926239013672,
+      "pass": false
+    },
+    {
+      "dpr": 2,
+      "scenario": "P04",
+      "variant": "current-v1",
+      "rounds": 3,
+      "tickP95Median": 76.67100000000028,
+      "tickP99PerRound": [
+        82.3763999999992,
+        84.51660000000084,
+        74.04910000000018
+      ],
+      "tickMax": 91.3693000000003,
+      "deadlineMisses": 300,
+      "hzMedian": 14.940386885202892,
+      "frameP95Median": 636.1000000000931,
+      "frameP99Worst": 858,
+      "rafP99Worst": 854.1999999999998,
+      "queueMax": 3,
+      "undrawn": 358,
+      "missing": 731,
+      "recoveries": 84,
+      "wireMBPerSecondMedian": 47.390771526697165,
+      "wireBytesPerGenerationMedian": 3201019.18,
+      "rssMiBMedian": 284.1875,
+      "clientHeapMiBMedian": 13.018661499023438,
+      "pass": false
+    },
+    {
+      "dpr": 2,
+      "scenario": "P04",
+      "variant": "current-v2",
+      "rounds": 3,
+      "tickP95Median": 88.19800000000032,
+      "tickP99PerRound": [
+        102.91179999999986,
+        94.03060000000005,
+        90.36230000000069
+      ],
+      "tickMax": 107.97069999999985,
+      "deadlineMisses": 300,
+      "hzMedian": 13.193884877126933,
+      "frameP95Median": 653.0999999996275,
+      "frameP99Worst": 922.8000000002794,
+      "rafP99Worst": 920.7999999999993,
+      "queueMax": 2,
+      "undrawn": 338,
+      "missing": 733,
+      "recoveries": 96,
+      "wireMBPerSecondMedian": 31.30220685146568,
+      "wireBytesPerGenerationMedian": 2326215.43,
+      "rssMiBMedian": 271.26953125,
+      "clientHeapMiBMedian": 15.246685028076172,
+      "pass": false
+    }
+  ],
+  "codecSummary": [
+    {
+      "name": "sparse",
+      "bytes": 3032,
+      "before": {
+        "encodeMs": {
+          "medianMean": 0.04181999999999988,
+          "medianP95": 0.09959999999999525,
+          "p99PerRound": [
+            0.4054000000000002,
+            0.07600000000000762,
+            0.1449000000000069,
+            0.054299999999997794,
+            0.09959999999999525
+          ]
+        },
+        "decodeOrderMs": {
+          "medianMean": 0.04318999999999988,
+          "medianP95": 0.07659999999999911,
+          "p99PerRound": [
+            0.6524000000000001,
+            0.06210000000000093,
+            0.04429999999999268,
+            0.07659999999999911,
+            0.12439999999999429
+          ]
+        },
+        "applyMs": {
+          "medianMean": 0.021649999999999635,
+          "medianP95": 0.02779999999999916,
+          "p99PerRound": [
+            0.09049999999999869,
+            0.11550000000001148,
+            0.026300000000006207,
+            0.02779999999999916,
+            0.027000000000001023
+          ]
+        },
+        "totalMs": {
+          "medianMean": 0.1102400000000003,
+          "medianP95": 0.20749999999999602,
+          "p99PerRound": [
+            0.7558999999999969,
+            0.22590000000000998,
+            0.20749999999999602,
+            0.1571999999999889,
+            0.17319999999999425
+          ]
+        }
+      },
+      "after": {
+        "encodeMs": {
+          "medianMean": 0.041579999999998306,
+          "medianP95": 0.10829999999999984,
+          "p99PerRound": [
+            0.13189999999999458,
+            0.113900000000001,
+            0.10829999999999984,
+            0.058099999999996044,
+            0.051400000000001
+          ]
+        },
+        "decodeOrderMs": {
+          "medianMean": 0.04075000000000273,
+          "medianP95": 0.059499999999999886,
+          "p99PerRound": [
+            0.18030000000000257,
+            0.059499999999999886,
+            0.04389999999999361,
+            0.06320000000000903,
+            0.054000000000002046
+          ]
+        },
+        "applyMs": {
+          "medianMean": 0.03613999999999749,
+          "medianP95": 0.0741999999999976,
+          "p99PerRound": [
+            0.0741999999999976,
+            0.1373000000000033,
+            0.03159999999999741,
+            0.0309999999999917,
+            0.10080000000000666
+          ]
+        },
+        "totalMs": {
+          "medianMean": 0.11477999999999895,
+          "medianP95": 0.18379999999999086,
+          "p99PerRound": [
+            0.3438999999999979,
+            0.21600000000000108,
+            0.18379999999999086,
+            0.13939999999999486,
+            0.17140000000000555
+          ]
+        }
+      }
+    },
+    {
+      "name": "dense-owner",
+      "bytes": 1013702,
+      "before": {
+        "encodeMs": {
+          "medianMean": 20.535180000000217,
+          "medianP95": 28.482299999999668,
+          "p99PerRound": [
+            29.758100000000013,
+            26.438600000000406,
+            28.482299999999668,
+            18.925599999998667,
+            37.69760000000315
+          ]
+        },
+        "decodeOrderMs": {
+          "medianMean": 21.02000999999982,
+          "medianP95": 30.673499999998967,
+          "p99PerRound": [
+            25.610300000000052,
+            31.334899999999834,
+            25.513499999999112,
+            30.673499999998967,
+            33.91949999999997
+          ]
+        },
+        "applyMs": {
+          "medianMean": 51.475000000000094,
+          "medianP95": 55.50300000000061,
+          "p99PerRound": [
+            69.3318999999999,
+            55.50300000000061,
+            55.43999999999869,
+            63.92489999999998,
+            52.46910000000207
+          ]
+        },
+        "totalMs": {
+          "medianMean": 91.46587000000018,
+          "medianP95": 106.1811000000007,
+          "p99PerRound": [
+            120.82249999999999,
+            106.1811000000007,
+            100.95370000000003,
+            97.13140000000021,
+            110.14120000000185
+          ]
+        }
+      },
+      "after": {
+        "encodeMs": {
+          "medianMean": 15.453880000000026,
+          "medianP95": 20.11070000000109,
+          "p99PerRound": [
+            27.424900000000434,
+            18.271099999999933,
+            20.42740000000049,
+            20.11070000000109,
+            11.606500000001688
+          ]
+        },
+        "decodeOrderMs": {
+          "medianMean": 10.99928000000009,
+          "medianP95": 16.134799999999814,
+          "p99PerRound": [
+            16.33680000000004,
+            15.509299999999712,
+            16.549200000001292,
+            16.134799999999814,
+            15.92450000000099
+          ]
+        },
+        "applyMs": {
+          "medianMean": 50.85960000000023,
+          "medianP95": 54.73650000000089,
+          "p99PerRound": [
+            54.860099999999875,
+            53.863100000000486,
+            54.73650000000089,
+            53.55989999999838,
+            60.63640000000305
+          ]
+        },
+        "totalMs": {
+          "medianMean": 76.99923000000027,
+          "medianP95": 83.8759,
+          "p99PerRound": [
+            90.14310000000023,
+            83.8759,
+            83.10129999999845,
+            85.16610000000037,
+            79.16560000000027
+          ]
+        }
+      }
+    },
+    {
+      "name": "mixed-churn",
+      "bytes": 1500032,
+      "before": {
+        "encodeMs": {
+          "medianMean": 6.3645999999997,
+          "medianP95": 6.987400000001799,
+          "p99PerRound": [
+            7.642700000000332,
+            6.987400000001799,
+            7.319500000001426,
+            6.6828999999997905,
+            6.828099999998813
+          ]
+        },
+        "decodeOrderMs": {
+          "medianMean": 7.5160899999998945,
+          "medianP95": 10.2016999999978,
+          "p99PerRound": [
+            9.997299999999086,
+            10.2016999999978,
+            10.618399999999383,
+            16.87420000000202,
+            10.063900000001013
+          ]
+        },
+        "applyMs": {
+          "medianMean": 31.887020000000483,
+          "medianP95": 39.091199999998935,
+          "p99PerRound": [
+            34.14500000000044,
+            37.632299999997485,
+            39.091199999998935,
+            39.49850000000151,
+            40.440999999998894
+          ]
+        },
+        "totalMs": {
+          "medianMean": 45.86997999999949,
+          "medianP95": 52.63160000000062,
+          "p99PerRound": [
+            48.905399999999645,
+            51.18739999999889,
+            52.63160000000062,
+            57.63699999999881,
+            53.89349999999831
+          ]
+        }
+      },
+      "after": {
+        "encodeMs": {
+          "medianMean": 6.563840000000345,
+          "medianP95": 7.430500000002212,
+          "p99PerRound": [
+            16.731599999999162,
+            7.089400000000751,
+            6.6137999999991735,
+            8.018299999999726,
+            7.430500000002212
+          ]
+        },
+        "decodeOrderMs": {
+          "medianMean": 7.126619999999457,
+          "medianP95": 11.638100000000122,
+          "p99PerRound": [
+            10.078099999998813,
+            11.980499999997846,
+            10.705400000002555,
+            11.638100000000122,
+            21.809300000000803
+          ]
+        },
+        "applyMs": {
+          "medianMean": 33.456099999999424,
+          "medianP95": 39.56299999999828,
+          "p99PerRound": [
+            34.03269999999975,
+            33.63420000000042,
+            39.56299999999828,
+            42.44410000000062,
+            39.842899999999645
+          ]
+        },
+        "totalMs": {
+          "medianMean": 48.730519999999885,
+          "medianP95": 56.47230000000127,
+          "p99PerRound": [
+            55.48949999999968,
+            50.51900000000023,
+            56.47230000000127,
+            57.668900000000576,
+            68.30750000000262
+          ]
+        }
+      }
+    },
+    {
+      "name": "all-births",
+      "bytes": 1500032,
+      "before": {
+        "encodeMs": {
+          "medianMean": 7.989869999999792,
+          "medianP95": 8.974900000001071,
+          "p99PerRound": [
+            21.902899999997317,
+            9.095299999997223,
+            8.93999999999869,
+            8.099099999999453,
+            8.974900000001071
+          ]
+        },
+        "decodeOrderMs": {
+          "medianMean": 7.0340499999998425,
+          "medianP95": 10.110499999998865,
+          "p99PerRound": [
+            10.110499999998865,
+            12.897100000001956,
+            8.726699999999255,
+            9.552300000003015,
+            10.593000000000757
+          ]
+        },
+        "applyMs": {
+          "medianMean": 31.34269999999742,
+          "medianP95": 35.04980000000069,
+          "p99PerRound": [
+            45.607300000003306,
+            35.246399999999994,
+            35.04980000000069,
+            33.06280000000697,
+            33.51929999999993
+          ]
+        },
+        "totalMs": {
+          "medianMean": 46.644029999997294,
+          "medianP95": 51.27479999999923,
+          "p99PerRound": [
+            61.018299999999726,
+            56.72899999999936,
+            48.7455000000009,
+            48.36250000000291,
+            51.27479999999923
+          ]
+        }
+      },
+      "after": {
+        "encodeMs": {
+          "medianMean": 6.776090000001932,
+          "medianP95": 7.863300000004529,
+          "p99PerRound": [
+            18.161299999999756,
+            7.66280000000188,
+            7.593399999997928,
+            8.803800000001502,
+            7.863300000004529
+          ]
+        },
+        "decodeOrderMs": {
+          "medianMean": 7.0803999999992815,
+          "medianP95": 9.411499999994703,
+          "p99PerRound": [
+            8.170200000000477,
+            10.96809999999823,
+            11.376900000002934,
+            8.433299999996962,
+            9.411499999994703
+          ]
+        },
+        "applyMs": {
+          "medianMean": 33.083119999999326,
+          "medianP95": 36.19679999999789,
+          "p99PerRound": [
+            48.22400000000198,
+            35.97390000000087,
+            39.02599999999802,
+            35.77469999999448,
+            36.19679999999789
+          ]
+        },
+        "totalMs": {
+          "medianMean": 47.08327999999892,
+          "medianP95": 51.006100000002334,
+          "p99PerRound": [
+            63.071600000002945,
+            51.006100000002334,
+            56.45420000000013,
+            48.86779999999635,
+            50.45470000000205
+          ]
+        }
+      }
+    }
+  ]
+}

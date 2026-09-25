@@ -9,6 +9,7 @@ import { Game, RULES } from './engine.js';
 import { runBots } from './bots.js';
 import { performanceConfig } from './performance-config.js';
 import { PerformanceMetrics, instrumentGame, startEventLoopMetrics } from './metrics.js';
+import { scheduleTicks } from './tick-scheduler.js';
 
 const ROOT = fileURLToPath(new URL('../public/', import.meta.url));
 const LIBRARY_DIR = fileURLToPath(new URL('../图案集_128/', import.meta.url));
@@ -36,7 +37,7 @@ const readBody = req => new Promise((resolve, reject) => {
   req.on('error', reject);
 });
 
-export function createServer({ port = Number(process.env.PORT) || 3000, host = '0.0.0.0', trace = performanceConfig().enabled, boardProtocol = Number(process.env.LIFEWAR_BOARD_PROTOCOL ?? 1) } = {}) {
+export function createServer({ port = Number(process.env.PORT) || 3000, host = '0.0.0.0', trace = performanceConfig().enabled, boardProtocol = Number(process.env.LIFEWAR_BOARD_PROTOCOL ?? 1), scheduler = scheduleTicks } = {}) {
   if(![1,2].includes(boardProtocol))throw new Error('Invalid LIFEWAR_BOARD_PROTOCOL');
   const metrics = trace ? new PerformanceMetrics({ capacity: performanceConfig().capacity }) : null;
   const eventLoop = metrics ? startEventLoopMetrics() : null;
@@ -343,7 +344,7 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
     ws.on('close', () => unlink(ws));
   });
 
-  const timer = setInterval(() => {
+  const timer = scheduler(() => {
     const now = Date.now();
     for (const room of rooms.values()) {
       if (room.members.some(m => m.ws)) room.lastActive = now;
@@ -384,11 +385,13 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
       if (metrics) metrics.record('tick.ms', metrics.now() - tickStart, game.generation, room.code, String(room.startedAt));
       if (game.status === 'finished') room.finishedBroadcast = true;
     }
-  }, 1000 / RULES.hz);
+  }, { periodMs: 1000 / RULES.hz, onTiming: metrics ? timing => {
+    for (const [key, value] of Object.entries(timing)) if (key.endsWith('Ms') && value !== null) metrics.record(`scheduler.${key}`, value);
+  } : null });
   const heartbeat = setInterval(() => {
     for (const ws of wss.clients) { if (!ws.alive) ws.terminate(); else { ws.alive = false; ws.ping(); } }
   }, 15000);
-  const closed = () => { clearInterval(timer); clearInterval(heartbeat); eventLoop?.close(); for (const ws of wss.clients) ws.terminate(); wss.close(); };
+  const closed = () => { timer.stop(); clearInterval(heartbeat); eventLoop?.close(); for (const ws of wss.clients) ws.terminate(); wss.close(); };
   server.on('close', closed);
   return { server, rooms, wss, performanceReport: () => metrics ? { ...metrics.export(), eventLoop: eventLoop.export() } : null,
     listen: () => new Promise(resolve => server.listen(port, host, () => resolve(server.address()))), close: () => new Promise(resolve => { closed(); server.close(resolve); }) };

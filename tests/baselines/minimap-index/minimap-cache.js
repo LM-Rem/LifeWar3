@@ -2,20 +2,13 @@
 export class MinimapCache {
   constructor() { this.invalid = true; this.dirty = new Set(); }
   // Cell changes invalidate the composition, not the background or canvas storage.
-  invalidate() { this.full = true; this.indexed = false; this.members = null; this.dirty.clear(); }
+  invalidate() { this.full = true; this.indexed = false; this.dirty.clear(); }
   beginPacket(field, count, snapshot) {
     // Avoid maintaining an index for dense updates; build it lazily for local edits.
     if (snapshot || count > 4096) { this.invalidate(); return; }
     if (count && !this.invalid && !this.full && !this.indexed) {
       this.members = Array.from({length:this.side ** 2}, () => new Set());
-      // Keep the same conservative footprint and insertion order without
-      // allocating a temporary tile array for every cell in a dense board.
-      for (const key of field.cells.keys()) {
-        const x = key % 1000 * this.scale, y = Math.floor(key / 1000) * this.scale;
-        const left = Math.max(0, Math.floor((x - 1) / 16)), right = Math.min(this.side - 1, Math.floor((x + 2) / 16));
-        const top = Math.max(0, Math.floor((y - 1) / 16)), bottom = Math.min(this.side - 1, Math.floor((y + 2) / 16));
-        for (let ty = top; ty <= bottom; ty++) for (let tx = left; tx <= right; tx++) this.members[ty * this.side + tx].add(key);
-      }
+      for (const key of field.cells.keys()) for (const tile of this.tiles(key)) this.members[tile].add(key);
       this.indexed = true;
     }
   }
@@ -41,7 +34,7 @@ export class MinimapCache {
       this.width = w; this.scale = w / 1000; this.side = Math.ceil(w / 16); this.signature = signature; this.territories = field.territories;
       this.canvas ??= document.createElement('canvas');
       if (this.canvas.width !== w || this.canvas.height !== w) this.canvas.width = this.canvas.height = w;
-      this.context = this.canvas.getContext('2d'); this.indexed = false; this.members = null;
+      this.context = this.canvas.getContext('2d'); this.indexed = false;
       this.background ??= document.createElement('canvas');
       if (this.background.width !== w || this.background.height !== w) this.background.width = this.background.height = w;
       paintBackground(this.background.getContext('2d'));

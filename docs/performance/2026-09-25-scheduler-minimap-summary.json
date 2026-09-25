@@ -1,0 +1,3451 @@
+{
+  "environment": {
+    "capturedAt": "2026-09-25T07:16:14.372Z",
+    "node": "v24.11.1",
+    "platform": "win32",
+    "os": "10.0.26200",
+    "arch": "x64",
+    "cpu": "13th Gen Intel(R) Core(TM) i9-13900HX",
+    "logicalCores": 32,
+    "memoryBytes": 34124718080,
+    "gpu": "NVIDIA GeForce RTX 5070 Ti Laptop GPU, 595.79, 12227 MiB, 62, 615 MHz",
+    "powerSchemeGuid": "381b4222-f694-41f0-9685-ff5bb260df2e",
+    "browser": "153.0.8010.53",
+    "dpr": null,
+    "displayRefreshHz": null,
+    "measuredNetworkMbps": null,
+    "unavailable": "null means unmeasured; CPU synthetic runs do not measure browser, display or network."
+  },
+  "sourceHashes": {
+    "src/bots.js": "3dabe6e6c7fda5f32a0b6ea5efcd0b29e3cf8db61ba3d9fdd14413af7db3b9e4",
+    "src/cell-changes.js": "babc47b08024169a7a14b9f2c820ad636938c50d4df3dccfa6162ad0ce419faa",
+    "src/config.js": "4850f86a53b3951b7cc305995513546bba4010ac58df3d4961db0867baf37bf4",
+    "src/dormancy.js": "f0dd6d8de47911a8504908806df77f583991ecaa63eeb46958a6f205fc398889",
+    "src/engine.js": "da701a2cc9e5a058c69a9c6511e098f8d10cc6b3d41c34bdaec84b976ba18cbb",
+    "src/metrics.js": "3f4112b485f35ad711123ba1983ebe2453614e912843c49712215ac3f2aa3cb1",
+    "src/ordered-cells.js": "d784ff7b62b29acb58183e786afec831a9cc8f44a4efd718ead82b904cf5b897",
+    "src/performance-config.js": "ec9ec33116914e835368dd3c5e3b6be4ca88a86d43d943a85bcfa97df6f84605",
+    "src/server.js": "3fb05e359ccdadf390759df40681fdb07a9a02e909f61e97676bc366cb5b97de",
+    "src/spatial-index.js": "d981127ff45ac0124174cba1453e33dc373e2e63727585c1d8eb61ead056e8c8",
+    "src/tick-scheduler.js": "37ae9b4016a78295df85e6566f86766230b101d0fd90602b35dd46e27d968671",
+    "src/evolution/backend.js": "416082ebda219cb4c2460c3ffc982bb5000511b24f43fe8ebd6d9c371c3792db",
+    "src/evolution/dense.js": "c89ff5908a3734ca84404bf173f07d38f238a08543e3232d22364c4e0c117237",
+    "src/evolution/frontier.js": "5ea913553522b084e1f1e89c7aae4147fd2277a47d99968fec2edce17afa6aff",
+    "src/evolution/rule-table.js": "2334ba7ec5dc933949ed0defea4d0ba9347ea0f6bed5d6a676996e378ba6a729",
+    "src/evolution/select.js": "eb34e2b894ba565de34b3c2d17df3188335fd5fcb05a4eb9e9984dce3e58a5bf",
+    "src/evolution/sparse.js": "3b1fa083de24a6d5ff27f7719db9af94f844f50ae9fca353798a0c6c3c835e81",
+    "public/app.js": "7d8edf0b8111b2305ff74d065e3b1d8dff8a7341919912d106e837bd1887417b",
+    "public/board-protocol.js": "d403a32b7426a2a1527f254808c19d68afbede375714531c60c2402c6f197d20",
+    "public/cards.js": "bf7a82e78b4f362047aff776b1833d751b742a2a35d87818d160df82718b09a7",
+    "public/cards.json": "7cfbf1add05e53d3bf8a2216194d0f751d250dad601eccd064a37ce6d661a18f",
+    "public/generation-queue.js": "6e917bc8c53bfcdc48e776a7a6d94bae2839db4150aa4d2c694294f51e59391f",
+    "public/library.js": "bbd952f87be550fca28d17261c7393a2edd60b4bc35f47d9aac9892bed81ffe7",
+    "public/minimap-cache.js": "838d86bc3768696ff46f919e9eb2529b0b0c796bcd82f9e4e24c862cab2f7609",
+    "public/patterns.js": "66d555cd204e45dcacad911aa59583d83c9d24c09de6c5e598efab0199e13ba5",
+    "public/patterns.json": "c14d8be3f4c8b22aaaf24146c9421bac75b9ce83886fcd34635e6e779defe720",
+    "public/performance-metrics.js": "cfa5ad084dd0e797e193053e305783d9decf676e48e3356465bc3c14bb46bc67",
+    "public/renderer.js": "a0b671777fd5a1bf67c1e2444c9f197263850f2c1713978f67c094ab4660648d",
+    "public/territory.js": "3db4be208c15026c62a85104add4375ebedfbf3e59dcc8de3884e46d8ec00817",
+    "public/world-texture.js": "f1bc597a8af343b971173a47464a99294e2db9b2f3aa55c9410c7847211ed84f"
+  },
+  "scope": "Production server loop and renderer, headless same-machine loopback clients. Tick from step entry through changes.clear includes encode/state/send/baseline maintenance; excludes preceding no-op AI/connection bookkeeping. Synthetic fixed rules/time, no HUD/app input handler, no physical scanout or LAN certification. Tail gets one second to drain with idle frame timings excluded. Heap excludes GPU memory; short-run memory is not a soak certificate.",
+  "baselineHash": "4260a177e797ca3bf1f5d75187ec3f4084fa5434a7b92ec778ca284771a5b747",
+  "timers": [
+    {
+      "round": 1,
+      "variant": "interval",
+      "intervalMs": {
+        "min": 52.718900000000005,
+        "max": 64.43280000000004,
+        "mean": 62.303994,
+        "p50": 62.421400000000176,
+        "p95": 63.80339999999978,
+        "p99": 64.22710000000006
+      },
+      "finalLagMs": 1230.3993999999993,
+      "hz": 16.050335392623467,
+      "cpuMs": 16,
+      "eventLoopP99Ms": 32.636927
+    },
+    {
+      "round": 1,
+      "variant": "deadline",
+      "intervalMs": {
+        "min": 45.33269999999902,
+        "max": 64.37700000000041,
+        "mean": 50.093671,
+        "p50": 47.24079999999958,
+        "p95": 62.80630000000019,
+        "p99": 63.51400000000103
+      },
+      "finalLagMs": 9.367099999999482,
+      "hz": 19.96260166279289,
+      "cpuMs": 0,
+      "eventLoopP99Ms": 32.555007
+    },
+    {
+      "round": 2,
+      "variant": "deadline",
+      "intervalMs": {
+        "min": 45.214899999999034,
+        "max": 63.288799999998446,
+        "mean": 50.092896,
+        "p50": 47.05199999999968,
+        "p95": 62.71649999999863,
+        "p99": 63.13310000000092
+      },
+      "finalLagMs": 9.289600000000064,
+      "hz": 19.96291050930655,
+      "cpuMs": 15,
+      "eventLoopP99Ms": 32.325631
+    },
+    {
+      "round": 2,
+      "variant": "interval",
+      "intervalMs": {
+        "min": 60.141599999999016,
+        "max": 64.86280000000261,
+        "mean": 62.38815800000002,
+        "p50": 62.237600000000384,
+        "p95": 63.67859999999928,
+        "p99": 64.45959999999832
+      },
+      "finalLagMs": 1238.815800000004,
+      "hz": 16.028682879209217,
+      "cpuMs": 48,
+      "eventLoopP99Ms": 32.882687
+    },
+    {
+      "round": 3,
+      "variant": "interval",
+      "intervalMs": {
+        "min": 60.540100000001985,
+        "max": 78.2515999999996,
+        "mean": 62.459572999999985,
+        "p50": 62.339599999999336,
+        "p95": 63.473799999999756,
+        "p99": 63.95759999999791
+      },
+      "finalLagMs": 1245.9572999999982,
+      "hz": 16.010356010599054,
+      "cpuMs": 31,
+      "eventLoopP99Ms": 32.620543
+    },
+    {
+      "round": 3,
+      "variant": "deadline",
+      "intervalMs": {
+        "min": 45.17559999999867,
+        "max": 64.14660000000003,
+        "mean": 50.10719000000001,
+        "p50": 46.6846000000005,
+        "p95": 62.56779999999708,
+        "p99": 63.990499999999884
+      },
+      "finalLagMs": 10.718999999997322,
+      "hz": 19.95721572093745,
+      "cpuMs": 31,
+      "eventLoopP99Ms": 32.342015
+    }
+  ],
+  "ordinaryRuns": [
+    {
+      "round": 1,
+      "variant": "current-v1",
+      "scenario": "P01",
+      "clients": 0,
+      "dpr": 1,
+      "generations": 100,
+      "warmup": 100,
+      "warmBoardHash": "436cacb62eaf46a205b141aedac4f7ccdbe262a93e9fd2e462febbc0c1c1c643",
+      "finalBoardHash": "436cacb62eaf46a205b141aedac4f7ccdbe262a93e9fd2e462febbc0c1c1c643",
+      "tickMs": {
+        "min": 1.0602999999998701,
+        "max": 6.126700000000028,
+        "mean": 1.8196049999999753,
+        "p50": 1.7001000000000204,
+        "p95": 2.606899999999996,
+        "p99": 2.8065999999998894
+      },
+      "stepMs": {
+        "min": 1.0559000000000651,
+        "max": 6.032100000000014,
+        "mean": 1.8137019999999722,
+        "p50": 1.696700000000419,
+        "p95": 2.6010000000001128,
+        "p99": 2.801100000000588
+      },
+      "L": {
+        "min": 24000,
+        "max": 24000,
+        "mean": 24000,
+        "p50": 24000,
+        "p95": 24000,
+        "p99": 24000
+      },
+      "D": {
+        "min": 0,
+        "max": 0,
+        "mean": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "deadlineMisses": 0,
+      "elapsedMs": 6228.3256,
+      "observedHz": 16.055679555352725,
+      "wireBytes": 0,
+      "wireBytesPerSecond": 0,
+      "wireBytesPerGeneration": 0,
+      "snapshotCount": 0,
+      "serverMemory": {
+        "generation": 200,
+        "rss": 152870912,
+        "heapTotal": 117780480,
+        "heapUsed": 54134576,
+        "external": 43191036,
+        "arrayBuffers": 39259175
+      },
+      "clientMetrics": [],
+      "scheduler": {
+        "mode": "interval",
+        "intervalMs": {
+          "min": 60.751500000000306,
+          "max": 64.14210000000003,
+          "mean": 62.38231122448979,
+          "p50": 62.33770000000004,
+          "p95": 63.90429999999924,
+          "p99": 64.14210000000003
+        },
+        "latenessMs": {
+          "min": 3.6245999999999867,
+          "max": 1217.0910999999996,
+          "mean": 615.3788323232319,
+          "p50": 614.2887999999998,
+          "p95": 1168.2113999999992,
+          "p99": 1217.0910999999996
+        },
+        "rebaseMs": 0,
+        "cpuMs": 499,
+        "eventLoopP99Ms": 34.308095,
+        "measuredDriftMs": 1213.4665000000005
+      },
+      "steadyHz": 16.030899283090086,
+      "realtimePass": false
+    },
+    {
+      "round": 1,
+      "variant": "current-v1",
+      "scenario": "P01",
+      "clients": 0,
+      "dpr": 1,
+      "generations": 100,
+      "warmup": 100,
+      "warmBoardHash": "436cacb62eaf46a205b141aedac4f7ccdbe262a93e9fd2e462febbc0c1c1c643",
+      "finalBoardHash": "436cacb62eaf46a205b141aedac4f7ccdbe262a93e9fd2e462febbc0c1c1c643",
+      "tickMs": {
+        "min": 1.0537999999999101,
+        "max": 4.3320999999999685,
+        "mean": 1.782492999999987,
+        "p50": 1.7120999999997366,
+        "p95": 2.766799999999421,
+        "p99": 3.0045000000000073
+      },
+      "stepMs": {
+        "min": 1.0502999999998792,
+        "max": 4.269799999999918,
+        "mean": 1.7761719999999628,
+        "p50": 1.7086999999996806,
+        "p95": 2.76279999999997,
+        "p99": 3.001199999999926
+      },
+      "L": {
+        "min": 24000,
+        "max": 24000,
+        "mean": 24000,
+        "p50": 24000,
+        "p95": 24000,
+        "p99": 24000
+      },
+      "D": {
+        "min": 0,
+        "max": 0,
+        "mean": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "deadlineMisses": 0,
+      "elapsedMs": 5004.5162,
+      "observedHz": 19.98195150212522,
+      "wireBytes": 0,
+      "wireBytesPerSecond": 0,
+      "wireBytesPerGeneration": 0,
+      "snapshotCount": 0,
+      "serverMemory": {
+        "generation": 200,
+        "rss": 160931840,
+        "heapTotal": 117780480,
+        "heapUsed": 53480856,
+        "external": 43188636,
+        "arrayBuffers": 39256775
+      },
+      "clientMetrics": [],
+      "scheduler": {
+        "mode": "deadline",
+        "intervalMs": {
+          "min": 45.507400000000416,
+          "max": 63.71630000000005,
+          "mean": 49.97990306122449,
+          "p50": 47.08479999999963,
+          "p95": 62.91430000000037,
+          "p99": 63.71630000000005
+        },
+        "latenessMs": {
+          "min": 0.7373000000006869,
+          "max": 15.954800000000432,
+          "mean": 8.37062424242436,
+          "p50": 8.572700000000168,
+          "p95": 15.040000000000873,
+          "p99": 15.954800000000432
+        },
+        "rebaseMs": 0,
+        "cpuMs": 125,
+        "eventLoopP99Ms": 34.045951,
+        "measuredDriftMs": -1.9695000000001528
+      },
+      "steadyHz": 20.021085236251537,
+      "realtimePass": false
+    },
+    {
+      "round": 1,
+      "variant": "current-v1",
+      "scenario": "P01",
+      "clients": 1,
+      "dpr": 1,
+      "generations": 100,
+      "warmup": 100,
+      "warmBoardHash": "436cacb62eaf46a205b141aedac4f7ccdbe262a93e9fd2e462febbc0c1c1c643",
+      "finalBoardHash": "436cacb62eaf46a205b141aedac4f7ccdbe262a93e9fd2e462febbc0c1c1c643",
+      "tickMs": {
+        "min": 1.1710000000002765,
+        "max": 7.1177000000000135,
+        "mean": 1.5143430000000193,
+        "p50": 1.394800000000032,
+        "p95": 1.8704999999999927,
+        "p99": 3.576300000000174
+      },
+      "stepMs": {
+        "min": 1.0500999999999294,
+        "max": 6.700399999999945,
+        "mean": 1.348002000000006,
+        "p50": 1.221299999999701,
+        "p95": 1.5875999999998385,
+        "p99": 3.4301000000000386
+      },
+      "L": {
+        "min": 24000,
+        "max": 24000,
+        "mean": 24000,
+        "p50": 24000,
+        "p95": 24000,
+        "p99": 24000
+      },
+      "D": {
+        "min": 0,
+        "max": 0,
+        "mean": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "deadlineMisses": 0,
+      "elapsedMs": 5011.9926,
+      "observedHz": 19.952144382655316,
+      "wireBytes": 55782,
+      "wireBytesPerSecond": 11129.705179532788,
+      "wireBytesPerGeneration": 557.82,
+      "snapshotCount": 0,
+      "serverMemory": {
+        "generation": 200,
+        "rss": 165335040,
+        "heapTotal": 121528320,
+        "heapUsed": 59038408,
+        "external": 43815562,
+        "arrayBuffers": 39883701
+      },
+      "clientMetrics": [
+        {
+          "frameMs": {
+            "min": 0,
+            "max": 0.9000000022351742,
+            "mean": 0.2328473413506871,
+            "p50": 0.19999999925494194,
+            "p95": 0.3999999985098839,
+            "p99": 0.6000000014901161
+          },
+          "rafMs": {
+            "min": 2.699999999999818,
+            "max": 66.69999999999999,
+            "mean": 4.2204291845493564,
+            "p50": 4.199999999999818,
+            "p95": 4.600000000000023,
+            "p99": 5.100000000000023
+          },
+          "decodeMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.006999999955296516,
+            "p50": 0,
+            "p95": 0.09999999776482582,
+            "p99": 0.10000000149011612
+          },
+          "applyMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.008999999947845935,
+            "p50": 0,
+            "p95": 0.09999999776482582,
+            "p99": 0.10000000149011612
+          },
+          "minimapMs": {
+            "min": 0,
+            "max": 0.20000000298023224,
+            "mean": 0.017123287671232876,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "queuePeak": 2,
+          "queueDepth": {
+            "min": 0,
+            "max": 1,
+            "mean": 0.0008576329331046312,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0
+          },
+          "undrawnGenerations": 0,
+          "missingGenerations": 0,
+          "failures": 0,
+          "heap": {
+            "usedSize": 3256700,
+            "totalSize": 8093696,
+            "embedderHeapUsedSize": 30889480,
+            "backingStorageSize": 5211847
+          },
+          "visibility": "visible"
+        }
+      ],
+      "scheduler": {
+        "mode": "deadline",
+        "intervalMs": {
+          "min": 45.03369999999995,
+          "max": 63.54539999999997,
+          "mean": 49.97965252525253,
+          "p50": 46.916099999999915,
+          "p95": 62.47159999999985,
+          "p99": 63.54539999999997
+        },
+        "latenessMs": {
+          "min": 0.05100000000015825,
+          "max": 15.378300000000309,
+          "mean": 7.657698989899144,
+          "p50": 7.625700000000052,
+          "p95": 14.813599999999951,
+          "p99": 15.378300000000309
+        },
+        "rebaseMs": 0,
+        "cpuMs": 515,
+        "eventLoopP99Ms": 33.013759,
+        "measuredDriftMs": -0.02459999999973661
+      },
+      "steadyHz": 19.945885000730744,
+      "realtimePass": true
+    },
+    {
+      "round": 1,
+      "variant": "current-v1",
+      "scenario": "P01",
+      "clients": 4,
+      "dpr": 1,
+      "generations": 100,
+      "warmup": 100,
+      "warmBoardHash": "436cacb62eaf46a205b141aedac4f7ccdbe262a93e9fd2e462febbc0c1c1c643",
+      "finalBoardHash": "436cacb62eaf46a205b141aedac4f7ccdbe262a93e9fd2e462febbc0c1c1c643",
+      "tickMs": {
+        "min": 1.285200000000259,
+        "max": 7.254500000000007,
+        "mean": 1.6509449999999788,
+        "p50": 1.5468000000000757,
+        "p95": 2.1469999999999345,
+        "p99": 2.757000000000062
+      },
+      "stepMs": {
+        "min": 1.1059999999997672,
+        "max": 6.717300000000023,
+        "mean": 1.3848269999999911,
+        "p50": 1.2810999999992418,
+        "p95": 1.7959000000000742,
+        "p99": 2.4821999999999207
+      },
+      "L": {
+        "min": 24000,
+        "max": 24000,
+        "mean": 24000,
+        "p50": 24000,
+        "p95": 24000,
+        "p99": 24000
+      },
+      "D": {
+        "min": 0,
+        "max": 0,
+        "mean": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "deadlineMisses": 0,
+      "elapsedMs": 6173.0148,
+      "observedHz": 16.199539971943693,
+      "wireBytes": 223128,
+      "wireBytesPerSecond": 36145.70954859853,
+      "wireBytesPerGeneration": 2231.28,
+      "snapshotCount": 0,
+      "serverMemory": {
+        "generation": 200,
+        "rss": 170422272,
+        "heapTotal": 123801600,
+        "heapUsed": 79309680,
+        "external": 46416598,
+        "arrayBuffers": 42484737
+      },
+      "clientMetrics": [
+        {
+          "frameMs": {
+            "min": 0.09999999776482582,
+            "max": 0.6999999992549419,
+            "mean": 0.2541353383973007,
+            "p50": 0.20000000298023224,
+            "p95": 0.4000000022351742,
+            "p99": 0.5
+          },
+          "rafMs": {
+            "min": 3.899999999999636,
+            "max": 25,
+            "mean": 4.226452494873547,
+            "p50": 4.199999999999818,
+            "p95": 4.300000000000182,
+            "p99": 4.400000000000091
+          },
+          "decodeMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.012000000029802322,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "applyMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.009090909000599024,
+            "p50": 0,
+            "p95": 0.09999999776482582,
+            "p99": 0.10000000149011612
+          },
+          "minimapMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.015135135179435884,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "queuePeak": 1,
+          "queueDepth": {
+            "min": 0,
+            "max": 0,
+            "mean": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0
+          },
+          "undrawnGenerations": 0,
+          "missingGenerations": 0,
+          "failures": 0,
+          "heap": {
+            "usedSize": 3836220,
+            "totalSize": 8880128,
+            "embedderHeapUsedSize": 37485648,
+            "backingStorageSize": 5211838
+          },
+          "visibility": "visible"
+        },
+        {
+          "frameMs": {
+            "min": 0.09999999776482582,
+            "max": 6.900000002235174,
+            "mean": 0.26092896169774193,
+            "p50": 0.20000000298023224,
+            "p95": 0.4000000022351742,
+            "p99": 0.5
+          },
+          "rafMs": {
+            "min": 3.899999999999636,
+            "max": 37.39999999999998,
+            "mean": 4.2236338797814215,
+            "p50": 4.199999999999818,
+            "p95": 4.300000000000182,
+            "p99": 4.400000000000091
+          },
+          "decodeMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.013000000007450581,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "applyMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.011111111050904399,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "minimapMs": {
+            "min": 0,
+            "max": 6.600000001490116,
+            "mean": 0.05135135137148806,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "queuePeak": 1,
+          "queueDepth": {
+            "min": 0,
+            "max": 0,
+            "mean": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0
+          },
+          "undrawnGenerations": 0,
+          "missingGenerations": 0,
+          "failures": 0,
+          "heap": {
+            "usedSize": 4532224,
+            "totalSize": 8617984,
+            "embedderHeapUsedSize": 37728752,
+            "backingStorageSize": 5211838
+          },
+          "visibility": "visible"
+        },
+        {
+          "frameMs": {
+            "min": 0.09999999776482582,
+            "max": 1,
+            "mean": 0.2501706484590781,
+            "p50": 0.20000000298023224,
+            "p95": 0.4000000022351742,
+            "p99": 0.5
+          },
+          "rafMs": {
+            "min": 3.899999999999636,
+            "max": 25,
+            "mean": 4.22641638225256,
+            "p50": 4.199999999999818,
+            "p95": 4.300000000000182,
+            "p99": 4.399999999999636
+          },
+          "decodeMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.009000000059604645,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "applyMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.008080808050704725,
+            "p50": 0,
+            "p95": 0.09999999776482582,
+            "p99": 0.10000000149011612
+          },
+          "minimapMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.016304347745102386,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "queuePeak": 1,
+          "queueDepth": {
+            "min": 0,
+            "max": 0,
+            "mean": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0
+          },
+          "undrawnGenerations": 0,
+          "missingGenerations": 0,
+          "failures": 0,
+          "heap": {
+            "usedSize": 4262192,
+            "totalSize": 8617984,
+            "embedderHeapUsedSize": 37602624,
+            "backingStorageSize": 5211838
+          },
+          "visibility": "visible"
+        },
+        {
+          "frameMs": {
+            "min": 0.09999999776482582,
+            "max": 0.8000000007450581,
+            "mean": 0.25085440867530184,
+            "p50": 0.20000000298023224,
+            "p95": 0.4000000022351742,
+            "p99": 0.5
+          },
+          "rafMs": {
+            "min": 3.800000000000182,
+            "max": 25,
+            "mean": 4.22365003417635,
+            "p50": 4.199999999999818,
+            "p95": 4.300000000000182,
+            "p99": 4.400000000000091
+          },
+          "decodeMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.012000000067055226,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "applyMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.015151515113885957,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "minimapMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.01729729731340666,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "queuePeak": 1,
+          "queueDepth": {
+            "min": 0,
+            "max": 0,
+            "mean": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0
+          },
+          "undrawnGenerations": 0,
+          "missingGenerations": 0,
+          "failures": 0,
+          "heap": {
+            "usedSize": 3727212,
+            "totalSize": 8646656,
+            "embedderHeapUsedSize": 37597888,
+            "backingStorageSize": 5211838
+          },
+          "visibility": "visible"
+        }
+      ],
+      "scheduler": {
+        "mode": "interval",
+        "intervalMs": {
+          "min": 51.8082000000004,
+          "max": 64.11040000000003,
+          "mean": 62.07675252525252,
+          "p50": 62.18119999999999,
+          "p95": 63.562299999999595,
+          "p99": 64.11040000000003
+        },
+        "latenessMs": {
+          "min": 156.98440000000005,
+          "max": 1344.9151999999995,
+          "mean": 755.8773929292929,
+          "p50": 758.9376000000002,
+          "p95": 1295.8024999999998,
+          "p99": 1344.9151999999995
+        },
+        "rebaseMs": 0,
+        "cpuMs": 234,
+        "eventLoopP99Ms": 34.078719,
+        "measuredDriftMs": 1187.9308
+      },
+      "steadyHz": 16.09801774050337,
+      "realtimePass": false
+    },
+    {
+      "round": 1,
+      "variant": "current-v1",
+      "scenario": "P01",
+      "clients": 4,
+      "dpr": 1,
+      "generations": 100,
+      "warmup": 100,
+      "warmBoardHash": "436cacb62eaf46a205b141aedac4f7ccdbe262a93e9fd2e462febbc0c1c1c643",
+      "finalBoardHash": "436cacb62eaf46a205b141aedac4f7ccdbe262a93e9fd2e462febbc0c1c1c643",
+      "tickMs": {
+        "min": 1.3023000000002867,
+        "max": 6.628999999999905,
+        "mean": 1.658498999999981,
+        "p50": 1.5286000000000968,
+        "p95": 2.045100000000275,
+        "p99": 4.038199999999961
+      },
+      "stepMs": {
+        "min": 1.113100000000486,
+        "max": 6.132699999999886,
+        "mean": 1.3913940000000093,
+        "p50": 1.280399999999645,
+        "p95": 1.580500000000029,
+        "p99": 3.761700000000019
+      },
+      "L": {
+        "min": 24000,
+        "max": 24000,
+        "mean": 24000,
+        "p50": 24000,
+        "p95": 24000,
+        "p99": 24000
+      },
+      "D": {
+        "min": 0,
+        "max": 0,
+        "mean": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "deadlineMisses": 0,
+      "elapsedMs": 4967.7562,
+      "observedHz": 20.12981232855187,
+      "wireBytes": 223120,
+      "wireBytesPerSecond": 44913.63726746494,
+      "wireBytesPerGeneration": 2231.2,
+      "snapshotCount": 0,
+      "serverMemory": {
+        "generation": 200,
+        "rss": 170192896,
+        "heapTotal": 123801600,
+        "heapUsed": 79276360,
+        "external": 46400957,
+        "arrayBuffers": 42469096
+      },
+      "clientMetrics": [
+        {
+          "frameMs": {
+            "min": 0.09999999776482582,
+            "max": 0.6000000014901161,
+            "mean": 0.24625850350082834,
+            "p50": 0.20000000298023224,
+            "p95": 0.3999999985098839,
+            "p99": 0.5
+          },
+          "rafMs": {
+            "min": 3.7000000000000455,
+            "max": 25,
+            "mean": 4.226955782312925,
+            "p50": 4.199999999999818,
+            "p95": 4.300000000000182,
+            "p99": 4.400000000000546
+          },
+          "decodeMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.011999999918043614,
+            "p50": 0,
+            "p95": 0.09999999776482582,
+            "p99": 0.10000000149011612
+          },
+          "applyMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.009090909038228219,
+            "p50": 0,
+            "p95": 0.09999999776482582,
+            "p99": 0.10000000149011612
+          },
+          "minimapMs": {
+            "min": 0,
+            "max": 0.19999999925494194,
+            "mean": 0.01689189194223365,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "queuePeak": 1,
+          "queueDepth": {
+            "min": 0,
+            "max": 0,
+            "mean": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0
+          },
+          "undrawnGenerations": 0,
+          "missingGenerations": 0,
+          "failures": 0,
+          "heap": {
+            "usedSize": 5018944,
+            "totalSize": 8880128,
+            "embedderHeapUsedSize": 31796808,
+            "backingStorageSize": 5211836
+          },
+          "visibility": "visible"
+        },
+        {
+          "frameMs": {
+            "min": 0.09999999776482582,
+            "max": 6.899999998509884,
+            "mean": 0.24676870760273467,
+            "p50": 0.20000000298023224,
+            "p95": 0.3999999985098839,
+            "p99": 0.5
+          },
+          "rafMs": {
+            "min": 3.899999999999636,
+            "max": 25.200000000000045,
+            "mean": 4.230442176870748,
+            "p50": 4.199999999999818,
+            "p95": 4.300000000000182,
+            "p99": 4.400000000000546
+          },
+          "decodeMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.007000000067055225,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "applyMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.014141414088733269,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "minimapMs": {
+            "min": 0,
+            "max": 6.599999997764826,
+            "mean": 0.05810810811817646,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.19999999925494194
+          },
+          "queuePeak": 1,
+          "queueDepth": {
+            "min": 0,
+            "max": 0,
+            "mean": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0
+          },
+          "undrawnGenerations": 0,
+          "missingGenerations": 0,
+          "failures": 0,
+          "heap": {
+            "usedSize": 3730084,
+            "totalSize": 8617984,
+            "embedderHeapUsedSize": 31649656,
+            "backingStorageSize": 5211836
+          },
+          "visibility": "visible"
+        },
+        {
+          "frameMs": {
+            "min": 0.09999999776482582,
+            "max": 0.6000000014901161,
+            "mean": 0.2415816326923415,
+            "p50": 0.20000000298023224,
+            "p95": 0.3999999985098839,
+            "p99": 0.5
+          },
+          "rafMs": {
+            "min": 3.799999999999727,
+            "max": 25,
+            "mean": 4.233843537414966,
+            "p50": 4.199999999999818,
+            "p95": 4.300000000000182,
+            "p99": 4.400000000000546
+          },
+          "decodeMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.015,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "applyMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.006999999955296516,
+            "p50": 0,
+            "p95": 0.09999999776482582,
+            "p99": 0.10000000149011612
+          },
+          "minimapMs": {
+            "min": 0,
+            "max": 0.19999999925494194,
+            "mean": 0.016107382490330894,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "queuePeak": 1,
+          "queueDepth": {
+            "min": 0,
+            "max": 0,
+            "mean": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0
+          },
+          "undrawnGenerations": 0,
+          "missingGenerations": 0,
+          "failures": 0,
+          "heap": {
+            "usedSize": 4983108,
+            "totalSize": 8355840,
+            "embedderHeapUsedSize": 31660872,
+            "backingStorageSize": 5211836
+          },
+          "visibility": "visible"
+        },
+        {
+          "frameMs": {
+            "min": 0,
+            "max": 7.699999999254942,
+            "mean": 0.2479148936620418,
+            "p50": 0.20000000298023224,
+            "p95": 0.3999999985098839,
+            "p99": 0.5
+          },
+          "rafMs": {
+            "min": 3.8000000000000114,
+            "max": 37.599999999999994,
+            "mean": 4.230468085106383,
+            "p50": 4.199999999999818,
+            "p95": 4.300000000000182,
+            "p99": 4.400000000000091
+          },
+          "decodeMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.010999999977648257,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "applyMs": {
+            "min": 0,
+            "max": 0.19999999925494194,
+            "mean": 0.009090909038228219,
+            "p50": 0,
+            "p95": 0.09999999776482582,
+            "p99": 0.19999999925494194
+          },
+          "minimapMs": {
+            "min": 0,
+            "max": 7.200000002980232,
+            "mean": 0.0664429530351354,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "queuePeak": 1,
+          "queueDepth": {
+            "min": 0,
+            "max": 0,
+            "mean": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0
+          },
+          "undrawnGenerations": 0,
+          "missingGenerations": 0,
+          "failures": 0,
+          "heap": {
+            "usedSize": 4575260,
+            "totalSize": 8384512,
+            "embedderHeapUsedSize": 31652816,
+            "backingStorageSize": 5211836
+          },
+          "visibility": "visible"
+        }
+      ],
+      "scheduler": {
+        "mode": "deadline",
+        "intervalMs": {
+          "min": 39.99850000000015,
+          "max": 63.66359999999986,
+          "mean": 50.104139393939384,
+          "p50": 46.96140000000014,
+          "p95": 62.72550000000001,
+          "p99": 63.66359999999986
+        },
+        "latenessMs": {
+          "min": 0.1948000000002139,
+          "max": 17.085199999999986,
+          "mean": 8.145080808080776,
+          "p50": 7.828599999999824,
+          "p95": 15.363900000000285,
+          "p99": 17.085199999999986
+        },
+        "rebaseMs": 0,
+        "cpuMs": 203,
+        "eventLoopP99Ms": 33.062911,
+        "measuredDriftMs": 1.3338999999996304
+      },
+      "steadyHz": 20.017771332549675,
+      "realtimePass": true
+    },
+    {
+      "round": 2,
+      "variant": "current-v1",
+      "scenario": "P01",
+      "clients": 4,
+      "dpr": 1,
+      "generations": 100,
+      "warmup": 100,
+      "warmBoardHash": "436cacb62eaf46a205b141aedac4f7ccdbe262a93e9fd2e462febbc0c1c1c643",
+      "finalBoardHash": "436cacb62eaf46a205b141aedac4f7ccdbe262a93e9fd2e462febbc0c1c1c643",
+      "tickMs": {
+        "min": 1.3590000000003783,
+        "max": 8.41969999999992,
+        "mean": 1.7509649999999874,
+        "p50": 1.5973000000003594,
+        "p95": 2.104000000000269,
+        "p99": 3.519999999999982
+      },
+      "stepMs": {
+        "min": 1.153599999999642,
+        "max": 7.498499999999922,
+        "mean": 1.4533299999999532,
+        "p50": 1.3459000000002561,
+        "p95": 1.692199999999957,
+        "p99": 3.160699999999906
+      },
+      "L": {
+        "min": 24000,
+        "max": 24000,
+        "mean": 24000,
+        "p50": 24000,
+        "p95": 24000,
+        "p99": 24000
+      },
+      "D": {
+        "min": 0,
+        "max": 0,
+        "mean": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "deadlineMisses": 0,
+      "elapsedMs": 5003.8002,
+      "observedHz": 19.984810744441795,
+      "wireBytes": 223124,
+      "wireBytesPerSecond": 44590.90912542831,
+      "wireBytesPerGeneration": 2231.24,
+      "snapshotCount": 0,
+      "serverMemory": {
+        "generation": 200,
+        "rss": 170090496,
+        "heapTotal": 124133376,
+        "heapUsed": 79673280,
+        "external": 46428670,
+        "arrayBuffers": 42496809
+      },
+      "clientMetrics": [
+        {
+          "frameMs": {
+            "min": 0.09999999776482582,
+            "max": 8.099999997764826,
+            "mean": 0.25079505296272653,
+            "p50": 0.20000000298023224,
+            "p95": 0.3999999985098839,
+            "p99": 0.5
+          },
+          "rafMs": {
+            "min": 3.899999999999636,
+            "max": 29,
+            "mean": 4.420583038869259,
+            "p50": 4.199999999999818,
+            "p95": 8.199999999999818,
+            "p99": 8.400000000000091
+          },
+          "decodeMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.01199999988079071,
+            "p50": 0,
+            "p95": 0.09999999776482582,
+            "p99": 0.10000000149011612
+          },
+          "applyMs": {
+            "min": 0,
+            "max": 0.09999999776482582,
+            "mean": 0.0030303029625704794,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0.09999999776482582
+          },
+          "minimapMs": {
+            "min": 0,
+            "max": 7.799999997019768,
+            "mean": 0.06577181206053535,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "queuePeak": 1,
+          "queueDepth": {
+            "min": 0,
+            "max": 0,
+            "mean": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0
+          },
+          "undrawnGenerations": 0,
+          "missingGenerations": 0,
+          "failures": 0,
+          "heap": {
+            "usedSize": 3658880,
+            "totalSize": 8355840,
+            "embedderHeapUsedSize": 30666856,
+            "backingStorageSize": 5211837
+          },
+          "visibility": "visible"
+        },
+        {
+          "frameMs": {
+            "min": 0.09999999776482582,
+            "max": 7.599999997764826,
+            "mean": 0.24858657248950047,
+            "p50": 0.20000000298023224,
+            "p95": 0.3999999985098839,
+            "p99": 0.5
+          },
+          "rafMs": {
+            "min": 3.9000000000005457,
+            "max": 41.69999999999993,
+            "mean": 4.420583038869259,
+            "p50": 4.199999999999818,
+            "p95": 8.199999999999818,
+            "p99": 8.400000000000091
+          },
+          "decodeMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.015999999940395356,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "applyMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.00808080816359231,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "minimapMs": {
+            "min": 0,
+            "max": 7.199999999254942,
+            "mean": 0.06711409400973543,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "queuePeak": 1,
+          "queueDepth": {
+            "min": 0,
+            "max": 0,
+            "mean": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0
+          },
+          "undrawnGenerations": 0,
+          "missingGenerations": 0,
+          "failures": 0,
+          "heap": {
+            "usedSize": 4252808,
+            "totalSize": 8617984,
+            "embedderHeapUsedSize": 30667328,
+            "backingStorageSize": 5211837
+          },
+          "visibility": "visible"
+        },
+        {
+          "frameMs": {
+            "min": 0.09999999776482582,
+            "max": 8.100000001490116,
+            "mean": 0.2499115045025813,
+            "p50": 0.20000000298023224,
+            "p95": 0.3999999985098839,
+            "p99": 0.5
+          },
+          "rafMs": {
+            "min": 3.899999999999636,
+            "max": 37.5,
+            "mean": 4.428407079646018,
+            "p50": 4.199999999999818,
+            "p95": 8.200000000000045,
+            "p99": 8.400000000000091
+          },
+          "decodeMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.008000000044703484,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "applyMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.004040403987723168,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0.10000000149011612
+          },
+          "minimapMs": {
+            "min": 0,
+            "max": 7.800000000745058,
+            "mean": 0.06756756754239669,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "queuePeak": 1,
+          "queueDepth": {
+            "min": 0,
+            "max": 0,
+            "mean": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0
+          },
+          "undrawnGenerations": 0,
+          "missingGenerations": 0,
+          "failures": 0,
+          "heap": {
+            "usedSize": 3647352,
+            "totalSize": 9142272,
+            "embedderHeapUsedSize": 30521072,
+            "backingStorageSize": 5211837
+          },
+          "visibility": "visible"
+        },
+        {
+          "frameMs": {
+            "min": 0.09999999776482582,
+            "max": 8.600000001490116,
+            "mean": 0.25349248454277756,
+            "p50": 0.20000000298023224,
+            "p95": 0.3999999985098839,
+            "p99": 0.5
+          },
+          "rafMs": {
+            "min": 4,
+            "max": 29.19999999999999,
+            "mean": 4.424668435013262,
+            "p50": 4.199999999999818,
+            "p95": 8.199999999999818,
+            "p99": 8.400000000000091
+          },
+          "decodeMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.013000000007450581,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "applyMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.010101010063380905,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "minimapMs": {
+            "min": 0,
+            "max": 8.199999999254942,
+            "mean": 0.06733333331843218,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "queuePeak": 1,
+          "queueDepth": {
+            "min": 0,
+            "max": 0,
+            "mean": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0
+          },
+          "undrawnGenerations": 0,
+          "missingGenerations": 0,
+          "failures": 0,
+          "heap": {
+            "usedSize": 3493740,
+            "totalSize": 8384512,
+            "embedderHeapUsedSize": 30521696,
+            "backingStorageSize": 5211837
+          },
+          "visibility": "visible"
+        }
+      ],
+      "scheduler": {
+        "mode": "deadline",
+        "intervalMs": {
+          "min": 44.85560000000078,
+          "max": 63.196500000000015,
+          "mean": 50.011216161616154,
+          "p50": 47.023299999999836,
+          "p95": 62.8117000000002,
+          "p99": 63.196500000000015
+        },
+        "latenessMs": {
+          "min": 0.27729999999996835,
+          "max": 16.181500000000142,
+          "mean": 8.054352525252318,
+          "p50": 8.068299999999908,
+          "p95": 15.315900000000056,
+          "p99": 16.181500000000142
+        },
+        "rebaseMs": 0,
+        "cpuMs": 282,
+        "eventLoopP99Ms": 33.439743,
+        "measuredDriftMs": 1.9749999999994543
+      },
+      "steadyHz": 19.943128241627075,
+      "realtimePass": true
+    },
+    {
+      "round": 2,
+      "variant": "current-v1",
+      "scenario": "P01",
+      "clients": 4,
+      "dpr": 1,
+      "generations": 100,
+      "warmup": 100,
+      "warmBoardHash": "436cacb62eaf46a205b141aedac4f7ccdbe262a93e9fd2e462febbc0c1c1c643",
+      "finalBoardHash": "436cacb62eaf46a205b141aedac4f7ccdbe262a93e9fd2e462febbc0c1c1c643",
+      "tickMs": {
+        "min": 1.2895000000007713,
+        "max": 8.5471,
+        "mean": 1.6428770000000008,
+        "p50": 1.5199000000002343,
+        "p95": 2.1089999999999236,
+        "p99": 2.638099999999895
+      },
+      "stepMs": {
+        "min": 1.1080000000001746,
+        "max": 8.025499999999965,
+        "mean": 1.3727060000000233,
+        "p50": 1.2663999999995212,
+        "p95": 1.5502999999998792,
+        "p99": 2.1496000000001914
+      },
+      "L": {
+        "min": 24000,
+        "max": 24000,
+        "mean": 24000,
+        "p50": 24000,
+        "p95": 24000,
+        "p99": 24000
+      },
+      "D": {
+        "min": 0,
+        "max": 0,
+        "mean": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "deadlineMisses": 0,
+      "elapsedMs": 6173.6472,
+      "observedHz": 16.197880565640354,
+      "wireBytes": 223140,
+      "wireBytesPerSecond": 36143.950694169886,
+      "wireBytesPerGeneration": 2231.4,
+      "snapshotCount": 0,
+      "serverMemory": {
+        "generation": 200,
+        "rss": 170196992,
+        "heapTotal": 123871232,
+        "heapUsed": 79826112,
+        "external": 46418713,
+        "arrayBuffers": 42486852
+      },
+      "clientMetrics": [
+        {
+          "frameMs": {
+            "min": 0,
+            "max": 0.7000000029802322,
+            "mean": 0.2416208791597695,
+            "p50": 0.20000000298023224,
+            "p95": 0.3999999985098839,
+            "p99": 0.5
+          },
+          "rafMs": {
+            "min": 3.300000000000182,
+            "max": 37.60000000000002,
+            "mean": 4.243887362637362,
+            "p50": 4.199999999999818,
+            "p95": 4.300000000000182,
+            "p99": 8.199999999999818
+          },
+          "decodeMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.013000000081956387,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "applyMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.012121212038427892,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "minimapMs": {
+            "min": 0,
+            "max": 0.20000000298023224,
+            "mean": 0.013043478313509537,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "queuePeak": 1,
+          "queueDepth": {
+            "min": 0,
+            "max": 0,
+            "mean": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0
+          },
+          "undrawnGenerations": 0,
+          "missingGenerations": 0,
+          "failures": 0,
+          "heap": {
+            "usedSize": 4797488,
+            "totalSize": 8880128,
+            "embedderHeapUsedSize": 37368688,
+            "backingStorageSize": 5211841
+          },
+          "visibility": "visible"
+        },
+        {
+          "frameMs": {
+            "min": 0.09999999776482582,
+            "max": 7.699999999254942,
+            "mean": 0.24103092783966015,
+            "p50": 0.19999999925494194,
+            "p95": 0.3999999985098839,
+            "p99": 0.4000000022351742
+          },
+          "rafMs": {
+            "min": 3.199999999999818,
+            "max": 25,
+            "mean": 4.24680412371134,
+            "p50": 4.199999999999818,
+            "p95": 4.300000000000182,
+            "p99": 8.299999999999955
+          },
+          "decodeMs": {
+            "min": 0,
+            "max": 0.19999999925494194,
+            "mean": 0.013000000007450581,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "applyMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.00808080808833392,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "minimapMs": {
+            "min": 0,
+            "max": 7.199999999254942,
+            "mean": 0.051891891920083276,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "queuePeak": 1,
+          "queueDepth": {
+            "min": 0,
+            "max": 0,
+            "mean": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0
+          },
+          "undrawnGenerations": 0,
+          "missingGenerations": 0,
+          "failures": 0,
+          "heap": {
+            "usedSize": 5233560,
+            "totalSize": 8880128,
+            "embedderHeapUsedSize": 37367248,
+            "backingStorageSize": 5211841
+          },
+          "visibility": "visible"
+        },
+        {
+          "frameMs": {
+            "min": 0.09999999776482582,
+            "max": 7.199999999254942,
+            "mean": 0.24206185562862564,
+            "p50": 0.19999999925494194,
+            "p95": 0.3999999985098839,
+            "p99": 0.5
+          },
+          "rafMs": {
+            "min": 3.299999999999727,
+            "max": 37.5,
+            "mean": 4.246941580756014,
+            "p50": 4.199999999999818,
+            "p95": 4.300000000000182,
+            "p99": 8.299999999999955
+          },
+          "decodeMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.007000000067055225,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "applyMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.005050505012875855,
+            "p50": 0,
+            "p95": 0.09999999776482582,
+            "p99": 0.10000000149011612
+          },
+          "minimapMs": {
+            "min": 0,
+            "max": 6.900000002235174,
+            "mean": 0.05163043480285484,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "queuePeak": 1,
+          "queueDepth": {
+            "min": 0,
+            "max": 0,
+            "mean": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0
+          },
+          "undrawnGenerations": 0,
+          "missingGenerations": 0,
+          "failures": 0,
+          "heap": {
+            "usedSize": 5218392,
+            "totalSize": 8355840,
+            "embedderHeapUsedSize": 37351960,
+            "backingStorageSize": 5211841
+          },
+          "visibility": "visible"
+        },
+        {
+          "frameMs": {
+            "min": 0,
+            "max": 7.5,
+            "mean": 0.2411966987948306,
+            "p50": 0.19999999925494194,
+            "p95": 0.3999999985098839,
+            "p99": 0.5
+          },
+          "rafMs": {
+            "min": 3.200000000000273,
+            "max": 25.099999999999994,
+            "mean": 4.249793672627235,
+            "p50": 4.199999999999818,
+            "p95": 4.300000000000182,
+            "p99": 8.299999999999955
+          },
+          "decodeMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.01299999985843897,
+            "p50": 0,
+            "p95": 0.09999999776482582,
+            "p99": 0.10000000149011612
+          },
+          "applyMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.006060606113286933,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "minimapMs": {
+            "min": 0,
+            "max": 7.100000001490116,
+            "mean": 0.054594594602649274,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.19999999925494194
+          },
+          "queuePeak": 1,
+          "queueDepth": {
+            "min": 0,
+            "max": 0,
+            "mean": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0
+          },
+          "undrawnGenerations": 0,
+          "missingGenerations": 0,
+          "failures": 0,
+          "heap": {
+            "usedSize": 4722780,
+            "totalSize": 8908800,
+            "embedderHeapUsedSize": 37348568,
+            "backingStorageSize": 5211841
+          },
+          "visibility": "visible"
+        }
+      ],
+      "scheduler": {
+        "mode": "interval",
+        "intervalMs": {
+          "min": 51.02229999999963,
+          "max": 63.82519999999931,
+          "mean": 62.096658585858584,
+          "p50": 62.265699999999924,
+          "p95": 63.53269999999975,
+          "p99": 63.82519999999931
+        },
+        "latenessMs": {
+          "min": 144.5759999999998,
+          "max": 1332.3527999999997,
+          "mean": 742.0541646464644,
+          "p50": 746.4161999999997,
+          "p95": 1283.4778999999999,
+          "p99": 1332.3527999999997
+        },
+        "rebaseMs": 0,
+        "cpuMs": 391,
+        "eventLoopP99Ms": 33.882111,
+        "measuredDriftMs": 1187.7768000000005
+      },
+      "steadyHz": 16.09306119869313,
+      "realtimePass": false
+    },
+    {
+      "round": 2,
+      "variant": "current-v1",
+      "scenario": "P01",
+      "clients": 1,
+      "dpr": 1,
+      "generations": 100,
+      "warmup": 100,
+      "warmBoardHash": "436cacb62eaf46a205b141aedac4f7ccdbe262a93e9fd2e462febbc0c1c1c643",
+      "finalBoardHash": "436cacb62eaf46a205b141aedac4f7ccdbe262a93e9fd2e462febbc0c1c1c643",
+      "tickMs": {
+        "min": 1.162000000000262,
+        "max": 6.650499999999965,
+        "mean": 1.508940000000016,
+        "p50": 1.4291999999995824,
+        "p95": 1.7789000000000215,
+        "p99": 2.365099999999984
+      },
+      "stepMs": {
+        "min": 1.0448999999998705,
+        "max": 6.3034999999999854,
+        "mean": 1.3482850000000577,
+        "p50": 1.27179999999953,
+        "p95": 1.6088999999999487,
+        "p99": 2.216799999999921
+      },
+      "L": {
+        "min": 24000,
+        "max": 24000,
+        "mean": 24000,
+        "p50": 24000,
+        "p95": 24000,
+        "p99": 24000
+      },
+      "D": {
+        "min": 0,
+        "max": 0,
+        "mean": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "deadlineMisses": 0,
+      "elapsedMs": 4972.1584,
+      "observedHz": 20.11198999613528,
+      "wireBytes": 55782,
+      "wireBytesPerSecond": 11218.870259644182,
+      "wireBytesPerGeneration": 557.82,
+      "snapshotCount": 0,
+      "serverMemory": {
+        "generation": 200,
+        "rss": 165457920,
+        "heapTotal": 121393152,
+        "heapUsed": 60891880,
+        "external": 43802617,
+        "arrayBuffers": 39870756
+      },
+      "clientMetrics": [
+        {
+          "frameMs": {
+            "min": 0.09999999776482582,
+            "max": 0.8999999985098839,
+            "mean": 0.23474503017144155,
+            "p50": 0.19999999925494194,
+            "p95": 0.3999999985098839,
+            "p99": 0.5999999977648258
+          },
+          "rafMs": {
+            "min": 2.5,
+            "max": 66.59999999999997,
+            "mean": 4.2207612456747405,
+            "p50": 4.199999999999818,
+            "p95": 4.700000000000273,
+            "p99": 5.199999999999818
+          },
+          "decodeMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.014000000059604644,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "applyMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.006060606113286933,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "minimapMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.012587412592622783,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "queuePeak": 2,
+          "queueDepth": {
+            "min": 0,
+            "max": 1,
+            "mean": 0.000864304235090752,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0
+          },
+          "undrawnGenerations": 0,
+          "missingGenerations": 0,
+          "failures": 0,
+          "heap": {
+            "usedSize": 3135060,
+            "totalSize": 8122368,
+            "embedderHeapUsedSize": 30768232,
+            "backingStorageSize": 5211838
+          },
+          "visibility": "visible"
+        }
+      ],
+      "scheduler": {
+        "mode": "deadline",
+        "intervalMs": {
+          "min": 44.823700000000144,
+          "max": 63.02559999999994,
+          "mean": 49.9602595959596,
+          "p50": 47.1105,
+          "p95": 62.67500000000018,
+          "p99": 63.02559999999994
+        },
+        "latenessMs": {
+          "min": 0.2749000000003434,
+          "max": 15.959200000000237,
+          "mean": 7.892123232323491,
+          "p50": 7.676000000000386,
+          "p95": 14.914300000000367,
+          "p99": 15.959200000000237
+        },
+        "rebaseMs": 0,
+        "cpuMs": 109,
+        "eventLoopP99Ms": 33.013759,
+        "measuredDriftMs": -2.242699999999786
+      },
+      "steadyHz": 20.022186200264336,
+      "realtimePass": true
+    },
+    {
+      "round": 2,
+      "variant": "current-v1",
+      "scenario": "P01",
+      "clients": 0,
+      "dpr": 1,
+      "generations": 100,
+      "warmup": 100,
+      "warmBoardHash": "436cacb62eaf46a205b141aedac4f7ccdbe262a93e9fd2e462febbc0c1c1c643",
+      "finalBoardHash": "436cacb62eaf46a205b141aedac4f7ccdbe262a93e9fd2e462febbc0c1c1c643",
+      "tickMs": {
+        "min": 1.0828000000001339,
+        "max": 3.8278000000000247,
+        "mean": 1.8970609999999988,
+        "p50": 1.8740999999999985,
+        "p95": 2.678199999999947,
+        "p99": 3.4448999999999614
+      },
+      "stepMs": {
+        "min": 1.0790999999999258,
+        "max": 3.7585000000000264,
+        "mean": 1.8913459999999884,
+        "p50": 1.8694000000004962,
+        "p95": 2.6713999999999487,
+        "p99": 3.4365000000000236
+      },
+      "L": {
+        "min": 24000,
+        "max": 24000,
+        "mean": 24000,
+        "p50": 24000,
+        "p95": 24000,
+        "p99": 24000
+      },
+      "D": {
+        "min": 0,
+        "max": 0,
+        "mean": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "deadlineMisses": 0,
+      "elapsedMs": 5002.5324,
+      "observedHz": 19.989875527842656,
+      "wireBytes": 0,
+      "wireBytesPerSecond": 0,
+      "wireBytesPerGeneration": 0,
+      "snapshotCount": 0,
+      "serverMemory": {
+        "generation": 200,
+        "rss": 161509376,
+        "heapTotal": 118042624,
+        "heapUsed": 52622864,
+        "external": 43187836,
+        "arrayBuffers": 39255975
+      },
+      "clientMetrics": [],
+      "scheduler": {
+        "mode": "deadline",
+        "intervalMs": {
+          "min": 45.48109999999997,
+          "max": 64.39499999999998,
+          "mean": 50.065895918367346,
+          "p50": 47.09140000000025,
+          "p95": 62.72070000000008,
+          "p99": 64.39499999999998
+        },
+        "latenessMs": {
+          "min": 0.20460000000002765,
+          "max": 16.254699999999957,
+          "mean": 8.250495959596003,
+          "p50": 8.09310000000005,
+          "p95": 15.493399999999838,
+          "p99": 16.254699999999957
+        },
+        "rebaseMs": 0,
+        "cpuMs": 203,
+        "eventLoopP99Ms": 33.652735,
+        "measuredDriftMs": 6.457800000000134
+      },
+      "steadyHz": 19.990294005532746,
+      "realtimePass": false
+    },
+    {
+      "round": 2,
+      "variant": "current-v1",
+      "scenario": "P01",
+      "clients": 0,
+      "dpr": 1,
+      "generations": 100,
+      "warmup": 100,
+      "warmBoardHash": "436cacb62eaf46a205b141aedac4f7ccdbe262a93e9fd2e462febbc0c1c1c643",
+      "finalBoardHash": "436cacb62eaf46a205b141aedac4f7ccdbe262a93e9fd2e462febbc0c1c1c643",
+      "tickMs": {
+        "min": 1.138300000000072,
+        "max": 5.597700000000032,
+        "mean": 1.9823450000000093,
+        "p50": 1.9133999999999105,
+        "p95": 2.7765000000000555,
+        "p99": 3.2900999999999385
+      },
+      "stepMs": {
+        "min": 1.1354999999998654,
+        "max": 5.524600000000078,
+        "mean": 1.976066999999987,
+        "p50": 1.9089999999996508,
+        "p95": 2.7670000000000528,
+        "p99": 3.278099999999995
+      },
+      "L": {
+        "min": 24000,
+        "max": 24000,
+        "mean": 24000,
+        "p50": 24000,
+        "p95": 24000,
+        "p99": 24000
+      },
+      "D": {
+        "min": 0,
+        "max": 0,
+        "mean": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "deadlineMisses": 0,
+      "elapsedMs": 6213.2778,
+      "observedHz": 16.094564450345356,
+      "wireBytes": 0,
+      "wireBytesPerSecond": 0,
+      "wireBytesPerGeneration": 0,
+      "snapshotCount": 0,
+      "serverMemory": {
+        "generation": 200,
+        "rss": 160403456,
+        "heapTotal": 118042624,
+        "heapUsed": 53689200,
+        "external": 43188636,
+        "arrayBuffers": 39256775
+      },
+      "clientMetrics": [],
+      "scheduler": {
+        "mode": "interval",
+        "intervalMs": {
+          "min": 60.268299999999726,
+          "max": 64.2519000000002,
+          "mean": 62.23931326530612,
+          "p50": 62.14049999999952,
+          "p95": 63.38999999999987,
+          "p99": 64.2519000000002
+        },
+        "latenessMs": {
+          "min": 4.045600000000036,
+          "max": 1203.4983000000002,
+          "mean": 601.0685222222221,
+          "p50": 601.0992999999999,
+          "p95": 1156.1179000000002,
+          "p99": 1203.4983000000002
+        },
+        "rebaseMs": 0,
+        "cpuMs": 156,
+        "eventLoopP99Ms": 34.701311,
+        "measuredDriftMs": 1199.4527000000007
+      },
+      "steadyHz": 16.06729072240227,
+      "realtimePass": false
+    },
+    {
+      "round": 3,
+      "variant": "current-v1",
+      "scenario": "P01",
+      "clients": 0,
+      "dpr": 1,
+      "generations": 100,
+      "warmup": 100,
+      "warmBoardHash": "436cacb62eaf46a205b141aedac4f7ccdbe262a93e9fd2e462febbc0c1c1c643",
+      "finalBoardHash": "436cacb62eaf46a205b141aedac4f7ccdbe262a93e9fd2e462febbc0c1c1c643",
+      "tickMs": {
+        "min": 1.110700000000179,
+        "max": 6.003299999999967,
+        "mean": 1.8752769999999555,
+        "p50": 1.7956999999996697,
+        "p95": 2.679700000000139,
+        "p99": 3.869699999999966
+      },
+      "stepMs": {
+        "min": 1.1073999999998705,
+        "max": 5.899599999999964,
+        "mean": 1.8687339999999393,
+        "p50": 1.7914999999993597,
+        "p95": 2.6734999999998763,
+        "p99": 3.856700000000046
+      },
+      "L": {
+        "min": 24000,
+        "max": 24000,
+        "mean": 24000,
+        "p50": 24000,
+        "p95": 24000,
+        "p99": 24000
+      },
+      "D": {
+        "min": 0,
+        "max": 0,
+        "mean": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "deadlineMisses": 0,
+      "elapsedMs": 6233.204900000001,
+      "observedHz": 16.043111305389623,
+      "wireBytes": 0,
+      "wireBytesPerSecond": 0,
+      "wireBytesPerGeneration": 0,
+      "snapshotCount": 0,
+      "serverMemory": {
+        "generation": 200,
+        "rss": 160575488,
+        "heapTotal": 118304768,
+        "heapUsed": 55693800,
+        "external": 43190236,
+        "arrayBuffers": 39258375
+      },
+      "clientMetrics": [],
+      "scheduler": {
+        "mode": "interval",
+        "intervalMs": {
+          "min": 60.47160000000031,
+          "max": 65.15560000000005,
+          "mean": 62.398412244897955,
+          "p50": 62.41519999999991,
+          "p95": 63.68130000000019,
+          "p99": 65.15560000000005
+        },
+        "latenessMs": {
+          "min": 8.816799999999944,
+          "max": 1223.8612000000003,
+          "mean": 615.32977979798,
+          "p50": 614.8893000000003,
+          "p95": 1173.511700000001,
+          "p99": 1223.8612000000003
+        },
+        "rebaseMs": 0,
+        "cpuMs": 453,
+        "eventLoopP99Ms": 34.406399,
+        "measuredDriftMs": 1215.0443999999998
+      },
+      "steadyHz": 16.030389213640106,
+      "realtimePass": false
+    },
+    {
+      "round": 3,
+      "variant": "current-v1",
+      "scenario": "P01",
+      "clients": 0,
+      "dpr": 1,
+      "generations": 100,
+      "warmup": 100,
+      "warmBoardHash": "436cacb62eaf46a205b141aedac4f7ccdbe262a93e9fd2e462febbc0c1c1c643",
+      "finalBoardHash": "436cacb62eaf46a205b141aedac4f7ccdbe262a93e9fd2e462febbc0c1c1c643",
+      "tickMs": {
+        "min": 1.0956999999998516,
+        "max": 5.7210999999999785,
+        "mean": 1.8800189999999999,
+        "p50": 1.805000000000291,
+        "p95": 2.5778999999999996,
+        "p99": 3.047399999999925
+      },
+      "stepMs": {
+        "min": 1.092200000000048,
+        "max": 5.63919999999996,
+        "mean": 1.8742969999999934,
+        "p50": 1.7966000000000122,
+        "p95": 2.571999999999889,
+        "p99": 3.0399999999999636
+      },
+      "L": {
+        "min": 24000,
+        "max": 24000,
+        "mean": 24000,
+        "p50": 24000,
+        "p95": 24000,
+        "p99": 24000
+      },
+      "D": {
+        "min": 0,
+        "max": 0,
+        "mean": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "deadlineMisses": 0,
+      "elapsedMs": 5000.335099999999,
+      "observedHz": 19.99865968982759,
+      "wireBytes": 0,
+      "wireBytesPerSecond": 0,
+      "wireBytesPerGeneration": 0,
+      "snapshotCount": 0,
+      "serverMemory": {
+        "generation": 200,
+        "rss": 154193920,
+        "heapTotal": 118042624,
+        "heapUsed": 54229848,
+        "external": 43191036,
+        "arrayBuffers": 39259175
+      },
+      "clientMetrics": [],
+      "scheduler": {
+        "mode": "deadline",
+        "intervalMs": {
+          "min": 44.90689999999995,
+          "max": 63.559400000000096,
+          "mean": 49.96875918367347,
+          "p50": 46.9390999999996,
+          "p95": 62.64760000000001,
+          "p99": 63.559400000000096
+        },
+        "latenessMs": {
+          "min": 0.06880000000001019,
+          "max": 16.026200000000244,
+          "mean": 8.144333333333515,
+          "p50": 8.199500000000057,
+          "p95": 14.955500000000029,
+          "p99": 16.026200000000244
+        },
+        "rebaseMs": 0,
+        "cpuMs": 234,
+        "eventLoopP99Ms": 33.882111,
+        "measuredDriftMs": -3.0615999999999985
+      },
+      "steadyHz": 20.02446585192442,
+      "realtimePass": false
+    },
+    {
+      "round": 3,
+      "variant": "current-v1",
+      "scenario": "P01",
+      "clients": 1,
+      "dpr": 1,
+      "generations": 100,
+      "warmup": 100,
+      "warmBoardHash": "436cacb62eaf46a205b141aedac4f7ccdbe262a93e9fd2e462febbc0c1c1c643",
+      "finalBoardHash": "436cacb62eaf46a205b141aedac4f7ccdbe262a93e9fd2e462febbc0c1c1c643",
+      "tickMs": {
+        "min": 1.155999999999949,
+        "max": 6.723599999999806,
+        "mean": 1.5239359999999988,
+        "p50": 1.4101000000000568,
+        "p95": 1.868800000000192,
+        "p99": 4.177300000000059
+      },
+      "stepMs": {
+        "min": 1.0398999999997613,
+        "max": 6.349399999999832,
+        "mean": 1.3666919999999572,
+        "p50": 1.2415999999998348,
+        "p95": 1.6538000000000466,
+        "p99": 4.013599999999997
+      },
+      "L": {
+        "min": 24000,
+        "max": 24000,
+        "mean": 24000,
+        "p50": 24000,
+        "p95": 24000,
+        "p99": 24000
+      },
+      "D": {
+        "min": 0,
+        "max": 0,
+        "mean": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "deadlineMisses": 0,
+      "elapsedMs": 4986.5981,
+      "observedHz": 20.053751674914405,
+      "wireBytes": 55782,
+      "wireBytesPerSecond": 11186.383759300754,
+      "wireBytesPerGeneration": 557.82,
+      "snapshotCount": 0,
+      "serverMemory": {
+        "generation": 200,
+        "rss": 165117952,
+        "heapTotal": 121061376,
+        "heapUsed": 60542536,
+        "external": 43818492,
+        "arrayBuffers": 39886631
+      },
+      "clientMetrics": [
+        {
+          "frameMs": {
+            "min": 0.09999999776482582,
+            "max": 0.8999999985098839,
+            "mean": 0.23568965511011153,
+            "p50": 0.19999999925494194,
+            "p95": 0.4000000022351742,
+            "p99": 0.6999999992549419
+          },
+          "rafMs": {
+            "min": 2.900000000000091,
+            "max": 66.69999999999999,
+            "mean": 4.22053494391717,
+            "p50": 4.199999999999818,
+            "p95": 4.599999999999909,
+            "p99": 5
+          },
+          "decodeMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.014999999888241291,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "applyMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.009090909188744998,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "minimapMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.018055555565903585,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "queuePeak": 2,
+          "queueDepth": {
+            "min": 0,
+            "max": 1,
+            "mean": 0.0008620689655172414,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0
+          },
+          "undrawnGenerations": 0,
+          "missingGenerations": 0,
+          "failures": 0,
+          "heap": {
+            "usedSize": 3577748,
+            "totalSize": 8122368,
+            "embedderHeapUsedSize": 30769152,
+            "backingStorageSize": 5211847
+          },
+          "visibility": "visible"
+        }
+      ],
+      "scheduler": {
+        "mode": "deadline",
+        "intervalMs": {
+          "min": 45.040100000000166,
+          "max": 63.403899999999794,
+          "mean": 49.949498989899,
+          "p50": 46.93229999999994,
+          "p95": 62.4393,
+          "p99": 63.403899999999794
+        },
+        "latenessMs": {
+          "min": 0.8834999999999127,
+          "max": 16.53939999999966,
+          "mean": 8.566926262626142,
+          "p50": 8.577000000000226,
+          "p95": 15.823399999999765,
+          "p99": 16.53939999999966
+        },
+        "rebaseMs": 0,
+        "cpuMs": 203,
+        "eventLoopP99Ms": 33.390591,
+        "measuredDriftMs": -1.5453999999990629
+      },
+      "steadyHz": 19.95621606196006,
+      "realtimePass": true
+    },
+    {
+      "round": 3,
+      "variant": "current-v1",
+      "scenario": "P01",
+      "clients": 4,
+      "dpr": 1,
+      "generations": 100,
+      "warmup": 100,
+      "warmBoardHash": "436cacb62eaf46a205b141aedac4f7ccdbe262a93e9fd2e462febbc0c1c1c643",
+      "finalBoardHash": "436cacb62eaf46a205b141aedac4f7ccdbe262a93e9fd2e462febbc0c1c1c643",
+      "tickMs": {
+        "min": 1.2800000000006548,
+        "max": 6.732500000000073,
+        "mean": 1.6091169999999737,
+        "p50": 1.5113999999998668,
+        "p95": 1.9834000000000742,
+        "p99": 2.43349999999964
+      },
+      "stepMs": {
+        "min": 1.0625,
+        "max": 6.253699999999981,
+        "mean": 1.337001999999959,
+        "p50": 1.2496000000001004,
+        "p95": 1.6238000000003012,
+        "p99": 1.9048000000002503
+      },
+      "L": {
+        "min": 24000,
+        "max": 24000,
+        "mean": 24000,
+        "p50": 24000,
+        "p95": 24000,
+        "p99": 24000
+      },
+      "D": {
+        "min": 0,
+        "max": 0,
+        "mean": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "deadlineMisses": 0,
+      "elapsedMs": 6200.352400000001,
+      "observedHz": 16.12811555678674,
+      "wireBytes": 223136,
+      "wireBytesPerSecond": 35987.631928791656,
+      "wireBytesPerGeneration": 2231.36,
+      "snapshotCount": 0,
+      "serverMemory": {
+        "generation": 200,
+        "rss": 169668608,
+        "heapTotal": 123609088,
+        "heapUsed": 79603096,
+        "external": 46427455,
+        "arrayBuffers": 42495594
+      },
+      "clientMetrics": [
+        {
+          "frameMs": {
+            "min": 0.09999999776482582,
+            "max": 0.8000000007450581,
+            "mean": 0.24996610172976882,
+            "p50": 0.20000000298023224,
+            "p95": 0.4000000022351742,
+            "p99": 0.5
+          },
+          "rafMs": {
+            "min": 3.399999999999636,
+            "max": 29.100000000000023,
+            "mean": 4.2117966101694915,
+            "p50": 4.199999999999818,
+            "p95": 4.300000000000182,
+            "p99": 4.400000000000091
+          },
+          "decodeMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.013000000081956387,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "applyMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.006060606000399349,
+            "p50": 0,
+            "p95": 0.09999999776482582,
+            "p99": 0.10000000149011612
+          },
+          "minimapMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.012903225878554006,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "queuePeak": 1,
+          "queueDepth": {
+            "min": 0,
+            "max": 0,
+            "mean": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0
+          },
+          "undrawnGenerations": 0,
+          "missingGenerations": 0,
+          "failures": 0,
+          "heap": {
+            "usedSize": 3879820,
+            "totalSize": 8617984,
+            "embedderHeapUsedSize": 37856032,
+            "backingStorageSize": 5211840
+          },
+          "visibility": "visible"
+        },
+        {
+          "frameMs": {
+            "min": 0,
+            "max": 0.6999999992549419,
+            "mean": 0.2530529171612564,
+            "p50": 0.20000000298023224,
+            "p95": 0.4000000022351742,
+            "p99": 0.5
+          },
+          "rafMs": {
+            "min": 3.300000000000182,
+            "max": 25.100000000000023,
+            "mean": 4.209023066485753,
+            "p50": 4.199999999999818,
+            "p95": 4.300000000000182,
+            "p99": 4.400000000000091
+          },
+          "decodeMs": {
+            "min": 0,
+            "max": 0.20000000298023224,
+            "mean": 0.01600000008940697,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "applyMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.007070707063181232,
+            "p50": 0,
+            "p95": 0.09999999776482582,
+            "p99": 0.10000000149011612
+          },
+          "minimapMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.017204301131348455,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "queuePeak": 1,
+          "queueDepth": {
+            "min": 0,
+            "max": 0,
+            "mean": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0
+          },
+          "undrawnGenerations": 0,
+          "missingGenerations": 0,
+          "failures": 0,
+          "heap": {
+            "usedSize": 3784188,
+            "totalSize": 8617984,
+            "embedderHeapUsedSize": 38492752,
+            "backingStorageSize": 5211840
+          },
+          "visibility": "visible"
+        },
+        {
+          "frameMs": {
+            "min": 0.09999999776482582,
+            "max": 0.8000000007450581,
+            "mean": 0.25461329705255004,
+            "p50": 0.20000000298023224,
+            "p95": 0.4000000022351742,
+            "p99": 0.5
+          },
+          "rafMs": {
+            "min": 3.300000000000182,
+            "max": 29.19999999999999,
+            "mean": 4.217571234735414,
+            "p50": 4.199999999999818,
+            "p95": 4.300000000000182,
+            "p99": 4.400000000000091
+          },
+          "decodeMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.009999999962747096,
+            "p50": 0,
+            "p95": 0.09999999776482582,
+            "p99": 0.10000000149011612
+          },
+          "applyMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.008080808125963115,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "minimapMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.010752688131986125,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "queuePeak": 1,
+          "queueDepth": {
+            "min": 0,
+            "max": 0,
+            "mean": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0
+          },
+          "undrawnGenerations": 0,
+          "missingGenerations": 0,
+          "failures": 0,
+          "heap": {
+            "usedSize": 4970984,
+            "totalSize": 8880128,
+            "embedderHeapUsedSize": 37845152,
+            "backingStorageSize": 5211840
+          },
+          "visibility": "visible"
+        },
+        {
+          "frameMs": {
+            "min": 0.09999999776482582,
+            "max": 0.6999999992549419,
+            "mean": 0.2548168249822536,
+            "p50": 0.20000000298023224,
+            "p95": 0.4000000022351742,
+            "p99": 0.5
+          },
+          "rafMs": {
+            "min": 3.300000000000182,
+            "max": 33.400000000000006,
+            "mean": 4.211872455902306,
+            "p50": 4.199999999999818,
+            "p95": 4.300000000000182,
+            "p99": 4.399999999999636
+          },
+          "decodeMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.008999999910593033,
+            "p50": 0,
+            "p95": 0.09999999776482582,
+            "p99": 0.10000000149011612
+          },
+          "applyMs": {
+            "min": 0,
+            "max": 0.19999999925494194,
+            "mean": 0.007070707100810427,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.19999999925494194
+          },
+          "minimapMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.0231182797341257,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "queuePeak": 1,
+          "queueDepth": {
+            "min": 0,
+            "max": 0,
+            "mean": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0
+          },
+          "undrawnGenerations": 0,
+          "missingGenerations": 0,
+          "failures": 0,
+          "heap": {
+            "usedSize": 4451548,
+            "totalSize": 8646656,
+            "embedderHeapUsedSize": 37844896,
+            "backingStorageSize": 5211840
+          },
+          "visibility": "visible"
+        }
+      ],
+      "scheduler": {
+        "mode": "interval",
+        "intervalMs": {
+          "min": 54.27140000000054,
+          "max": 64.1297999999997,
+          "mean": 62.17011515151515,
+          "p50": 62.35699999999997,
+          "p95": 63.514100000000326,
+          "p99": 64.1297999999997
+        },
+        "latenessMs": {
+          "min": 155.26690000000008,
+          "max": 1349.3472000000002,
+          "mean": 752.194292929293,
+          "p50": 752.5625,
+          "p95": 1300.5787,
+          "p99": 1349.3472000000002
+        },
+        "rebaseMs": 0,
+        "cpuMs": 641,
+        "eventLoopP99Ms": 33.882111,
+        "measuredDriftMs": 1194.0802999999996
+      },
+      "steadyHz": 16.080786231546366,
+      "realtimePass": false
+    },
+    {
+      "round": 3,
+      "variant": "current-v1",
+      "scenario": "P01",
+      "clients": 4,
+      "dpr": 1,
+      "generations": 100,
+      "warmup": 100,
+      "warmBoardHash": "436cacb62eaf46a205b141aedac4f7ccdbe262a93e9fd2e462febbc0c1c1c643",
+      "finalBoardHash": "436cacb62eaf46a205b141aedac4f7ccdbe262a93e9fd2e462febbc0c1c1c643",
+      "tickMs": {
+        "min": 1.3222999999998137,
+        "max": 7.032400000000052,
+        "mean": 1.6480810000000339,
+        "p50": 1.5552000000006956,
+        "p95": 1.8753999999998996,
+        "p99": 2.6515999999999167
+      },
+      "stepMs": {
+        "min": 1.1334999999999127,
+        "max": 6.525300000000016,
+        "mean": 1.3697640000000342,
+        "p50": 1.292699999999968,
+        "p95": 1.5050000000001091,
+        "p99": 2.3554999999998927
+      },
+      "L": {
+        "min": 24000,
+        "max": 24000,
+        "mean": 24000,
+        "p50": 24000,
+        "p95": 24000,
+        "p99": 24000
+      },
+      "D": {
+        "min": 0,
+        "max": 0,
+        "mean": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "deadlineMisses": 0,
+      "elapsedMs": 4955.9399,
+      "observedHz": 20.177807240963514,
+      "wireBytes": 223136,
+      "wireBytesPerSecond": 45023.95196519635,
+      "wireBytesPerGeneration": 2231.36,
+      "snapshotCount": 0,
+      "serverMemory": {
+        "generation": 200,
+        "rss": 169250816,
+        "heapTotal": 123801600,
+        "heapUsed": 79002520,
+        "external": 46392781,
+        "arrayBuffers": 42460920
+      },
+      "clientMetrics": [
+        {
+          "frameMs": {
+            "min": 0,
+            "max": 0.6000000014901161,
+            "mean": 0.2292428199068892,
+            "p50": 0.19999999925494194,
+            "p95": 0.30000000074505806,
+            "p99": 0.4000000022351742
+          },
+          "rafMs": {
+            "min": 3.899999999999636,
+            "max": 45.89999999999998,
+            "mean": 4.3118363794604,
+            "p50": 4.199999999999818,
+            "p95": 4.300000000000182,
+            "p99": 8.399999999999864
+          },
+          "decodeMs": {
+            "min": 0,
+            "max": 0.19999999925494194,
+            "mean": 0.013999999947845936,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "applyMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.007070707025552037,
+            "p50": 0,
+            "p95": 0.09999999776482582,
+            "p99": 0.10000000149011612
+          },
+          "minimapMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.012925170133916699,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "queuePeak": 1,
+          "queueDepth": {
+            "min": 0,
+            "max": 0,
+            "mean": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0
+          },
+          "undrawnGenerations": 0,
+          "missingGenerations": 0,
+          "failures": 0,
+          "heap": {
+            "usedSize": 3684884,
+            "totalSize": 8617984,
+            "embedderHeapUsedSize": 30791216,
+            "backingStorageSize": 5211840
+          },
+          "visibility": "visible"
+        },
+        {
+          "frameMs": {
+            "min": 0,
+            "max": 0.6000000014901161,
+            "mean": 0.22480417758524676,
+            "p50": 0.19999999925494194,
+            "p95": 0.30000000074505806,
+            "p99": 0.4000000022351742
+          },
+          "rafMs": {
+            "min": 3.899999999999636,
+            "max": 41.60000000000002,
+            "mean": 4.315404699738903,
+            "p50": 4.199999999999818,
+            "p95": 4.300000000000182,
+            "p99": 8.399999999999977
+          },
+          "decodeMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.01599999997764826,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "applyMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.00808080808833392,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "minimapMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.01972789119700996,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "queuePeak": 1,
+          "queueDepth": {
+            "min": 0,
+            "max": 0,
+            "mean": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0
+          },
+          "undrawnGenerations": 0,
+          "missingGenerations": 0,
+          "failures": 0,
+          "heap": {
+            "usedSize": 3697960,
+            "totalSize": 9142272,
+            "embedderHeapUsedSize": 30904984,
+            "backingStorageSize": 5211840
+          },
+          "visibility": "visible"
+        },
+        {
+          "frameMs": {
+            "min": 0,
+            "max": 0.6000000014901161,
+            "mean": 0.22384682333370828,
+            "p50": 0.19999999925494194,
+            "p95": 0.30000000074505806,
+            "p99": 0.4000000022351742
+          },
+          "rafMs": {
+            "min": 4,
+            "max": 29.19999999999999,
+            "mean": 4.315404699738904,
+            "p50": 4.199999999999818,
+            "p95": 4.300000000000182,
+            "p99": 8.400000000000091
+          },
+          "decodeMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.005999999940395355,
+            "p50": 0,
+            "p95": 0.09999999776482582,
+            "p99": 0.10000000149011612
+          },
+          "applyMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.006060606000399349,
+            "p50": 0,
+            "p95": 0.09999999776482582,
+            "p99": 0.10000000149011612
+          },
+          "minimapMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.01486486491017245,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "queuePeak": 1,
+          "queueDepth": {
+            "min": 0,
+            "max": 0,
+            "mean": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0
+          },
+          "undrawnGenerations": 0,
+          "missingGenerations": 0,
+          "failures": 0,
+          "heap": {
+            "usedSize": 4216904,
+            "totalSize": 8617984,
+            "embedderHeapUsedSize": 30764000,
+            "backingStorageSize": 5211840
+          },
+          "visibility": "visible"
+        },
+        {
+          "frameMs": {
+            "min": 0.09999999776482582,
+            "max": 0.5999999977648258,
+            "mean": 0.22299651559507183,
+            "p50": 0.19999999925494194,
+            "p95": 0.30000000074505806,
+            "p99": 0.4000000022351742
+          },
+          "rafMs": {
+            "min": 3.900000000000091,
+            "max": 33.5,
+            "mean": 4.319250871080139,
+            "p50": 4.199999999999818,
+            "p95": 4.300000000000182,
+            "p99": 8.400000000000091
+          },
+          "decodeMs": {
+            "min": 0,
+            "max": 0.09999999776482582,
+            "mean": 0.004999999888241291,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0.09999999776482582
+          },
+          "applyMs": {
+            "min": 0,
+            "max": 0.10000000149011612,
+            "mean": 0.007999999970197678,
+            "p50": 0,
+            "p95": 0.09999999776482582,
+            "p99": 0.10000000149011612
+          },
+          "minimapMs": {
+            "min": 0,
+            "max": 0.19999999925494194,
+            "mean": 0.01689189184155013,
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "p99": 0.10000000149011612
+          },
+          "queuePeak": 1,
+          "queueDepth": {
+            "min": 0,
+            "max": 0,
+            "mean": 0,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0
+          },
+          "undrawnGenerations": 0,
+          "missingGenerations": 0,
+          "failures": 0,
+          "heap": {
+            "usedSize": 4175672,
+            "totalSize": 8908800,
+            "embedderHeapUsedSize": 30761832,
+            "backingStorageSize": 5211840
+          },
+          "visibility": "visible"
+        }
+      ],
+      "scheduler": {
+        "mode": "deadline",
+        "intervalMs": {
+          "min": 45.03850000000057,
+          "max": 63.40480000000025,
+          "mean": 50.06639292929293,
+          "p50": 46.970800000000054,
+          "p95": 62.5934000000002,
+          "p99": 63.40480000000025
+        },
+        "latenessMs": {
+          "min": 0.6606000000001586,
+          "max": 16.494500000000244,
+          "mean": 8.36190808080823,
+          "p50": 8.013600000000224,
+          "p95": 14.812200000000303,
+          "p99": 16.494500000000244
+        },
+        "rebaseMs": 0,
+        "cpuMs": 265,
+        "eventLoopP99Ms": 33.144831,
+        "measuredDriftMs": -2.227100000000064
+      },
+      "steadyHz": 20.02451526564876,
+      "realtimePass": true
+    }
+  ],
+  "denseSingle": {
+    "variant": "current-v1",
+    "scenario": "P03",
+    "clients": 1,
+    "dpr": 1,
+    "generations": 100,
+    "warmup": 100,
+    "warmBoardHash": "3af13354037bac6772dc8a1b956889786813c79052afadfc5d3b8ff33dded665",
+    "finalBoardHash": "98682edb5d1c41371128b56b907b6c45b87631acd884eece645d8a515ebc6d43",
+    "tickMs": {
+      "min": 24.09859999999935,
+      "max": 37.654799999999796,
+      "mean": 26.902553000000008,
+      "p50": 26.7520999999997,
+      "p95": 28.982500000000073,
+      "p99": 33.50510000000031
+    },
+    "stepMs": {
+      "min": 23.947000000000116,
+      "max": 37.178499999999985,
+      "mean": 26.706888000000014,
+      "p50": 26.481800000001385,
+      "p95": 28.834499999999935,
+      "p99": 33.36329999999907
+    },
+    "L": {
+      "min": 891373,
+      "max": 990373,
+      "mean": 940873,
+      "p50": 940373,
+      "p95": 985373,
+      "p99": 989373
+    },
+    "D": {
+      "min": 1756,
+      "max": 1756,
+      "mean": 1756,
+      "p50": 1756,
+      "p95": 1756,
+      "p99": 1756
+    },
+    "deadlineMisses": 0,
+    "elapsedMs": 5021.320299999999,
+    "observedHz": 19.915080900136964,
+    "wireBytes": 809964,
+    "wireBytesPerSecond": 161304.98586198536,
+    "wireBytesPerGeneration": 8099.64,
+    "snapshotCount": 0,
+    "serverMemory": {
+      "generation": 200,
+      "rss": 212754432,
+      "heapTotal": 130244608,
+      "heapUsed": 70532120,
+      "external": 59709336,
+      "arrayBuffers": 55777475
+    },
+    "clientMetrics": [
+      {
+        "frameMs": {
+          "min": 0.09999999776482582,
+          "max": 402.9000000022352,
+          "mean": 2.5220030349013656,
+          "p50": 0.30000000074505806,
+          "p95": 12,
+          "p99": 23.399999998509884
+        },
+        "rafMs": {
+          "min": 3.5,
+          "max": 399.89999999999964,
+          "mean": 7.612746585735964,
+          "p50": 4.2000000000000455,
+          "p95": 24.90000000000009,
+          "p99": 33.399999999999636
+        },
+        "decodeMs": {
+          "min": 0,
+          "max": 0.10000000149011612,
+          "mean": 0.025,
+          "p50": 0,
+          "p95": 0.10000000149011612,
+          "p99": 0.10000000149011612
+        },
+        "applyMs": {
+          "min": 0.4000000022351742,
+          "max": 67.40000000223517,
+          "mean": 2.0616161615559547,
+          "p50": 0.7999999970197678,
+          "p95": 1.0999999977648258,
+          "p99": 67.40000000223517
+        },
+        "minimapMs": {
+          "min": 0,
+          "max": 401.80000000074506,
+          "mean": 10.628925619816238,
+          "p50": 6.399999998509884,
+          "p95": 21,
+          "p99": 25.5
+        },
+        "queuePeak": 8,
+        "queueDepth": {
+          "min": 0,
+          "max": 7,
+          "mean": 0.07283763277693475,
+          "p50": 0,
+          "p95": 0,
+          "p99": 4
+        },
+        "undrawnGenerations": 0,
+        "missingGenerations": 0,
+        "failures": 0,
+        "heap": {
+          "usedSize": 72782428,
+          "totalSize": 100229120,
+          "embedderHeapUsedSize": 17776272,
+          "backingStorageSize": 5771553
+        },
+        "visibility": "visible"
+      }
+    ],
+    "scheduler": {
+      "mode": "deadline",
+      "intervalMs": {
+        "min": 37.83640000000014,
+        "max": 63.45690000000013,
+        "mean": 50.10562323232322,
+        "p50": 47.067299999999705,
+        "p95": 63.010299999999916,
+        "p99": 63.45690000000013
+      },
+      "latenessMs": {
+        "min": 0.8631999999997788,
+        "max": 16.091699999999946,
+        "mean": 8.205413131312508,
+        "p50": 7.947499999999309,
+        "p95": 15.28269999999975,
+        "p99": 16.091699999999946
+      },
+      "rebaseMs": 0,
+      "cpuMs": 2906,
+      "eventLoopP99Ms": 62.128127,
+      "measuredDriftMs": -3.0002000000004045
+    },
+    "steadyHz": 20.020298155627,
+    "realtimePass": false
+  },
+  "minimap": {
+    "scope": "Diagnostic JS traversal pass immediately before draw warms caches; Canvas completion includes PNG encoding. Per-stage measurements are not pure GPU times. No per-cell clocks.",
+    "pixelMatch": true,
+    "pixelPairs": 24,
+    "stages": [
+      {
+        "name": "dense-mono",
+        "step": "full",
+        "variant": "baseline",
+        "rounds": 3,
+        "indexMs": 0,
+        "applyMs": 65.69999999925494,
+        "traversalOnlyMs": 12.200000002980232,
+        "miniSubmitMs": 258.8999999985099,
+        "readbackPlusPngMs": 75,
+        "totalMs": 401.0999999977648
+      },
+      {
+        "name": "dense-mono",
+        "step": "full",
+        "variant": "current",
+        "rounds": 3,
+        "indexMs": 0,
+        "applyMs": 66.69999999925494,
+        "traversalOnlyMs": 12.299999997019768,
+        "miniSubmitMs": 259.80000000074506,
+        "readbackPlusPngMs": 74.30000000074506,
+        "totalMs": 400.69999999925494
+      },
+      {
+        "name": "dense-mono",
+        "step": "first-local",
+        "variant": "baseline",
+        "rounds": 3,
+        "indexMs": 65.30000000074506,
+        "applyMs": 65.40000000223517,
+        "traversalOnlyMs": 2.399999998509884,
+        "miniSubmitMs": 3.800000000745058,
+        "readbackPlusPngMs": 4.399999998509884,
+        "totalMs": 74.20000000298023
+      },
+      {
+        "name": "dense-mono",
+        "step": "first-local",
+        "variant": "current",
+        "rounds": 3,
+        "indexMs": 60,
+        "applyMs": 60.099999997764826,
+        "traversalOnlyMs": 2.100000001490116,
+        "miniSubmitMs": 4,
+        "readbackPlusPngMs": 4.300000000745058,
+        "totalMs": 68.39999999850988
+      },
+      {
+        "name": "dense-mono",
+        "step": "indexed-local",
+        "variant": "baseline",
+        "rounds": 3,
+        "indexMs": 0,
+        "applyMs": 0.09999999776482582,
+        "traversalOnlyMs": 2.100000001490116,
+        "miniSubmitMs": 2.100000001490116,
+        "readbackPlusPngMs": 5.800000000745058,
+        "totalMs": 7.700000002980232
+      },
+      {
+        "name": "dense-mono",
+        "step": "indexed-local",
+        "variant": "current",
+        "rounds": 3,
+        "indexMs": 0,
+        "applyMs": 0.10000000149011612,
+        "traversalOnlyMs": 1.800000000745058,
+        "miniSubmitMs": 2,
+        "readbackPlusPngMs": 4,
+        "totalMs": 6.299999997019768
+      },
+      {
+        "name": "dense-mono",
+        "step": "spread2000",
+        "variant": "baseline",
+        "rounds": 3,
+        "indexMs": 0,
+        "applyMs": 1.199999999254942,
+        "traversalOnlyMs": 11.399999998509884,
+        "miniSubmitMs": 259,
+        "readbackPlusPngMs": 74.80000000074506,
+        "totalMs": 336
+      },
+      {
+        "name": "dense-mono",
+        "step": "spread2000",
+        "variant": "current",
+        "rounds": 3,
+        "indexMs": 0,
+        "applyMs": 1.5,
+        "traversalOnlyMs": 14.899999998509884,
+        "miniSubmitMs": 256.5,
+        "readbackPlusPngMs": 76.80000000074506,
+        "totalMs": 334.80000000074506
+      },
+      {
+        "name": "dense-four",
+        "step": "full",
+        "variant": "baseline",
+        "rounds": 3,
+        "indexMs": 0,
+        "applyMs": 52.19999999925494,
+        "traversalOnlyMs": 17.5,
+        "miniSubmitMs": 125.5,
+        "readbackPlusPngMs": 64.59999999776483,
+        "totalMs": 242.29999999701977
+      },
+      {
+        "name": "dense-four",
+        "step": "full",
+        "variant": "current",
+        "rounds": 3,
+        "indexMs": 0,
+        "applyMs": 50.79999999701977,
+        "traversalOnlyMs": 17.100000001490116,
+        "miniSubmitMs": 121.10000000149012,
+        "readbackPlusPngMs": 65.59999999776483,
+        "totalMs": 236.89999999850988
+      },
+      {
+        "name": "dense-four",
+        "step": "first-local",
+        "variant": "baseline",
+        "rounds": 3,
+        "indexMs": 59,
+        "applyMs": 59.100000001490116,
+        "traversalOnlyMs": 1,
+        "miniSubmitMs": 1.199999999254942,
+        "readbackPlusPngMs": 4,
+        "totalMs": 64.80000000074506
+      },
+      {
+        "name": "dense-four",
+        "step": "first-local",
+        "variant": "current",
+        "rounds": 3,
+        "indexMs": 43,
+        "applyMs": 43,
+        "traversalOnlyMs": 0.8999999985098839,
+        "miniSubmitMs": 1.199999999254942,
+        "readbackPlusPngMs": 3.5,
+        "totalMs": 47.80000000074506
+      },
+      {
+        "name": "dense-four",
+        "step": "indexed-local",
+        "variant": "baseline",
+        "rounds": 3,
+        "indexMs": 0,
+        "applyMs": 0.09999999776482582,
+        "traversalOnlyMs": 0.20000000298023224,
+        "miniSubmitMs": 0.8999999985098839,
+        "readbackPlusPngMs": 3.7999999970197678,
+        "totalMs": 4.99999999627471
+      },
+      {
+        "name": "dense-four",
+        "step": "indexed-local",
+        "variant": "current",
+        "rounds": 3,
+        "indexMs": 0,
+        "applyMs": 0.09999999776482582,
+        "traversalOnlyMs": 0.30000000074505806,
+        "miniSubmitMs": 1,
+        "readbackPlusPngMs": 3.300000000745058,
+        "totalMs": 4.300000000745058
+      },
+      {
+        "name": "dense-four",
+        "step": "spread2000",
+        "variant": "baseline",
+        "rounds": 3,
+        "indexMs": 0,
+        "applyMs": 1.1000000014901161,
+        "traversalOnlyMs": 8.699999999254942,
+        "miniSubmitMs": 28.899999998509884,
+        "readbackPlusPngMs": 19.900000002235174,
+        "totalMs": 49.79999999701977
+      },
+      {
+        "name": "dense-four",
+        "step": "spread2000",
+        "variant": "current",
+        "rounds": 3,
+        "indexMs": 0,
+        "applyMs": 1.0999999977648258,
+        "traversalOnlyMs": 8.100000001490116,
+        "miniSubmitMs": 26.600000001490116,
+        "readbackPlusPngMs": 19.100000001490116,
+        "totalMs": 47.20000000298023
+      }
+    ],
+    "rejectedContexts": {
+      "cpu": {
+        "pixelMatch": false
+      },
+      "opaque": {
+        "pixelMatch": true,
+        "reason": "No material speed gain in exploratory run"
+      }
+    }
+  },
+  "denseDiagnostic": {
+    "scope": "Additional instrumented run; not included in acceptance timing tables.",
+    "fullRedraws": [
+      {
+        "generation": 160,
+        "L": 950373,
+        "dirty": 12,
+        "work": 97088,
+        "indexed": true,
+        "reason": "background",
+        "previousSignature": "[1,[[474,520,0],[508,890,0],[937,529,0],[505,107,0],[106,480,0],[717,425,0],[357,335,0],[651,647,0],[373,713,0],[635,246,0],[334,60,0],[66,651,0],[677,929,0]],[[180,180,false],[820,820,false],[820,180,false],[180,820,false]]]",
+        "nextSignature": "[1,[[474,520,1],[508,890,0],[937,529,1],[505,107,1],[106,480,1],[717,425,1],[357,335,1],[651,647,1],[373,713,1],[635,246,1],[334,60,1],[66,651,1],[677,929,0]],[[180,180,false],[820,820,false],[820,180,false],[180,820,false]]]",
+        "drawMs": 389.3999999985099
+      }
+    ]
+  },
+  "verification": {
+    "unitTests": 145,
+    "unitFailures": 0,
+    "originalCanvas": 212,
+    "protocolCanvas": 64,
+    "orderedMap": 32
+  },
+  "limitations": [
+    "Headless loopback, DPR 1 performance; no physical display/LAN/soak certification.",
+    "Three ordinary rounds, one dense boundary run; P04 and full initial/current v1/v2 matrix were not repeated this stage.",
+    "Scheduler timing hook excludes the last measured tick; steadyHz uses all 100 tick starts.",
+    "Memory snapshots exclude GPU allocations; server CPU excludes Chromium. Preliminary e2e/ runs are not acceptance data."
+  ]
+}

@@ -26,6 +26,7 @@ test('dense invalidation retains background storage and safely transitions to lo
     cache.beginPacket(field,1,false);assert.equal(cache.indexed,true);
     cache.change(0,3,4);field.cells.set(0,4);draw();assert.deepEqual(drawn,[[0,4]]);
     cache.beginPacket(field,2,true);field.cells.clear();field.cells.set(999999,2);
+    assert.equal(cache.members,null,'invalid index must not retain dense contributor Sets');
     draw();assert.deepEqual(drawn,[[999999,2]]);assert.equal(backgrounds,1);
     field.state.players.push({x:1,y:2,eliminated:false});draw();assert.equal(backgrounds,2);
     assert.equal(resizes,6,'ownership/state invalidation retains backing storage, including tile scratch');

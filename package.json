@@ -21,7 +21,10 @@
     "test:browser:protocol": "node tests/browser/protocol-v2.mjs",
     "benchmark:minimap:batching": "node tests/performance/minimap-batching.mjs",
     "benchmark:codec:compare": "node tests/performance/codec-compare.mjs",
-    "benchmark:e2e": "node tests/performance/end-to-end.mjs"
+    "benchmark:e2e": "node tests/performance/end-to-end.mjs",
+    "benchmark:scheduler": "node tests/performance/scheduler.mjs",
+    "benchmark:scheduler:e2e": "node tests/performance/scheduler-e2e.mjs",
+    "benchmark:minimap:profile": "node tests/performance/minimap-profile.mjs"
   },
   "dependencies": {
     "ws": "^8.18.0"
