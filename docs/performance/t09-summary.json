@@ -1,0 +1,971 @@
+{
+  "baseline": {
+    "provenance": "Reconstructed pre-T09: 9d4e9c2 evolution modules, current T13 working-tree engine minus two T09 hooks; not a committed T13 revision.",
+    "hashes": {
+      "package.json": "6dc1b06d6b093e9cccb20bee06a93836eee0420ae26803ca2ce4065d82f070d1",
+      "public\\board-protocol.js": "009d1f143d1385030033e7b2e537ae547603037533d505d231aaba8fe4746c0d",
+      "public\\cards.js": "bf7a82e78b4f362047aff776b1833d751b742a2a35d87818d160df82718b09a7",
+      "public\\cards.json": "7cfbf1add05e53d3bf8a2216194d0f751d250dad601eccd064a37ce6d661a18f",
+      "public\\territory.js": "3db4be208c15026c62a85104add4375ebedfbf3e59dcc8de3884e46d8ec00817",
+      "src\\bots.js": "3dabe6e6c7fda5f32a0b6ea5efcd0b29e3cf8db61ba3d9fdd14413af7db3b9e4",
+      "src\\cell-changes.js": "babc47b08024169a7a14b9f2c820ad636938c50d4df3dccfa6162ad0ce419faa",
+      "src\\config.js": "4850f86a53b3951b7cc305995513546bba4010ac58df3d4961db0867baf37bf4",
+      "src\\dormancy.js": "f0dd6d8de47911a8504908806df77f583991ecaa63eeb46958a6f205fc398889",
+      "src\\engine.js": "1256cbde5ae5cd5bbdfbb0a02a19ed9dda7b5504fb4f74e0653af2ea9440fb94",
+      "src\\metrics.js": "3f4112b485f35ad711123ba1983ebe2453614e912843c49712215ac3f2aa3cb1",
+      "src\\ordered-cells.js": "d784ff7b62b29acb58183e786afec831a9cc8f44a4efd718ead82b904cf5b897",
+      "src\\performance-config.js": "ec9ec33116914e835368dd3c5e3b6be4ca88a86d43d943a85bcfa97df6f84605",
+      "src\\server.js": "5f913e31b7db6a0f2b433e5e8656f8dd8bdad3c43abfbaf780a8179e4a4f21ab",
+      "src\\spatial-index.js": "d981127ff45ac0124174cba1453e33dc373e2e63727585c1d8eb61ead056e8c8",
+      "src\\evolution\\backend.js": "f088c4143cd9e40f44c1e95f9b8b1f1f667195e33c1d40da6c81940949836333",
+      "src\\evolution\\dense.js": "0ed4d69fe2e66c276e87e450ec085d03a95c1d6f98faf04fec8c31fb9ea7e3dd",
+      "src\\evolution\\rule-table.js": "8e3e7f070dc68f0ae41be99e2ee6195aac13f71ef7c132e55786926b66f038fc",
+      "src\\evolution\\select.js": "9724e314d71417598575bb1efd4893b2677e1e69118f623838c631b1070a2c76",
+      "src\\evolution\\sparse.js": "3b1fa083de24a6d5ff27f7719db9af94f844f50ae9fca353798a0c6c3c835e81"
+    },
+    "verifiedCommit": "aee889e",
+    "verification": "All 19 source/config files match commit after LF/CRLF normalization"
+  },
+  "summary": [
+    {
+      "scenario": "P01",
+      "mode": "pre-t09",
+      "tickMs": {
+        "min": 0.9264999999999759,
+        "max": 2.5678000000000054,
+        "mean": 1.0540728000000013,
+        "p50": 1.0415000000000134,
+        "p95": 1.1739000000000033,
+        "p99": 1.271000000000015
+      },
+      "deadlineMisses": 0,
+      "processMeans": [
+        1.0685360000000028,
+        1.0440319999999992,
+        1.0379380000000007,
+        1.0688799999999992,
+        1.0509780000000006
+      ],
+      "frontier": [
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "reports": [
+        "artifacts/performance/t09/P01-pre-t09-0/report.json",
+        "artifacts/performance/t09/P01-pre-t09-1/report.json",
+        "artifacts/performance/t09/P01-pre-t09-2/report.json",
+        "artifacts/performance/t09/P01-pre-t09-3/report.json",
+        "artifacts/performance/t09/P01-pre-t09-4/report.json"
+      ]
+    },
+    {
+      "scenario": "P01",
+      "mode": "sparse",
+      "tickMs": {
+        "min": 0.9011999999999887,
+        "max": 2.7735999999999876,
+        "mean": 1.0822558000000009,
+        "p50": 1.0734999999999957,
+        "p95": 1.22890000000001,
+        "p99": 1.3603999999999985
+      },
+      "deadlineMisses": 0,
+      "processMeans": [
+        1.023841999999998,
+        1.076339,
+        1.0888580000000008,
+        1.1111880000000023,
+        1.1110519999999997
+      ],
+      "frontier": [
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "reports": [
+        "artifacts/performance/t09/P01-sparse-0/report.json",
+        "artifacts/performance/t09/P01-sparse-1/report.json",
+        "artifacts/performance/t09/P01-sparse-2/report.json",
+        "artifacts/performance/t09/P01-sparse-3/report.json",
+        "artifacts/performance/t09/P01-sparse-4/report.json"
+      ]
+    },
+    {
+      "scenario": "P01",
+      "mode": "frontier",
+      "tickMs": {
+        "min": 0.7072999999999752,
+        "max": 1.2233000000000231,
+        "mean": 0.8567164000000005,
+        "p50": 0.8477000000000032,
+        "p95": 0.9879999999999995,
+        "p99": 1.1248000000000218
+      },
+      "deadlineMisses": 0,
+      "processMeans": [
+        0.8708259999999999,
+        0.8770029999999998,
+        0.8323699999999996,
+        0.886717999999999,
+        0.8166650000000004
+      ],
+      "frontier": [
+        {
+          "rebuilds": 1,
+          "fallbacks": 0,
+          "lastEvaluated": 0,
+          "lastCandidates": 96000,
+          "cacheBytes": 2000000
+        },
+        {
+          "rebuilds": 1,
+          "fallbacks": 0,
+          "lastEvaluated": 0,
+          "lastCandidates": 96000,
+          "cacheBytes": 2000000
+        },
+        {
+          "rebuilds": 1,
+          "fallbacks": 0,
+          "lastEvaluated": 0,
+          "lastCandidates": 96000,
+          "cacheBytes": 2000000
+        },
+        {
+          "rebuilds": 1,
+          "fallbacks": 0,
+          "lastEvaluated": 0,
+          "lastCandidates": 96000,
+          "cacheBytes": 2000000
+        },
+        {
+          "rebuilds": 1,
+          "fallbacks": 0,
+          "lastEvaluated": 0,
+          "lastCandidates": 96000,
+          "cacheBytes": 2000000
+        }
+      ],
+      "reports": [
+        "artifacts/performance/t09/P01-frontier-0/report.json",
+        "artifacts/performance/t09/P01-frontier-1/report.json",
+        "artifacts/performance/t09/P01-frontier-2/report.json",
+        "artifacts/performance/t09/P01-frontier-3/report.json",
+        "artifacts/performance/t09/P01-frontier-4/report.json"
+      ]
+    },
+    {
+      "scenario": "P01",
+      "mode": "dense",
+      "tickMs": {
+        "min": 6.488000000000056,
+        "max": 10.638700000000028,
+        "mean": 7.535198800000002,
+        "p50": 7.531600000000026,
+        "p95": 8.217800000000011,
+        "p99": 8.695499999999925
+      },
+      "deadlineMisses": 0,
+      "processMeans": [
+        7.400907000000003,
+        7.118022000000008,
+        7.756949000000005,
+        7.8814870000000035,
+        7.518628999999983
+      ],
+      "frontier": [
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "reports": [
+        "artifacts/performance/t09/P01-dense-0/report.json",
+        "artifacts/performance/t09/P01-dense-1/report.json",
+        "artifacts/performance/t09/P01-dense-2/report.json",
+        "artifacts/performance/t09/P01-dense-3/report.json",
+        "artifacts/performance/t09/P01-dense-4/report.json"
+      ]
+    },
+    {
+      "scenario": "P03",
+      "mode": "pre-t09",
+      "tickMs": {
+        "min": 18.373400000000174,
+        "max": 23.85279999999989,
+        "mean": 20.821851000000024,
+        "p50": 20.823000000000093,
+        "p95": 22.417899999999918,
+        "p99": 23.43119999999999
+      },
+      "deadlineMisses": 0,
+      "processMeans": [
+        20.031771999999982,
+        20.765429000000022,
+        21.123703000000006,
+        20.802418999999983,
+        21.385932000000007
+      ],
+      "frontier": [
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "reports": [
+        "artifacts/performance/t09/P03-pre-t09-0/report.json",
+        "artifacts/performance/t09/P03-pre-t09-1/report.json",
+        "artifacts/performance/t09/P03-pre-t09-2/report.json",
+        "artifacts/performance/t09/P03-pre-t09-3/report.json",
+        "artifacts/performance/t09/P03-pre-t09-4/report.json"
+      ]
+    },
+    {
+      "scenario": "P03",
+      "mode": "sparse",
+      "tickMs": {
+        "min": 19.22050000000013,
+        "max": 24.028800000000047,
+        "mean": 21.402929400000012,
+        "p50": 21.351799999999912,
+        "p95": 23.092999999999847,
+        "p99": 23.589500000000044
+      },
+      "deadlineMisses": 0,
+      "processMeans": [
+        20.769127000000022,
+        21.22875600000001,
+        21.554355000000008,
+        21.583759999999984,
+        21.878649000000006
+      ],
+      "frontier": [
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "reports": [
+        "artifacts/performance/t09/P03-sparse-0/report.json",
+        "artifacts/performance/t09/P03-sparse-1/report.json",
+        "artifacts/performance/t09/P03-sparse-2/report.json",
+        "artifacts/performance/t09/P03-sparse-3/report.json",
+        "artifacts/performance/t09/P03-sparse-4/report.json"
+      ]
+    },
+    {
+      "scenario": "P03",
+      "mode": "frontier",
+      "tickMs": {
+        "min": 13.347700000000032,
+        "max": 17.918699999999717,
+        "mean": 15.262130200000009,
+        "p50": 15.153900000000021,
+        "p95": 16.848999999999705,
+        "p99": 17.683299999999917
+      },
+      "deadlineMisses": 0,
+      "processMeans": [
+        14.730615000000007,
+        15.004359000000013,
+        15.41066699999999,
+        15.294399,
+        15.870610999999998
+      ],
+      "frontier": [
+        {
+          "rebuilds": 1,
+          "fallbacks": 0,
+          "lastEvaluated": 4548,
+          "lastCandidates": 921129,
+          "cacheBytes": 2000000
+        },
+        {
+          "rebuilds": 1,
+          "fallbacks": 0,
+          "lastEvaluated": 4548,
+          "lastCandidates": 921129,
+          "cacheBytes": 2000000
+        },
+        {
+          "rebuilds": 1,
+          "fallbacks": 0,
+          "lastEvaluated": 4548,
+          "lastCandidates": 921129,
+          "cacheBytes": 2000000
+        },
+        {
+          "rebuilds": 1,
+          "fallbacks": 0,
+          "lastEvaluated": 4548,
+          "lastCandidates": 921129,
+          "cacheBytes": 2000000
+        },
+        {
+          "rebuilds": 1,
+          "fallbacks": 0,
+          "lastEvaluated": 4548,
+          "lastCandidates": 921129,
+          "cacheBytes": 2000000
+        }
+      ],
+      "reports": [
+        "artifacts/performance/t09/P03-frontier-0/report.json",
+        "artifacts/performance/t09/P03-frontier-1/report.json",
+        "artifacts/performance/t09/P03-frontier-2/report.json",
+        "artifacts/performance/t09/P03-frontier-3/report.json",
+        "artifacts/performance/t09/P03-frontier-4/report.json"
+      ]
+    },
+    {
+      "scenario": "P03",
+      "mode": "dense",
+      "tickMs": {
+        "min": 20.63720000000012,
+        "max": 26.403299999999945,
+        "mean": 22.6403252,
+        "p50": 22.574099999999817,
+        "p95": 24.049099999999726,
+        "p99": 24.790800000000218
+      },
+      "deadlineMisses": 0,
+      "processMeans": [
+        22.004570999999974,
+        22.540472000000005,
+        22.93951099999998,
+        22.753961999999984,
+        22.963109999999997
+      ],
+      "frontier": [
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "reports": [
+        "artifacts/performance/t09/P03-dense-0/report.json",
+        "artifacts/performance/t09/P03-dense-1/report.json",
+        "artifacts/performance/t09/P03-dense-2/report.json",
+        "artifacts/performance/t09/P03-dense-3/report.json",
+        "artifacts/performance/t09/P03-dense-4/report.json"
+      ]
+    },
+    {
+      "scenario": "P04",
+      "mode": "pre-t09",
+      "tickMs": {
+        "min": 45.882300000000214,
+        "max": 58.83739999999989,
+        "mean": 48.691526599999996,
+        "p50": 48.44200000000001,
+        "p95": 51.85369999999966,
+        "p99": 54.438500000000204
+      },
+      "deadlineMisses": 74,
+      "processMeans": [
+        48.269424,
+        47.83200799999996,
+        48.659925999999984,
+        49.529011999999994,
+        49.16726300000003
+      ],
+      "frontier": [
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "reports": [
+        "artifacts/performance/t09/P04-pre-t09-0/report.json",
+        "artifacts/performance/t09/P04-pre-t09-1/report.json",
+        "artifacts/performance/t09/P04-pre-t09-2/report.json",
+        "artifacts/performance/t09/P04-pre-t09-3/report.json",
+        "artifacts/performance/t09/P04-pre-t09-4/report.json"
+      ]
+    },
+    {
+      "scenario": "P04",
+      "mode": "sparse",
+      "tickMs": {
+        "min": 45.106899999999996,
+        "max": 56.557699999999386,
+        "mean": 48.224979799999986,
+        "p50": 47.9385999999995,
+        "p95": 51.268300000000636,
+        "p99": 54.63010000000031
+      },
+      "deadlineMisses": 55,
+      "processMeans": [
+        47.44724800000003,
+        47.883156999999954,
+        48.18227199999999,
+        49.036507000000036,
+        48.575715
+      ],
+      "frontier": [
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "reports": [
+        "artifacts/performance/t09/P04-sparse-0/report.json",
+        "artifacts/performance/t09/P04-sparse-1/report.json",
+        "artifacts/performance/t09/P04-sparse-2/report.json",
+        "artifacts/performance/t09/P04-sparse-3/report.json",
+        "artifacts/performance/t09/P04-sparse-4/report.json"
+      ]
+    },
+    {
+      "scenario": "P04",
+      "mode": "frontier",
+      "tickMs": {
+        "min": 46.112300000000005,
+        "max": 66.10649999999987,
+        "mean": 49.49722079999997,
+        "p50": 48.79989999999998,
+        "p95": 54.79820000000018,
+        "p99": 57.94680000000017
+      },
+      "deadlineMisses": 131,
+      "processMeans": [
+        48.190768,
+        48.594565999999986,
+        48.99592299999998,
+        50.04910399999995,
+        51.65574300000001
+      ],
+      "frontier": [
+        {
+          "rebuilds": 130,
+          "fallbacks": 130,
+          "lastEvaluated": 998005,
+          "lastCandidates": 998005,
+          "cacheBytes": 2000000
+        },
+        {
+          "rebuilds": 130,
+          "fallbacks": 130,
+          "lastEvaluated": 998005,
+          "lastCandidates": 998005,
+          "cacheBytes": 2000000
+        },
+        {
+          "rebuilds": 130,
+          "fallbacks": 130,
+          "lastEvaluated": 998005,
+          "lastCandidates": 998005,
+          "cacheBytes": 2000000
+        },
+        {
+          "rebuilds": 130,
+          "fallbacks": 130,
+          "lastEvaluated": 998005,
+          "lastCandidates": 998005,
+          "cacheBytes": 2000000
+        },
+        {
+          "rebuilds": 130,
+          "fallbacks": 130,
+          "lastEvaluated": 998005,
+          "lastCandidates": 998005,
+          "cacheBytes": 2000000
+        }
+      ],
+      "reports": [
+        "artifacts/performance/t09/P04-frontier-0/report.json",
+        "artifacts/performance/t09/P04-frontier-1/report.json",
+        "artifacts/performance/t09/P04-frontier-2/report.json",
+        "artifacts/performance/t09/P04-frontier-3/report.json",
+        "artifacts/performance/t09/P04-frontier-4/report.json"
+      ]
+    },
+    {
+      "scenario": "P04",
+      "mode": "dense",
+      "tickMs": {
+        "min": 48.168000000000575,
+        "max": 74.0630000000001,
+        "mean": 51.17960239999998,
+        "p50": 50.79770000000008,
+        "p95": 53.85369999999966,
+        "p99": 57.21990000000005
+      },
+      "deadlineMisses": 396,
+      "processMeans": [
+        50.993426999999976,
+        51.34781600000004,
+        51.26151499999995,
+        51.007242999999995,
+        51.288010999999926
+      ],
+      "frontier": [
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "reports": [
+        "artifacts/performance/t09/P04-dense-0/report.json",
+        "artifacts/performance/t09/P04-dense-1/report.json",
+        "artifacts/performance/t09/P04-dense-2/report.json",
+        "artifacts/performance/t09/P04-dense-3/report.json",
+        "artifacts/performance/t09/P04-dense-4/report.json"
+      ]
+    }
+  ],
+  "environment": {
+    "capturedAt": "2026-09-24T14:42:22.853Z",
+    "node": "v24.11.1",
+    "platform": "win32",
+    "os": "10.0.26200",
+    "arch": "x64",
+    "cpu": "13th Gen Intel(R) Core(TM) i9-13900HX",
+    "logicalCores": 32,
+    "memoryBytes": 34124718080,
+    "gpu": "NVIDIA GeForce RTX 5070 Ti Laptop GPU, 595.79, 12227 MiB, 45, 1290 MHz",
+    "powerSchemeGuid": "381b4222-f694-41f0-9685-ff5bb260df2e",
+    "browser": null,
+    "dpr": null,
+    "displayRefreshHz": null,
+    "measuredNetworkMbps": null,
+    "unavailable": "null means unmeasured; CPU synthetic runs do not measure browser, display or network."
+  },
+  "sourceHashes": {
+    "src/bots.js": "3dabe6e6c7fda5f32a0b6ea5efcd0b29e3cf8db61ba3d9fdd14413af7db3b9e4",
+    "src/cell-changes.js": "babc47b08024169a7a14b9f2c820ad636938c50d4df3dccfa6162ad0ce419faa",
+    "src/config.js": "4850f86a53b3951b7cc305995513546bba4010ac58df3d4961db0867baf37bf4",
+    "src/dormancy.js": "f0dd6d8de47911a8504908806df77f583991ecaa63eeb46958a6f205fc398889",
+    "src/engine.js": "da701a2cc9e5a058c69a9c6511e098f8d10cc6b3d41c34bdaec84b976ba18cbb",
+    "src/metrics.js": "3f4112b485f35ad711123ba1983ebe2453614e912843c49712215ac3f2aa3cb1",
+    "src/ordered-cells.js": "d784ff7b62b29acb58183e786afec831a9cc8f44a4efd718ead82b904cf5b897",
+    "src/performance-config.js": "ec9ec33116914e835368dd3c5e3b6be4ca88a86d43d943a85bcfa97df6f84605",
+    "src/server.js": "5f913e31b7db6a0f2b433e5e8656f8dd8bdad3c43abfbaf780a8179e4a4f21ab",
+    "src/spatial-index.js": "d981127ff45ac0124174cba1453e33dc373e2e63727585c1d8eb61ead056e8c8",
+    "src/evolution/backend.js": "416082ebda219cb4c2460c3ffc982bb5000511b24f43fe8ebd6d9c371c3792db",
+    "src/evolution/dense.js": "c89ff5908a3734ca84404bf173f07d38f238a08543e3232d22364c4e0c117237",
+    "src/evolution/frontier.js": "5ea913553522b084e1f1e89c7aae4147fd2277a47d99968fec2edce17afa6aff",
+    "src/evolution/rule-table.js": "2334ba7ec5dc933949ed0defea4d0ba9347ea0f6bed5d6a676996e378ba6a729",
+    "src/evolution/select.js": "eb34e2b894ba565de34b3c2d17df3188335fd5fcb05a4eb9e9984dce3e58a5bf",
+    "src/evolution/sparse.js": "3b1fa083de24a6d5ff27f7719db9af94f844f50ae9fca353798a0c6c3c835e81",
+    "public/cards.js": "bf7a82e78b4f362047aff776b1833d751b742a2a35d87818d160df82718b09a7",
+    "public/cards.json": "7cfbf1add05e53d3bf8a2216194d0f751d250dad601eccd064a37ce6d661a18f",
+    "public/territory.js": "3db4be208c15026c62a85104add4375ebedfbf3e59dcc8de3884e46d8ec00817"
+  },
+  "harnessHashes": {
+    "src/metrics.js": "3f4112b485f35ad711123ba1983ebe2453614e912843c49712215ac3f2aa3cb1",
+    "src/performance-config.js": "ec9ec33116914e835368dd3c5e3b6be4ca88a86d43d943a85bcfa97df6f84605",
+    "public/performance-metrics.js": "cfa5ad084dd0e797e193053e305783d9decf676e48e3356465bc3c14bb46bc67",
+    "tests/performance/runner.mjs": "675edece1c23778bc3f8e71d8517a3503f5fa1c9e1ebd5abaaf2bb0fc6c1530c",
+    "tests/performance/statistics.mjs": "509d0039fa3cd0a8b7bdb5ba8d8034ca3a7deb5ba01c3f1618b98722fe66f5c4",
+    "tests/performance/scenarios.mjs": "e0b9cb6f15c7b9812551ff75d201797e73a66c98a9a103497a002ea2fdc4f6fb",
+    "tests/helpers/load-fixture.js": "6c95e97aac053e566fa2376376875410030ba57fa7385e133bac3bf8445119da",
+    "tests/fixtures/performance/production-20hz.json": "0f81ab7b982e94abed15ce96e23304e6f3c7af2e13c2aeba081191e5ddeb06d5"
+  },
+  "browser": {
+    "status": "PASS",
+    "browser": "153.0.8010.53",
+    "traceSequences": 5,
+    "fixedTimePixelComparison": "main + minimap byte-identical PNG",
+    "scope": "headless desktop smoke, not frame-rate certification or physical presentation",
+    "pageErrors": []
+  },
+  "workloads": [
+    {
+      "workload": "glider",
+      "mode": "sparse",
+      "tickMs": {
+        "min": 0.8686999999999898,
+        "max": 1.560200000000009,
+        "mean": 0.9857496666666661,
+        "p50": 0.9751999999999725,
+        "p95": 1.094600000000014,
+        "p99": 1.2508000000000266
+      },
+      "D": [
+        {
+          "min": 4,
+          "max": 4,
+          "mean": 4,
+          "p50": 4,
+          "p95": 4,
+          "p99": 4
+        },
+        {
+          "min": 4,
+          "max": 4,
+          "mean": 4,
+          "p50": 4,
+          "p95": 4,
+          "p99": 4
+        },
+        {
+          "min": 4,
+          "max": 4,
+          "mean": 4,
+          "p50": 4,
+          "p95": 4,
+          "p99": 4
+        }
+      ],
+      "lastEvaluated": [
+        null,
+        null,
+        null
+      ],
+      "snapshotHashes": [
+        "29c5a6810963c0b548af4877ade93a7be2791d5c922f8ef5879285a2f8253f1c",
+        "29c5a6810963c0b548af4877ade93a7be2791d5c922f8ef5879285a2f8253f1c",
+        "29c5a6810963c0b548af4877ade93a7be2791d5c922f8ef5879285a2f8253f1c"
+      ]
+    },
+    {
+      "workload": "glider",
+      "mode": "frontier",
+      "tickMs": {
+        "min": 0.7141999999998916,
+        "max": 1.16640000000001,
+        "mean": 0.8053759999999993,
+        "p50": 0.7933000000000447,
+        "p95": 0.9025000000000318,
+        "p99": 1.0418999999999983
+      },
+      "D": [
+        {
+          "min": 4,
+          "max": 4,
+          "mean": 4,
+          "p50": 4,
+          "p95": 4,
+          "p99": 4
+        },
+        {
+          "min": 4,
+          "max": 4,
+          "mean": 4,
+          "p50": 4,
+          "p95": 4,
+          "p99": 4
+        },
+        {
+          "min": 4,
+          "max": 4,
+          "mean": 4,
+          "p50": 4,
+          "p95": 4,
+          "p99": 4
+        }
+      ],
+      "lastEvaluated": [
+        18,
+        18,
+        18
+      ],
+      "snapshotHashes": [
+        "29c5a6810963c0b548af4877ade93a7be2791d5c922f8ef5879285a2f8253f1c",
+        "29c5a6810963c0b548af4877ade93a7be2791d5c922f8ef5879285a2f8253f1c",
+        "29c5a6810963c0b548af4877ade93a7be2791d5c922f8ef5879285a2f8253f1c"
+      ]
+    },
+    {
+      "workload": "local1",
+      "mode": "sparse",
+      "tickMs": {
+        "min": 1.379199999999969,
+        "max": 2.435699999999997,
+        "mean": 1.557994666666674,
+        "p50": 1.527699999999868,
+        "p95": 1.8251999999999953,
+        "p99": 2.100599999999986
+      },
+      "D": [
+        {
+          "min": 4,
+          "max": 4,
+          "mean": 4,
+          "p50": 4,
+          "p95": 4,
+          "p99": 4
+        },
+        {
+          "min": 4,
+          "max": 4,
+          "mean": 4,
+          "p50": 4,
+          "p95": 4,
+          "p99": 4
+        },
+        {
+          "min": 4,
+          "max": 4,
+          "mean": 4,
+          "p50": 4,
+          "p95": 4,
+          "p99": 4
+        }
+      ],
+      "lastEvaluated": [
+        null,
+        null,
+        null
+      ],
+      "snapshotHashes": [
+        "29c5a6810963c0b548af4877ade93a7be2791d5c922f8ef5879285a2f8253f1c",
+        "29c5a6810963c0b548af4877ade93a7be2791d5c922f8ef5879285a2f8253f1c",
+        "29c5a6810963c0b548af4877ade93a7be2791d5c922f8ef5879285a2f8253f1c"
+      ]
+    },
+    {
+      "workload": "local1",
+      "mode": "frontier",
+      "tickMs": {
+        "min": 0.6999999999998181,
+        "max": 1.7394000000001597,
+        "mean": 0.8157109999999981,
+        "p50": 0.7803000000001248,
+        "p95": 0.9944000000000415,
+        "p99": 1.2411999999999352
+      },
+      "D": [
+        {
+          "min": 4,
+          "max": 4,
+          "mean": 4,
+          "p50": 4,
+          "p95": 4,
+          "p99": 4
+        },
+        {
+          "min": 4,
+          "max": 4,
+          "mean": 4,
+          "p50": 4,
+          "p95": 4,
+          "p99": 4
+        },
+        {
+          "min": 4,
+          "max": 4,
+          "mean": 4,
+          "p50": 4,
+          "p95": 4,
+          "p99": 4
+        }
+      ],
+      "lastEvaluated": [
+        18,
+        18,
+        18
+      ],
+      "snapshotHashes": [
+        "29c5a6810963c0b548af4877ade93a7be2791d5c922f8ef5879285a2f8253f1c",
+        "29c5a6810963c0b548af4877ade93a7be2791d5c922f8ef5879285a2f8253f1c",
+        "29c5a6810963c0b548af4877ade93a7be2791d5c922f8ef5879285a2f8253f1c"
+      ]
+    },
+    {
+      "workload": "local8",
+      "mode": "sparse",
+      "tickMs": {
+        "min": 1.4881999999997788,
+        "max": 2.486699999999928,
+        "mean": 1.6263469999999947,
+        "p50": 1.6191000000001168,
+        "p95": 1.7625000000000455,
+        "p99": 1.825399999999945
+      },
+      "D": [
+        {
+          "min": 4,
+          "max": 4,
+          "mean": 4,
+          "p50": 4,
+          "p95": 4,
+          "p99": 4
+        },
+        {
+          "min": 4,
+          "max": 4,
+          "mean": 4,
+          "p50": 4,
+          "p95": 4,
+          "p99": 4
+        },
+        {
+          "min": 4,
+          "max": 4,
+          "mean": 4,
+          "p50": 4,
+          "p95": 4,
+          "p99": 4
+        }
+      ],
+      "lastEvaluated": [
+        null,
+        null,
+        null
+      ],
+      "snapshotHashes": [
+        "29c5a6810963c0b548af4877ade93a7be2791d5c922f8ef5879285a2f8253f1c",
+        "29c5a6810963c0b548af4877ade93a7be2791d5c922f8ef5879285a2f8253f1c",
+        "29c5a6810963c0b548af4877ade93a7be2791d5c922f8ef5879285a2f8253f1c"
+      ]
+    },
+    {
+      "workload": "local8",
+      "mode": "frontier",
+      "tickMs": {
+        "min": 0.7114000000001397,
+        "max": 1.4463000000000648,
+        "mean": 0.8018993333333401,
+        "p50": 0.790599999999813,
+        "p95": 0.9447999999997592,
+        "p99": 1.058799999999792
+      },
+      "D": [
+        {
+          "min": 4,
+          "max": 4,
+          "mean": 4,
+          "p50": 4,
+          "p95": 4,
+          "p99": 4
+        },
+        {
+          "min": 4,
+          "max": 4,
+          "mean": 4,
+          "p50": 4,
+          "p95": 4,
+          "p99": 4
+        },
+        {
+          "min": 4,
+          "max": 4,
+          "mean": 4,
+          "p50": 4,
+          "p95": 4,
+          "p99": 4
+        }
+      ],
+      "lastEvaluated": [
+        18,
+        18,
+        18
+      ],
+      "snapshotHashes": [
+        "29c5a6810963c0b548af4877ade93a7be2791d5c922f8ef5879285a2f8253f1c",
+        "29c5a6810963c0b548af4877ade93a7be2791d5c922f8ef5879285a2f8253f1c",
+        "29c5a6810963c0b548af4877ade93a7be2791d5c922f8ef5879285a2f8253f1c"
+      ]
+    },
+    {
+      "workload": "frequent-rules",
+      "mode": "sparse",
+      "tickMs": {
+        "min": 1.1786999999999352,
+        "max": 2.379699999999957,
+        "mean": 1.638650000000019,
+        "p50": 1.6947999999997592,
+        "p95": 1.979899999999816,
+        "p99": 2.1875999999997475
+      },
+      "D": [
+        {
+          "min": 4,
+          "max": 4,
+          "mean": 4,
+          "p50": 4,
+          "p95": 4,
+          "p99": 4
+        },
+        {
+          "min": 4,
+          "max": 4,
+          "mean": 4,
+          "p50": 4,
+          "p95": 4,
+          "p99": 4
+        },
+        {
+          "min": 4,
+          "max": 4,
+          "mean": 4,
+          "p50": 4,
+          "p95": 4,
+          "p99": 4
+        }
+      ],
+      "lastEvaluated": [
+        null,
+        null,
+        null
+      ],
+      "snapshotHashes": [
+        "29c5a6810963c0b548af4877ade93a7be2791d5c922f8ef5879285a2f8253f1c",
+        "29c5a6810963c0b548af4877ade93a7be2791d5c922f8ef5879285a2f8253f1c",
+        "29c5a6810963c0b548af4877ade93a7be2791d5c922f8ef5879285a2f8253f1c"
+      ]
+    },
+    {
+      "workload": "frequent-rules",
+      "mode": "frontier",
+      "tickMs": {
+        "min": 1.023200000000088,
+        "max": 2.8911000000002787,
+        "mean": 1.5080026666666693,
+        "p50": 1.5510999999996784,
+        "p95": 1.8953000000001339,
+        "p99": 2.3654999999998836
+      },
+      "D": [
+        {
+          "min": 4,
+          "max": 4,
+          "mean": 4,
+          "p50": 4,
+          "p95": 4,
+          "p99": 4
+        },
+        {
+          "min": 4,
+          "max": 4,
+          "mean": 4,
+          "p50": 4,
+          "p95": 4,
+          "p99": 4
+        },
+        {
+          "min": 4,
+          "max": 4,
+          "mean": 4,
+          "p50": 4,
+          "p95": 4,
+          "p99": 4
+        }
+      ],
+      "lastEvaluated": [
+        96022,
+        96022,
+        96022
+      ],
+      "snapshotHashes": [
+        "29c5a6810963c0b548af4877ade93a7be2791d5c922f8ef5879285a2f8253f1c",
+        "29c5a6810963c0b548af4877ade93a7be2791d5c922f8ef5879285a2f8253f1c",
+        "29c5a6810963c0b548af4877ade93a7be2791d5c922f8ef5879285a2f8253f1c"
+      ]
+    }
+  ]
+}

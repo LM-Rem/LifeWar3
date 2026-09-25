@@ -18,7 +18,7 @@ export function denseCandidates() {
   }
   return orderedCandidates.call(this);
 }
-function orderedCandidates() {
+export function orderedCandidates() {
     const { board, marks, candidates, size } = this;
     let length = 0;
     const stamp = this.generation >>> 0;

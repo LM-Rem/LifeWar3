@@ -67,6 +67,7 @@ export class Game {
 
   // One ordered transition stream; network changes separately retain final values.
   recordChange(key, oldOwner, newOwner, phase) {
+    this.frontier?.change(this,key,oldOwner,newOwner);
     this.dormancy.change(key, oldOwner, newOwner);
     this.onCellTransition?.({ key, oldOwner, newOwner, phase });
     this.changes.set(key, newOwner);
@@ -77,6 +78,7 @@ export class Game {
   }
   // Explicit hook for bulk fixture/import writes that bypass gameplay commands.
   rebuildDerivedState() {
+    this.frontier?.invalidate();
     if (!(this.alive instanceof OrderedCells)) {
       const values = this.alive; this.alive = new OrderedCells(this.board.length);
       for (const key of values) this.alive.push(key);

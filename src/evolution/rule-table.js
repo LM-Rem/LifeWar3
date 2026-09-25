@@ -1,4 +1,11 @@
 export function ruleMask(set) { let mask=0;for(let n=0;n<=8;n++)if(set.has(n))mask|=1<<n;return mask; }
+export function evolutionRules(game) {
+  const rules=game.ruleOverride??{birth:game.birthRule,survival:game.survivalRule};
+  const birthMask=ruleMask(rules.birth),survivalMask=ruleMask(rules.survival);
+  game.localIndex.prepare(game.localRules);
+  const inheritance=game.cards.effects.filter(e=>e.stat==='birthPriority'&&e.endsAt>game.now());
+  return {birthMask,survivalMask,priorityOwner:inheritance.length===1?inheritance[0].playerId:0};
+}
 export class LocalRuleIndex {
   constructor(size) {this.size=size;this.side=Math.ceil(size/32);this.signature='';this.active=false;}
   prepare(rules) {

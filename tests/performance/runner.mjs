@@ -14,7 +14,7 @@ if (values.help) {
 const profiles = { smoke: [10, 20, 1], quick: [20, 300, 3], full: [100, 1000, 5] };
 if (!profiles[values.profile] || !['current', 'legacy', 'baseline'].includes(values.backend)) throw new Error('Invalid profile/backend; use --help');
 if (values.backend === 'baseline' && !values.baseline) throw new Error('--baseline DIR/ is required');
-if(values.mode&&!['auto','sparse','dense','alternate'].includes(values.mode))throw new Error('Invalid evolution mode');
+if(values.mode&&!['auto','sparse','dense','frontier','alternate'].includes(values.mode))throw new Error('Invalid evolution mode');
 if(!Number.isInteger(+values.locals)||+values.locals<0||+values.locals>8)throw new Error('Invalid local-rule count');
 let [warmup, generations, rounds] = profiles[values.profile];
 warmup = +(values.warmup ?? warmup); generations = +(values.generations ?? generations); rounds = +(values.rounds ?? rounds);
@@ -50,7 +50,7 @@ for (let round = 0; round < rounds; round++) {
   const metrics = values.trace ? new PerformanceMetrics({ capacity: 100000 }) : null;
   if (metrics) instrumentGame(game, metrics);
   const result = measure(game, { generations, warmup, hz: RULES.hz });
-  report.rounds.push({ ...result, trace: metrics?.export() ?? null });
+  report.rounds.push({ ...result, frontier: game.frontier ? {rebuilds:game.frontier.rebuilds,fallbacks:game.frontier.fallbacks,lastEvaluated:game.frontier.evaluated,lastCandidates:game.lastCandidateCount,cacheBytes:game.frontier.result.byteLength+game.frontier.dirty.byteLength}:null, trace: metrics?.export() ?? null });
   console.log(JSON.stringify({ round: round + 1, backend: values.backend, trace: values.trace, scenario: values.scenario,
     tickMs: result.tickMs, L: result.L, C: result.C, D: result.D, deadlineMisses: result.deadlineMisses }));
   if (result.earlyTermination || result.emptyPopulation) throw new Error('Invalid load: early termination or empty population');
