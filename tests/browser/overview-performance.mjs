@@ -21,8 +21,13 @@ try {
     document.body.innerHTML='<canvas id="main" style="width:800px;height:700px"></canvas><canvas id="mini" width="180" height="180"></canvas>';
     const f=new Battlefield(document.querySelector('#main'),document.querySelector('#mini'),{grid:false,ranges:true,motion:false});f.camera={x:500,y:500,zoom:.65};
     const samples=[];
+    // The old cache's per-cell drawing belongs only in this historical adapter.
+    const colors=['#67f5d1','#ff796c','#ac98ff','#f4cc75'];
+    class LegacyAdapter extends Legacy {
+      draw(field,background,bases){let last=0;super.draw(field,background,c=>{bases(c);last=0;},(c,key,owner)=>{if(last!==owner)c.fillStyle=colors[owner-1]+'a6';last=owner;const s=field.minimap.width/1000;c.fillRect(key%1000*s,Math.floor(key/1000)*s,1,1);});}
+    }
     function packet(n,offset){const b=new ArrayBuffer(8+4*n),v=new DataView(b);v.setUint32(0,1,true);v.setUint32(4,offset,true);for(let i=0;i<n;i++){const k=i*7919%1000000;v.setUint32(8+i*4,k+(1+(i+offset)%4)*1000000,true);}return b;}
-    for(const n of [500000,800000])for(const [name,Type]of [['legacy',Legacy],['texture',Fast]]){
+    for(const n of [500000,800000])for(const [name,Type]of [['legacy',LegacyAdapter],['texture',Fast]]){
       f.reset();f.minimapCache=new Type();f.setState(state);
       for(let i=0;i<7;i++){
         const b=packet(n,i),start=performance.now();f.updatePacket(b);const applied=performance.now();f.drawMinimap();const drawn=performance.now();f.minimap.toDataURL();const done=performance.now();
@@ -34,12 +39,20 @@ try {
     for(let k=0;k<1000000;k++){const owner=1+(k%1000>=500?1:0)+(k>=500000?2:0);v.setUint32(8+k*4,k+owner*1000000,true);}
     f.updatePacket(b);f.drawMinimap();f.draw(0);
     const pixels=[[45,45],[135,45],[45,135],[135,135]].map(([x,y])=>Array.from(f.mctx.getImageData(x,y,1,1).data));
-    return {samples,pixels};
+    const before=f.minimap.toDataURL();
+    f.minimap.width=f.minimap.height=240;f.drawMinimap();
+    const resized=f.minimapCache.canvas.width===240;
+    const stateBefore=f.minimap.toDataURL();f.setState({...state,players:state.players.map(p=>({...p,eliminated:true}))});f.drawMinimap();
+    const stateChanged=stateBefore!==f.minimap.toDataURL();
+    const populated=f.minimap.toDataURL();f.reset();f.drawMinimap();const cleared=f.minimap.toDataURL();
+    f.setState(state);f.updatePacket(b);f.minimap.width=f.minimap.height=180;f.drawMinimap();
+    return {samples,pixels,resized,stateChanged,cleared:cleared!==populated,reconnected:f.minimap.toDataURL()===before};
   },state);
   const [green,red,purple,yellow]=report.pixels;
   assert.ok(green[1]>green[0]&&green[1]>green[2]);assert.ok(red[0]>red[1]&&red[0]>red[2]);
   assert.ok(purple[2]>purple[0]&&purple[2]>purple[1]);assert.ok(yellow[0]>yellow[2]&&yellow[1]>yellow[2]);
   assert.deepEqual(errors,[]);
+  for(const key of ['resized','stateChanged','cleared','reconnected'])assert.equal(report[key],true,key);
   const summary=[];
   for(const n of [500000,800000])for(const name of ['legacy','texture']){
     const samples=report.samples.filter(s=>s.n===n&&s.name===name),row={n,name};

@@ -5,6 +5,27 @@ import {GenerationQueue} from '../public/generation-queue.js';
 import {Game} from '../src/engine.js';
 import {randomSource} from './helpers/load-fixture.js';
 const N=1000000;
+
+test('negotiated varints preserve arbitrary key order and choose the smallest encoding',()=>{
+  const random=randomSource(12);
+  for(let run=0;run<100;run++){
+    const keys=[...new Set(Array.from({length:5000},(_,i)=>run%2?Math.floor(random()*N):i*2))];
+    const f=fixture(keys),old=encodeBoardV2(f),buffer=encodeBoardV2({...f,allowVarint:true});
+    assert.ok(buffer.byteLength<=old.byteLength);
+    assert.deepEqual([...orderedBoardEntries(decodeBoardPacket(buffer),f.previous)].sort((a,b)=>a-b), [...orderedBoardEntries(decodeBoardPacket(old),f.previous)].sort((a,b)=>a-b));
+  }
+  const f=fixture([999999,0,1,2,3,4,5,6,7,8,9,10]);
+  for(const snapshot of [false,true]){
+    const p=decodeBoardPacket(encodeBoardV2({...f,snapshot,allowVarint:true}));
+    assert.equal(p.encoding,2);assert.deepEqual([...p.entries],f.keys.map(k=>k+2*N));
+  }
+});
+
+test('varint decoder rejects duplicates, negative keys, invalid owners and malformed integers',()=>{
+  const template=encodeBoardV2({...fixture([0,1,2,3]),allowVarint:true});
+  const bad=(bytes,count)=>{const b=new Uint8Array(32+bytes.length);b.set(new Uint8Array(template,0,32));b.set(bytes,32);const v=new DataView(b.buffer);v.setUint32(20,bytes.length,true);v.setUint32(24,count,true);assert.throws(()=>decodeBoardPacket(b.buffer));};
+  bad([2,2],2);bad([10],1);bad([5],1);bad([128],1);bad([128,0],1);bad([255,255,255,8],1);bad([2,18],1);
+});
 const apply=(buffer,board,map)=>{const p=decodeBoardPacket(buffer),entries=orderedBoardEntries(p,board);if(p.snapshot){board.fill(0);map.clear();}for(const v of entries){const k=v%N,o=Math.floor(v/N);board[k]=o;if(o)map.set(k,o);else map.delete(k);}return p;};
 const tileKeys=tile=>Array.from({length:1024},(_,i)=>(Math.floor(tile/32)*32+Math.floor(i/32))*1000+tile%32*32+i%32).filter(k=>k<N&&k%1000>=tile%32*32);
 function fixture(keys,previousOwner=1,owner=2){const previous=new Uint8Array(N),board=new Uint8Array(N);for(const k of keys){previous[k]=previousOwner;board[k]=owner;}return {keys,previous,board,ownerAt:k=>board[k],generation:1,baseGeneration:0,roomEpoch:7};}
@@ -32,8 +53,8 @@ test('1000 randomized generations exactly preserve v1 board and Map insertion or
       // Final-write values and first-touch order, including death/rebirth in one broadcast.
       g.board[k]=owner;g.changes.set(k,owner);
     }
-    if(generation%101===0){g.alive.length=0;for(const k of keys)if(g.board[k])g.alive.push(k);const v1=g.packet(true),v2=g.packetV2({roomEpoch:7,snapshot:true});apply(v1,a,ma);apply(v2,b,mb);}
-    else {const v2=g.packetV2({roomEpoch:7,baseGeneration:generation-1,previous:a});const p=apply(v2,b,mb);p.encoding?tiled++:ordered++;apply(g.packet(),a,ma);}
+    if(generation%101===0){g.alive.length=0;for(const k of keys)if(g.board[k])g.alive.push(k);const v1=g.packet(true),v2=g.packetV2({roomEpoch:7,snapshot:true,allowVarint:true});apply(v1,a,ma);apply(v2,b,mb);}
+    else {const v2=g.packetV2({roomEpoch:7,baseGeneration:generation-1,previous:a,allowVarint:generation%2===0});const p=apply(v2,b,mb);p.encoding?tiled++:ordered++;apply(g.packet(),a,ma);}
     assert.deepEqual(b,a,`board generation ${generation}`);assert.deepEqual([...mb],[...ma],`order generation ${generation}`);
   }
   assert.ok(tiled>0&&ordered>0);
@@ -44,7 +65,7 @@ test('decoder rejects malformed lengths, owners, duplicate tiles/keys and insert
   const mutate=(buffer,edit)=>{const copy=buffer.slice(0);edit(new DataView(copy));assert.throws(()=>decodeBoardPacket(copy));};
   for(const length of [0,7,8,31,32,35,100,dense.byteLength-1])assert.throws(()=>decodeBoardPacket(dense.slice(0,length)));
   assert.throws(()=>decodeBoardPacket(new ArrayBuffer(MAX_PACKET_BYTES+1)));
-  for(const [offset,value,width] of [[0,0x1234,4],[4,3,1],[5,2,1],[6,2,2],[8,0,4],[20,0xffffffff,4],[24,N+1,4],[28,1025,4],[32,1025,2],[34,1,2],[36,1024,2],[40,5,1]])mutate(dense,v=>v['setUint'+width*8](offset,value,true));
+  for(const [offset,value,width] of [[0,0x1234,4],[4,3,1],[5,3,1],[6,2,2],[8,0,4],[20,0xffffffff,4],[24,N+1,4],[28,1025,4],[32,1025,2],[34,1,2],[36,1024,2],[40,5,1]])mutate(dense,v=>v['setUint'+width*8](offset,value,true));
   const two=encodeBoardV2(fixture([...tileKeys(0),...tileKeys(1)]));mutate(two,v=>v.setUint16(1064,0,true));
   const edge=dense.slice(0),ev=new DataView(edge);ev.setUint16(36,1023,true);ev.setUint32(24,64,true);
   for(let local=0;local<1024;local++)ev.setUint8(40+local,(local%32<8&&Math.floor(local/32)<8)?2:0);

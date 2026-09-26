@@ -11,7 +11,7 @@ const keyOf=(tile,local)=>((tile>>>5)*32+(local>>>5))*1000+(tile%32)*32+(local&3
 const validLocal=(tile,local)=>(tile%32)*32+(local&31)<1000&&(tile>>>5)*32+(local>>>5)<1000;
 const check=(condition,message)=>{if(!condition)throw new Error('board-protocol: '+message);};
 
-export function encodeBoardV2({keys,ownerAt,board,previous,generation,baseGeneration,roomEpoch,snapshot=false,forceOrdered=false}) {
+export function encodeBoardV2({keys,ownerAt,board,previous,generation,baseGeneration,roomEpoch,snapshot=false,forceOrdered=false,allowVarint=false}) {
   const count=keys.length;
   check(count<=CELL_COUNT&&Number.isInteger(roomEpoch)&&roomEpoch>0&&roomEpoch<=0xffffffff&&Number.isInteger(generation)&&generation>=0&&generation<=0xffffffff,'encoder bounds');
   check(snapshot||(Number.isInteger(baseGeneration)&&baseGeneration>=0&&baseGeneration<=generation&&generation-baseGeneration<=1),'encoder base');
@@ -20,18 +20,34 @@ export function encodeBoardV2({keys,ownerAt,board,previous,generation,baseGenera
   // every live key in order, so adding a dense image cannot reduce their size.
   if(!snapshot&&!forceOrdered&&previous&&count>=64){
     counts=new Uint16Array(TILE_COUNT);
-    for(const key of keys){const tile=tileOf(key);if(!counts[tile])tiles.push(tile);counts[tile]++;
+    for(let i=0;i<count;i++){const key=keys[i];const tile=tileOf(key);if(!counts[tile])tiles.push(tile);counts[tile]++;
       if(!previous[key]&&ownerAt(key))births++;
     }
     const bytes=4+tiles.length*4+tiles.reduce((n,t)=>n+Math.min(counts[t]*2,1024),0)+births*3;
     if(bytes<payload){encoding=1;payload=bytes;}
   }
+  // Encoding 2 preserves the original sequence, including negative key deltas.
+  // Negotiate separately: earlier v2 clients only understand encodings 0/1.
+  if(allowVarint&&count){
+    let last=0,bytes=0;
+    for(let i=0;i<count;i++){const key=keys[i];const delta=key-last;last=key;
+      bytes+=delta>=-8&&delta<8?1:delta>=-1024&&delta<1024?2:delta>=-131072&&delta<131072?3:4;
+    }
+    if(bytes<payload){encoding=2;payload=bytes;}
+  }
   const buffer=new ArrayBuffer(HEADER_BYTES+payload),v=new DataView(buffer);
   v.setUint32(0,MAGIC,true);v.setUint8(4,2);v.setUint8(5,encoding);v.setUint16(6,+snapshot,true);
   v.setUint32(8,roomEpoch,true);v.setUint32(12,generation,true);v.setUint32(16,snapshot?0xffffffff:baseGeneration,true);
-  v.setUint32(20,payload,true);v.setUint32(24,count,true);v.setUint32(28,encoding?births:0,true);
+  v.setUint32(20,payload,true);v.setUint32(24,count,true);v.setUint32(28,encoding===1?births:0,true);
   let p=HEADER_BYTES;
-  if(!encoding){for(const key of keys){write24(v,p,key+ownerAt(key)*PACK);p+=3;}return buffer;}
+  if(!encoding){for(let i=0;i<count;i++){const key=keys[i];write24(v,p,key+ownerAt(key)*PACK);p+=3;}return buffer;}
+  if(encoding===2){
+    const bytes=new Uint8Array(buffer);let last=0;
+    for(let i=0;i<count;i++){const key=keys[i];const delta=key-last;let value=((delta<<1)^(delta>>31))*8+ownerAt(key);last=key;
+      while(value>=128){bytes[p++]=(value&127)|128;value>>>=7;}bytes[p++]=value;
+    }
+    return buffer;
+  }
   v.setUint16(p,tiles.length,true);p+=4;
   const offsets=new Uint32Array(TILE_COUNT),bytes=new Uint8Array(buffer);let represented=0,sparse=false;
   for(const tile of tiles){
@@ -45,7 +61,7 @@ export function encodeBoardV2({keys,ownerAt,board,previous,generation,baseGenera
     }
     else{sparse=true;offsets[tile]=p;p+=counts[tile]*2;represented+=counts[tile];}
   }
-  if(sparse||births)for(const key of keys){
+  if(sparse||births)for(let i=0;i<count;i++){const key=keys[i];
     if(sparse){const tile=tileOf(key);if(counts[tile]<=512){v.setUint16(offsets[tile],localOf(key)+ownerAt(key)*1024,true);offsets[tile]+=2;}}
     if(births&&!previous[key]&&ownerAt(key)){write24(v,p,key);p+=3;}
   }
@@ -67,19 +83,33 @@ export function decodeBoardPacket(buffer) {
   check(type===MAGIC&&buffer.byteLength>=HEADER_BYTES,'magic/header');
   const version=v.getUint8(4),encoding=v.getUint8(5),flags=v.getUint16(6,true),roomEpoch=v.getUint32(8,true),generation=v.getUint32(12,true),baseGeneration=v.getUint32(16,true);
   const payload=v.getUint32(20,true),count=v.getUint32(24,true),insertCount=v.getUint32(28,true),snapshot=flags===1;
-  check(version===2&&encoding<=1&&flags<=1&&roomEpoch!==0,'version/flags/epoch');
+  check(version===2&&encoding<=2&&flags<=1&&roomEpoch!==0,'version/flags/epoch');
   check(payload===buffer.byteLength-HEADER_BYTES&&count<=CELL_COUNT&&insertCount<=count,'length/count');
-  check(snapshot?baseGeneration===0xffffffff&&encoding===0:baseGeneration<=generation&&generation-baseGeneration<=1,'base generation');
-  const entries=new Uint32Array(count),seen=count&&(encoding?insertCount:count>=4096)?new Uint8Array(CELL_COUNT):null;
-  const smallSeen=!encoding&&!seen?new Set():null;
+  check(snapshot?baseGeneration===0xffffffff&&encoding!==1:baseGeneration<=generation&&generation-baseGeneration<=1,'base generation');
+  const tiled=encoding===1;
+  const entries=new Uint32Array(count),seen=count&&(tiled?insertCount:count>=4096)?new Uint8Array(CELL_COUNT):null;
+  const smallSeen=!tiled&&!seen?new Set():null;
   let p=HEADER_BYTES,n=0;
-  const add=(key,owner)=>{check(n<count&&key<CELL_COUNT&&owner<=4&&(!snapshot||owner>0),'entry');
-    if(!encoding){check(seen?!seen[key]:!smallSeen.has(key),'duplicate');smallSeen?.add(key);}
+  const add=(key,owner)=>{check(n<count&&key>=0&&key<CELL_COUNT&&owner<=4&&(!snapshot||owner>0),'entry');
+    if(!tiled){check(seen?!seen[key]:!smallSeen.has(key),'duplicate');smallSeen?.add(key);}
     if(seen)seen[key]=owner+1;entries[n++]=key+owner*CELL_COUNT;};
   let insertions;
   if(!encoding){
     check(insertCount===0&&payload===3*count,'ordered length');
     for(let i=0;i<count;i++){const value=read24(v,p);p+=3;add(value%PACK,Math.floor(value/PACK));}
+  }else if(encoding===2){
+    check(insertCount===0&&payload>=count&&payload<=4*count,'varint length');
+    let last=0;
+    for(let i=0;i<count;i++){
+      let value=0,shift=0,byte;
+      do{
+        check(p<buffer.byteLength&&shift<=21,'varint truncation/overflow');byte=v.getUint8(p++);
+        check(shift<21||byte<8,'varint overflow');value|=(byte&127)<<shift;shift+=7;
+      }while(byte&128);
+      check(shift===7||byte!==0,'noncanonical varint');
+      const zigzag=value>>>3,delta=(zigzag>>>1)^-(zigzag&1),key=last+delta;
+      add(key,value&7);last=key;
+    }
   }else{
     check(payload>=4,'tile header');const tileCount=v.getUint16(p,true);check(tileCount>0&&tileCount<=TILE_COUNT&&v.getUint16(p+2,true)===0,'tile count');p+=4;
     const seenTiles=new Uint8Array(TILE_COUNT),seenLocals=new Uint8Array(1024);
@@ -108,8 +138,8 @@ export function decodeBoardPacket(buffer) {
     for(let i=0;i<insertCount;i++){const key=read24(v,p);p+=3;check(key<CELL_COUNT&&seen[key]>=2&&seen[key]<=5,'insertion/duplicate');insertions[i]=key+(seen[key]-1)*CELL_COUNT;seen[key]+=8;}
   }
   check(n===count&&p===buffer.byteLength,'trailing bytes');
-  return {version,encoding,snapshot,roomEpoch,generation,baseGeneration,entries,insertions,insertionFlags:encoding?seen:null,
-    memoryBytes:entries.byteLength+(insertions?.byteLength??0)+(encoding?(seen?.byteLength??0):0)};
+  return {version,encoding,snapshot,roomEpoch,generation,baseGeneration,entries,insertions,insertionFlags:tiled?seen:null,
+    memoryBytes:entries.byteLength+(insertions?.byteLength??0)+(tiled?(seen?.byteLength??0):0)};
 }
 
 // Existing cells retain their Map position. Deaths commute; births must follow

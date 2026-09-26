@@ -1,8 +1,6 @@
 // Tactical overview: reuse the world texture, never replay per-cell strokes.
 export class MinimapCache {
   invalidate() { this.revision = -1; this.state = null; }
-  beginPacket() {}
-  change() {}
   draw(field, paintBackground, paintBases) {
     const w = field.minimap.width;
     this.canvas ??= document.createElement('canvas');

@@ -9,7 +9,6 @@ export const COLORS = ['#67f5d1', '#ff796c', '#ac98ff', '#f4cc75'];
 const TAU = Math.PI * 2;
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 const hexAlpha = (color, opacity) => color + Math.round(opacity * 255).toString(16).padStart(2, '0');
-const MINIMAP_COLORS = COLORS.map(color => hexAlpha(color, .65));
 
 export function drawPattern(canvas, cells, color = COLORS[0]) {
   const ctx = canvas.getContext('2d'), w = canvas.width, h = canvas.height;
@@ -81,14 +80,12 @@ export class Battlefield {
       if (decoded.snapshot) browserMetrics.record('snapshot', 1, decoded.generation);
     }
     if (decoded.snapshot) { this.cells.clear(); this.board.fill(0); this.texture.reset(); this.minimapCache.invalidate(); }
-    this.minimapCache.beginPacket(this, entries.length, decoded.snapshot);
     this.generation = decoded.generation;
     for (const value of entries) {
       const owner = Math.floor(value / 1000000), key = value % 1000000;
       // No-op entries (including dense tile padding on the board) must not
-      // write Map/texture or invalidate a local minimap contribution.
+      // write cell storage or texture.
       if (this.board[key] === owner) continue;
-      this.minimapCache.change(key, this.board[key], owner);
       this.board[key] = owner;
       if (owner) { this.cells.set(key,owner); this.texture.set(key,owner); }
       else { this.cells.delete(key); this.texture.set(key,0); }
@@ -116,9 +113,11 @@ export class Battlefield {
     const point=this.pointer?this.worldPoint(this.pointer.x,this.pointer.y):null;
     const bounds=this.patternBounds(this.pattern);
     const x=point?Math.floor(point[0]-(this.cardTarget?0:bounds.w/2)):null,y=point?Math.floor(point[1]-(this.cardTarget?0:bounds.h/2)):null;
-    const signature=JSON.stringify([x,y,this.boardRevision,this.me,this.baseHitRadius,this.playerCells,this.state?.status,this.state?.players,this.state?.nodes.map(n=>n.owner),this.extraLand]);
+    const signature=[x,y,this.boardRevision,this.me,this.baseHitRadius,this.playerCells,this.state?.status,
+        ...(this.state?.players??[]).flatMap(p=>[p.id,p.x,p.y,p.eliminated,p.energy,p.cells,p.capacity,p.freeDeployBudget,p.deployMultiplier]),
+        ...(this.state?.nodes??[]).map(n=>n.owner),...(this.extraLand??[])];
     const cached=this.previewCache;
-    if(cached&&cached.signature===signature&&cached.pattern===this.pattern&&cached.target===this.cardTarget&&cached.state===this.state)return cached.value;
+    if(cached&&cached.signature.length===signature.length&&cached.signature.every((v,i)=>v===signature[i])&&cached.pattern===this.pattern&&cached.target===this.cardTarget&&cached.state===this.state)return cached.value;
     const value=this.placementUncached();this.previewCache={signature,pattern:this.pattern,target:this.cardTarget,state:this.state,value};return value;
   }
   placementUncached() {
@@ -319,8 +318,6 @@ export class Battlefield {
   }
   drawMinimap(){
     const c=this.mctx,w=this.minimap.width,s=w/1000;
-    // Each replay starts after background/base painting may have changed fillStyle.
-    let lastCellOwner=0;
     this.minimapCache.draw(this, c => {
       c.fillStyle='#08141a';c.fillRect(0,0,w,w);c.strokeStyle='#213942';c.lineWidth=.5;
       for(let i=1;i<5;i++){c.beginPath();c.moveTo(i*w/5,0);c.lineTo(i*w/5,w);c.moveTo(0,i*w/5);c.lineTo(w,i*w/5);c.stroke();}
@@ -330,10 +327,6 @@ export class Battlefield {
       }
     }, c => {
       for(const p of this.state.players){c.fillStyle=p.eliminated?'#33434a':COLORS[p.id-1];c.fillRect(p.x*s-2.5,p.y*s-2.5,5,5);}
-      lastCellOwner=0;
-    }, (c,key,owner) => {
-      if (lastCellOwner !== owner) c.fillStyle=MINIMAP_COLORS[owner-1];
-      lastCellOwner=owner;c.fillRect(key%1000*s,Math.floor(key/1000)*s,1,1);
     });
     c.strokeStyle='#b2e7d799';c.lineWidth=1;const vw=this.width/this.camera.zoom*s,vh=this.height/this.camera.zoom*s;c.strokeRect(this.camera.x*s-vw/2,this.camera.y*s-vh/2,vw,vh);
   }

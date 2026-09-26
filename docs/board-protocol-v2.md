@@ -1,6 +1,6 @@
 # 棋盘协议 v2
 
-状态：2026-09-24 实现并测试，默认保留 v1。设置 `LIFEWAR_BOARD_PROTOCOL=2` 的新服务进程才会提供 v2 协商；设置为 1 或不设置可回退。协议不会在已加入房间的连接中切换。
+状态：运行脚本默认 GPU＋v2；显式 `LIFEWAR_BOARD_PROTOCOL=1` 回退。直接运行 server.js/导入 createServer 不加载运行脚本默认值。2026-09-26 增加显式协商的 encoding 2；不在已加入房间的连接中切换协议。
 
 ## 协商、会话与代边界
 
@@ -20,14 +20,14 @@
 |---:|---:|---|---|
 | 0 | 4 | magic | `0x3252574c`，字节 ASCII `LWR2`，与 v1 的 0/1 标记不混淆 |
 | 4 | 1 | version | 2 |
-| 5 | 1 | encoding | 0 = ordered24；1 = tiled |
+| 5 | 1 | encoding | 0 = ordered24；1 = tiled；2 = delta-varint（另行协商） |
 | 6 | 2 | flags | 0 = 增量；1 = 快照；其他拒绝 |
 | 8 | 4 | roomEpoch | 非零，与 started 一致 |
 | 12 | 4 | generation | 本消息的棋盘代 |
 | 16 | 4 | baseGeneration | 增量依赖代；快照固定 `0xffffffff` |
 | 20 | 4 | payloadLength | 必须等于消息长度减 32 |
 | 24 | 4 | entryCount | ordered24 的条目数；tiled 的有效棋盘坐标条目数，含 dense 中未变化格；≤1,000,000 |
-| 28 | 4 | insertionCount | tiled 的有序新生表长度；ordered24 固定 0 |
+| 28 | 4 | insertionCount | tiled 的有序新生表长度；ordered24 / delta-varint 固定 0 |
 
 v1 格式、字段与封包顺序保持不变。v2 客户端只接受协商版本的包，不按长度或猜测内容降级。
 
@@ -69,3 +69,11 @@ room 维护上一次广播后的棋盘（启用 v2 的服务额外 1,000,000 字
 队列原有 32 包、64MiB、500ms 限制保留。64MiB 计入原始消息与保留的解码数组/新生标记，避免只按压缩后的网络字节限制内存。验证、应用的短期数组及最后一个重复包检测引用另有有界开销；这不是进程总内存硬上限。
 
 默认 v1 不分配 room 广播基准。启用 v2 后可与 v1 客户端混用；背压仍使用原有阈值与显式快照恢复，不为带宽优化取消这一保护。
+
+## 有序差值扩展（2026-09-26）
+
+提供扩展的服务器在 hello 中发送 `boardEncodings:[0,1,2]`。客户端仅在看到 2 时请求 `{type:"protocol",version:2,deltaVarint:true}`；服务端确认相同布尔字段。未请求扩展的旧客户端仅收到 encoding 0/1。运行脚本仍默认 GPU＋v2，新客户端自动请求扩展。
+
+encoding 2 的每个条目按原始 keys 顺序编码：初始 `last=0`，`delta=key-last`，`zigzag=(delta<<1)^(delta>>31)`，`value=zigzag*8+owner`，使用 unsigned LEB128 写出 value，再更新 last。每条 1–4 字节，第四字节小于 8。owner 取低三位且只能为 0–4，快照不可为 0；key 只能为 0–999999，不可重复。拒绝截断、溢出、非最短编码、额外尾部字节及条目数不符。该编码既支持增量也支持快照，insertionCount 为 0。
+
+编码器比较三种完整包长度，仅当差值编码更小时采用；不排序、不合并代数。首次快照之后的增量仍强制有序（0 或 2），历史缓存按客户端协商能力区分包，避免把扩展发送给旧客户端。解码必须完整校验后才修改棋盘。性能代价见 README 与本轮报告。

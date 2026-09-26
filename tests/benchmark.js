@@ -16,3 +16,8 @@ const g=new Game([1,2,3,4].map(i=>({name:'P'+i})));let seed=91;
 for(let team=1;team<=4;team++)for(let y=0;y<110;y++)for(let x=0;x<110;x++){seed=(seed*1664525+1013904223)>>>0;if(seed/4294967296<.48){const key=(350+y+(team>2?130:0))*1000+350+x+(team%2?0:130);g.board[key]=team;g.alive.push(key);}}
 const { samples, ...report } = measure(g, { generations: 100, hz: RULES.hz });
 console.log(JSON.stringify({scenario:'four chaotic fronts',finalLive:g.alive.length,hz:RULES.hz,...report}));
+
+const {scenario}=await import('./performance/scenarios.mjs');
+const dense=scenario(Game,'P04');
+const {samples:denseSamples,...denseReport}=measure(dense,{warmup:20,generations:100,hz:RULES.hz});
+console.log(JSON.stringify({scenario:'synthetic sustained 500k high-change (nonstandard rules, dormancy disabled)',finalLive:dense.alive.length,hz:RULES.hz,...denseReport}));

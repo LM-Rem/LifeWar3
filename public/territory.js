@@ -62,8 +62,8 @@ export function createTerritories(players, nodes, size = 1000) {
   });
 }
 
-const territoryGrids=new WeakMap();
-export function invalidateTerritoryIndex(territories){territoryGrids.delete(territories);}
+const territoryGrids=new WeakMap(),territoryAdjacency=new WeakMap();
+export function invalidateTerritoryIndex(territories){territoryGrids.delete(territories);territoryAdjacency.delete(territories);}
 export function prepareTerritoryIndex(territories,size=1000){
   const grid=new Int16Array(size*size);grid.fill(-1);
   for(let key=0;key<grid.length;key++){
@@ -77,8 +77,15 @@ export function territoryAt(territories, x, y, size = 1000) {
   if(Number.isInteger(x)&&Number.isInteger(y)) {
     let cache=territoryGrids.get(territories);
     if(!cache||cache.size!==size){cache={size,hits:0};territoryGrids.set(territories,cache);}
-    // Build once for repeated deployment/preview queries; small games pay no startup scan.
-    if(!cache.grid&&++cache.hits>=512){prepareTerritoryIndex(territories,size);cache=territoryGrids.get(territories);}
+    // Cache queried rows only: avoid a synchronous million-cell scan during preview.
+    if(!cache.grid&&++cache.hits>=512){cache.grid=new Int16Array(size*size);cache.rows=new Uint8Array(size);}
+    if(cache.grid&&cache.rows&&!cache.rows[y]){
+      for(let cx=0;cx<size;cx++){let best=Infinity,index=-1;
+        for(let i=0;i<territories.length;i++){const site=territories[i],d=(site.x-cx)**2+(site.y-y)**2;if(d<best){best=d;index=i;}}
+        cache.grid[y*size+cx]=index;
+      }
+      cache.rows[y]=1;
+    }
     if(cache.grid)return territories[cache.grid[y*size+x]]??null;
   }
   let nearest = null, distance = Infinity;
@@ -107,8 +114,12 @@ export function canDeployInTerritory(territories, players, nodes, id, x, y, size
 // Adjacent means a shared edge, not just a shared vertex. Used by border-drop
 // on both the authoritative server and deployment preview.
 export function adjacentNeutralTerritories(territories, players, nodes, id) {
-  const owned = territories.filter(t => territoryOwner(t, players, nodes) === id);
-  return territories.filter(t => t.kind === 'node' && !territoryOwner(t, players, nodes) && owned.some(o =>
-    t.polygon.filter(a => o.polygon.some(b => Math.hypot(a[0] - b[0], a[1] - b[1]) < 1e-5)).length >= 2
-  ));
+  let adjacency=territoryAdjacency.get(territories);
+  if(!adjacency){
+    adjacency=territories.map(t=>territories.filter(o=>o!==t&&
+      t.polygon.filter(a=>o.polygon.some(b=>Math.hypot(a[0]-b[0],a[1]-b[1])<1e-5)).length>=2));
+    territoryAdjacency.set(territories,adjacency);
+  }
+  return territories.filter((t,i)=>t.kind==='node'&&!territoryOwner(t,players,nodes)&&
+    adjacency[i].some(o=>territoryOwner(o,players,nodes)===id));
 }

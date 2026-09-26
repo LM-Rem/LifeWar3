@@ -186,11 +186,12 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
   }
   function broadcastRoom(room) { for (const m of room.members) send(m.ws, roomView(room)); }
   let nextRoomEpoch=randomBytes(4).readUInt32LE(0)||1;
+  const boardVariant=ws=>ws.boardVersion===2&&ws.deltaVarint?'2-varint':ws.boardVersion;
   function boardPacket(ws,room,snapshot=false,cache=new Map()) {
     const ordered=ws.boardVersion===2 && ws.v2NeedsOrdered;
-    const key=`${ws.boardVersion}:${snapshot}:${!!ordered}`;
+    const key=`${boardVariant(ws)}:${snapshot}:${!!ordered}`;
     if(!cache.has(key))cache.set(key,ws.boardVersion===2
-      ?room.game.packetV2({roomEpoch:room.epoch,baseGeneration:room.boardGeneration,previous:room.broadcastBoard,snapshot,forceOrdered:ordered})
+      ?room.game.packetV2({roomEpoch:room.epoch,baseGeneration:room.boardGeneration,previous:room.broadcastBoard,snapshot,forceOrdered:ordered,allowVarint:!!ws.deltaVarint})
       :room.game.packet(snapshot));
     return cache.get(key);
   }
@@ -254,7 +255,7 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
   wss.on('connection', ws => {
     ws.alive = true; ws.budget = 40; ws.refillAt = Date.now();ws.boardVersion=1;
     ws.on('pong', () => { ws.alive = true; });
-    send(ws, { type: 'hello', version: '1.0.0',boardProtocols:boardProtocol===2?[1,2]:[1] }); lobbyList(ws);
+    send(ws, { type: 'hello', version: '1.0.0',boardProtocols:boardProtocol===2?[1,2]:[1],boardEncodings:boardProtocol===2?[0,1,2]:[] }); lobbyList(ws);
     ws.on('error', () => {});
     ws.on('message', (raw, isBinary) => {
       ws.budget = Math.min(40, ws.budget + (Date.now() - ws.refillAt) / 100); ws.refillAt = Date.now();
@@ -267,7 +268,7 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
         case 'protocol': {
           if(room)return fail('请在加入战区前协商协议');
           if(msg.version!==1&&(msg.version!==2||boardProtocol!==2))return fail('不支持的棋盘协议版本');
-          ws.boardVersion=msg.version;send(ws,{type:'protocol',version:ws.boardVersion});return;
+          ws.boardVersion=msg.version;ws.deltaVarint=msg.version===2&&msg.deltaVarint===true;send(ws,{type:'protocol',version:ws.boardVersion,deltaVarint:ws.deltaVarint});return;
         }
         case 'ping': return send(ws, { type: 'pong', time: msg.time });
         case 'list': return lobbyList(ws);
@@ -385,12 +386,11 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
       const packets=new Map();
       // Store canonical independent deltas once per room, never merge generations.
       const historyPackets = new Map();
-      for (const version of new Set(room.members.filter(m => m.ws).map(m => m.ws.boardVersion))) {
-        const peer = { boardVersion: version, v2NeedsOrdered: false };
-        historyPackets.set(version, boardPacket(peer, room, false, packets));
-      }
-      if (room.members.some(m => m.ws?.boardVersion === 2 && m.ws.v2NeedsOrdered)) {
-        historyPackets.set('2ordered', boardPacket({boardVersion:2,v2NeedsOrdered:true}, room, false, packets));
+      for (const {ws} of room.members) {
+        if(!ws)continue;
+        const variant=boardVariant(ws);
+        if(!historyPackets.has(variant))historyPackets.set(variant,boardPacket({boardVersion:ws.boardVersion,deltaVarint:ws.deltaVarint,v2NeedsOrdered:false},room,false,packets));
+        if(ws.boardVersion===2&&ws.v2NeedsOrdered)historyPackets.set(`${variant}ordered`,boardPacket(ws,room,false,packets));
       }
       room.history ??= new PacketHistory();
       if (!room.history.frames.has(game.generation)) room.history.add(game.generation, historyPackets);
@@ -405,9 +405,9 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
         if (ws?.readyState !== WebSocket.OPEN) continue;
         if (ws.bufferedAmount > 262144) { if (metrics) metrics.record('backpressureSkip', ws.bufferedAmount, game.generation, `${room.code}/${m.id}`, String(room.startedAt)); continue; }
         if (!ws.needsSnapshot && ws.sentGeneration < game.generation) {
-          const replay = room.history.after(ws.sentGeneration, game.generation, ws.boardVersion);
+          const replay = room.history.after(ws.sentGeneration, game.generation, boardVariant(ws));
           if (replay && ws.boardVersion === 2 && ws.v2NeedsOrdered) {
-            const ordered = room.history.frames.get(ws.sentGeneration + 1)?.packets.get('2ordered');
+            const ordered = room.history.frames.get(ws.sentGeneration + 1)?.packets.get(`${boardVariant(ws)}ordered`);
             if (ordered) replay[0] = ordered; else ws.needsSnapshot = true;
           }
           if (replay && !ws.needsSnapshot) {

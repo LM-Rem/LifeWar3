@@ -754,7 +754,7 @@ async function connect() {
     ws.onmessage=e=>{if(ws!==socket)return;if(e.data instanceof ArrayBuffer)battlefield.receivePacket(e.data);else{
       const traceStart=browserMetrics?browserMetrics.now():0;
       try{const msg=JSON.parse(e.data);if(msg.type==='hello'){
-        if(msg.boardProtocols?.includes(2))ws.send(JSON.stringify({type:'protocol',version:2}));
+        if(msg.boardProtocols?.includes(2))ws.send(JSON.stringify({type:'protocol',version:2,deltaVarint:msg.boardEncodings?.includes(2)===true}));
         if(session)ws.send(JSON.stringify({type:'resume',...session}));connectionPromise=null;resolve();
       }onMessage(msg);}catch(err){console.error('Message error',err);}
       finally{if(browserMetrics)browserMetrics.duration('json.decodeDispatch.ms',traceStart,battlefield.generation);}
