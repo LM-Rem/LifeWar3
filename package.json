@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "node --watch src/server.js",
+    "start": "node --import ./src/runtime-defaults.js src/server.js",
+    "dev": "node --watch --import ./src/runtime-defaults.js src/server.js",
     "test": "node --import ./tests/setup.js --test tests/*.test.js",
     "benchmark": "node tests/benchmark.js",
     "benchmark:expansion": "node tests/expansion-benchmark.js",
@@ -26,9 +26,14 @@
     "benchmark:scheduler:e2e": "node tests/performance/scheduler-e2e.mjs",
     "benchmark:minimap:profile": "node tests/performance/minimap-profile.mjs",
     "benchmark:minimap:background": "node tests/performance/minimap-background.mjs",
-    "benchmark:minimap:layers": "node tests/performance/minimap-layers.mjs"
+    "benchmark:minimap:layers": "node tests/performance/minimap-layers.mjs",
+    "benchmark:gpu": "node --import ./tests/setup.js tests/performance/gpu.mjs",
+    "benchmark:overview": "node tests/browser/overview-performance.mjs"
   },
   "dependencies": {
     "ws": "^8.18.0"
+  },
+  "optionalDependencies": {
+    "webgpu": "^0.6.1"
   }
 }

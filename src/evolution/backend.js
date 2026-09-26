@@ -1,10 +1,25 @@
 import { sparseCandidates } from './sparse.js';
-import { denseCandidates } from './dense.js';
+import { denseCandidates, orderedCandidates } from './dense.js';
 import { evolutionRules } from './rule-table.js';
 import { Frontier } from './frontier.js';
 export function evolve(game) {
   const mode=game.backendSelector.select(game);
   game.lastBackend=mode;
+  if (mode === 'gpu') {
+    const rules = evolutionRules(game);
+    const result = game.gpuEvolution?.compute(game, rules);
+    if (result) {
+      game.frontier?.invalidate();
+      const length = orderedCandidates.call(game), nextAlive = game.spareAlive, totals = [0,0,0,0,0];
+      game.lastCandidateCount = length; game.next.fill(0); nextAlive.length = 0;
+      for (let i = 0; i < length; i++) {
+        const key = game.candidates[i], owner = result[key];
+        if (owner) { game.next[key] = owner; nextAlive.push(key); totals[owner]++; }
+      }
+      commitEvolution(game, length, nextAlive, totals); return;
+    }
+    game.lastBackend = 'gpu-fallback-sparse';
+  }
   if(mode==='frontier'){
     const frontier=game.frontier??=new Frontier(game),{length,rebuild}=frontier.begin(game);
     if(rebuild){game.lastBackend='frontier-rebuild';settle.call(game,length,frontier);frontier.result.set(game.board);}

@@ -12,7 +12,7 @@ import {summarize} from './statistics.mjs';
 import {environment} from './environment.mjs';
 import {monitorEventLoopDelay} from 'node:perf_hooks';
 import {scheduleTicks} from '../../src/tick-scheduler.js';
-const {values:v}=parseArgs({options:{playwright:{type:'string'},executable:{type:'string'},variant:{type:'string'},scenario:{type:'string'},scheduler:{type:'string',default:'deadline'},rounds:{type:'string',default:'3'},generations:{type:'string',default:'100'},warmup:{type:'string',default:'100'},clients:{type:'string',default:'4'},dpr:{type:'string',default:'1'},output:{type:'string',default:'artifacts/performance/2026-09-25/e2e'},'minimap-trace':{type:'boolean'},help:{type:'boolean'}}});
+const {values:v}=parseArgs({options:{gpu:{type:'boolean'},playwright:{type:'string'},executable:{type:'string'},variant:{type:'string'},scenario:{type:'string'},scheduler:{type:'string',default:'deadline'},rounds:{type:'string',default:'3'},generations:{type:'string',default:'100'},warmup:{type:'string',default:'100'},clients:{type:'string',default:'4'},dpr:{type:'string',default:'1'},output:{type:'string',default:'artifacts/performance/2026-09-25/e2e'},'minimap-trace':{type:'boolean'},help:{type:'boolean'}}});
 if(v.help){console.log('end-to-end.mjs [--variant initial|current-v1|current-v2] [--scenario P01|P03|P04] [--scheduler interval|deadline (current only)] [--rounds 3] [--generations 100] [--warmup 100] [--clients 0..4 (0 = isolated server)] [--dpr 1|2] [--minimap-trace (diagnostic overhead)] [--playwright PATH] [--executable PATH] [--output DIR]');process.exit(0);}
 for(const k of ['rounds','generations','warmup','dpr'])assert.ok(Number.isSafeInteger(+v[k])&&+v[k]>0,k);
 assert.ok(Number.isInteger(+v.clients)&&+v.clients>=0);assert.ok(['interval','deadline'].includes(v.scheduler));
@@ -54,6 +54,8 @@ const scheduler=(callback,options)=>{
 };
 const sourceHashes=hashes(),env=environment();
 const game=scenario(Game,v.scenario||'P01');game.rebuildDerivedState?.();
+// Optional real hardware run using the same bridge installed by server startup.
+let gpu;
 for(let i=0;i<+v.warmup;i++){game.step();game.changes.clear();}
 assert.equal(game.status,'playing');assert.ok(game.alive.length);
 const startGeneration=game.generation,target=startGeneration+(+v.generations),warmBoardHash=hash(game.board),samples=[],memory=[{phase:'warm',...process.memoryUsage()}];
@@ -65,6 +67,10 @@ const done=new Promise(resolve=>finish=resolve),errors=[],pages=[],sessions=[];
 const app=createServer({port:0,host:'127.0.0.1',trace:false,boardProtocol:version,scheduler});
 try{
  const {port}=await app.listen();if(+v.clients)browser=await chromium.launch({headless:true,executablePath:v.executable});env.browser=browser?.version()??null;
+ if(v.gpu || process.env.LIFEWAR_BENCH_GPU==='1'){
+  const {createGpuEvolution}=await import('../../src/evolution/gpu.js');gpu=await createGpuEvolution();
+  game.backendSelector.mode='gpu';game.gpuEvolution=gpu;
+ }
  for(let i=0;i<+v.clients;i++){
   const page=await browser.newPage({viewport:{width:1920,height:1080},deviceScaleFactor:+v.dpr});pages.push(page);
   page.on('pageerror',e=>{errors.push(e.message);console.error('browser error:',e.message);});
@@ -112,7 +118,7 @@ try{
  const sockets=[...app.wss.clients];assert.equal(sockets.length,+v.clients);
  const room={code:'BENCH1',host:1,epoch:7,startedAt:game.startedAt,lastActive:Date.now(),lastActiveGen:0,boardGeneration:startGeneration,broadcastBoard:version===2?game.board.slice():null,members:[]};
  for(let i=0;i<sockets.length;i++){
-  const ws=sockets[i],member={id:i+1,name:'P'+(i+1),ws,bot:false,ready:true};room.members.push(member);ws.room=room;ws.member=member;ws.boardVersion=version;
+  const ws=sockets[i],member={id:i+1,name:'P'+(i+1),ws,bot:false,ready:true};room.members.push(member);ws.room=room;ws.member=member;ws.boardVersion=version;ws.sentGeneration=startGeneration;ws.v2NeedsOrdered=version===2;
   const send=ws.send;ws.send=function(data,...args){if(measuring){const bytes=typeof data==='string'?Buffer.byteLength(data):data.byteLength;wireBytes+=bytes+(bytes<126?2:bytes<65536?4:10);if(typeof data!=='string'){const a=data instanceof ArrayBuffer?new DataView(data):new DataView(data.buffer,data.byteOffset,data.byteLength);if(version===2?a.getUint16(6,true)===1:a.getUint32(0,true)===1)snapshotCount++;}}return send.call(this,data,...args);};
   ws.send(JSON.stringify(game.state(i+1)));ws.send(version===2?game.packetV2({roomEpoch:7,snapshot:true}):game.packet(true));
  }
@@ -142,7 +148,8 @@ try{
  summary.steadyHz=(samples.length-1)*1000/(samples.at(-1).atMs-samples[0].atMs);
  summary.scheduler.measuredDriftMs=timings.length>1?timings.at(-1).startedAt-timings[0].startedAt-(timings.length-1)*50:null;
  summary.realtimePass=clients.length>0&&summary.tickMs.p95<=25&&summary.tickMs.p99<=40&&summary.deadlineMisses===0&&summary.observedHz>=19.5&&snapshotCount===0&&clients.every(c=>c.summary.frameMs.p95<=8&&c.summary.frameMs.p99<=12&&c.summary.rafMs.p99<=25&&!c.summary.undrawnGenerations&&!c.summary.missingGenerations&&!c.summary.failures&&(initial||c.summary.queuePeak<=2));
- const report={summary,environment:env,sourceHashes,harnessHash:hash(readFileSync(fileURLToPath(import.meta.url))),scope:'Production server loop and renderer, headless same-machine loopback clients. Tick from step entry through changes.clear includes encode/state/send/baseline maintenance; excludes preceding no-op AI/connection bookkeeping. Synthetic fixed rules/time, no HUD/app input handler, no physical scanout or LAN certification. Tail gets one second to drain with idle frame timings excluded. Heap excludes GPU memory; short-run memory is not a soak certificate.',samples,memory,clients};
+ summary.evolutionBackend=game.lastBackend;summary.gpuAdapter=gpu?.adapter;
+ const report={summary,environment:env,sourceHashes,harnessHash:hash(readFileSync(fileURLToPath(import.meta.url))),scope:'Production server loop and renderer, headless same-machine loopback clients. Tick from step entry through changes.clear includes encode/state/send/baseline maintenance; excludes preceding no-op AI/connection bookkeeping. Synthetic fixed rules/time, no HUD/app input handler, no physical scanout or LAN certification. Tail gets one second to drain with idle frame timings excluded. Heap excludes GPU memory; short-run memory is not a soak certificate. wireBytes measures pre-compression application packets plus frame headers, NOT compressed socket traffic.',samples,memory,clients};
  report.schedulerTimings=timings;
  writeFileSync(`${v.output}/report.json`,JSON.stringify(report,null,2));console.log(JSON.stringify(summary));
-}finally{loop.disable();await browser?.close();await app.close();}
+}finally{loop.disable();await browser?.close();await app.close();await gpu?.close();}

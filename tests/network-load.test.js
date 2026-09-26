@@ -29,11 +29,11 @@ test('four mixed v1/v2 clients preserve per-connection v1 order through dense up
   const code=a.messages.find(m=>m.type==='welcome').code;
   for(const peer of [b,c,d]){peer.send({type:'join',code,name:'Peer'});await until(()=>peer.messages.some(m=>m.type==='welcome'));peer.send({type:'ready'});}
   await until(()=>a.messages.some(m=>m.type==='room'&&m.players.length===4&&m.players.every(p=>p.ready)));
-  const room=app.rooms.get(code),expected=clients.map(()=>[]),traffic=clients.map(()=>({binaryBytes:0,v1EquivalentBytes:0,jsonBytes:0,messages:0}));
+  const room=app.rooms.get(code),expected=clients.map(()=>[]),traffic=clients.map(()=>({binaryBytes:0,v1EquivalentBytes:0,jsonBytes:0,messages:0})),v1History=new Map();
   const framed=n=>n+(n<126?2:n<65536?4:10);
   for(let i=0;i<4;i++){
     const ws=room.members[i].ws,send=ws.send.bind(ws),apply=consumer();
-    ws.send=(data,...args)=>{if(data instanceof ArrayBuffer){const meta=decodeBoardPacket(data),v1=room.game.packet(meta.snapshot);expected[i].push(apply(v1));traffic[i].binaryBytes+=framed(data.byteLength);traffic[i].v1EquivalentBytes+=framed(v1.byteLength);traffic[i].messages++;}else if(typeof data==='string')traffic[i].jsonBytes+=framed(Buffer.byteLength(data));return send(data,...args);};
+    ws.send=(data,...args)=>{if(data instanceof ArrayBuffer){const meta=decodeBoardPacket(data),v1=meta.generation===room.game.generation?room.game.packet(meta.snapshot):v1History.get(meta.generation);assert.ok(v1);if(!meta.snapshot)v1History.set(meta.generation,v1);expected[i].push(apply(v1));traffic[i].binaryBytes+=framed(data.byteLength);traffic[i].v1EquivalentBytes+=framed(v1.byteLength);traffic[i].messages++;}else if(typeof data==='string')traffic[i].jsonBytes+=framed(Buffer.byteLength(data));return send(data,...args);};
   }
   a.send({type:'start'});await until(()=>clients.every(p=>p.records.length));
   const game=room.game;
@@ -47,10 +47,11 @@ test('four mixed v1/v2 clients preserve per-connection v1 order through dense up
   await until(()=>clients.every(p=>p.records.filter(r=>r.encoding===1||r.version===1).length>=5));
   const slow=room.members[3].ws;Object.defineProperty(slow,'bufferedAmount',{configurable:true,get:()=>300000});
   const before=d.records.length,gen=game.generation;
-  await until(()=>game.generation>=gen+4);assert.equal(d.records.length,before);assert.ok(slow.needsSnapshot);
+  await until(()=>game.generation>=gen+4);assert.equal(d.records.length,before);assert.ok(!slow.needsSnapshot);
   delete slow.bufferedAmount;
-  await until(()=>d.records.slice(before).some(r=>r.snapshot)&&d.records.length>=before+3);
-  const resumed=d.records.slice(before);assert.equal(resumed[0].snapshot,true);assert.equal(resumed[1].encoding,0,'first delta after snapshot is ordered');assert.equal(resumed[2].encoding,1);
+  await until(()=>d.records.length>=before+5);
+  const resumed=d.records.slice(before);assert.ok(resumed.every(r=>!r.snapshot));
+  for(let i=0;i<resumed.length;i++)assert.equal(resumed[i].generation,d.records[before-1].generation+i+1);
   // Snapshot taken after an unbroadcast deletion; next delta may resurrect it.
   const key=game.alive.keys[0];game.board[key]=0;game.changes.set(key,0);game.alive.compact(game.board);
   const resyncAt=b.records.length;b.send({type:'resync'});await until(()=>b.records.slice(resyncAt).some(r=>r.snapshot)&&b.records.length>=resyncAt+3);

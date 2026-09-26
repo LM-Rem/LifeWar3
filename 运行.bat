@@ -1,4 +1,9 @@
 @echo off
+setlocal
+cd /d "%~dp0"
+
+if not defined LIFEWAR_EVOLUTION set "LIFEWAR_EVOLUTION=gpu"
+if not defined LIFEWAR_BOARD_PROTOCOL set "LIFEWAR_BOARD_PROTOCOL=2"
 
 where node >nul 2>nul
 if errorlevel 1 (

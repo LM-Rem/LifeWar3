@@ -10,6 +10,9 @@ import { runBots } from './bots.js';
 import { performanceConfig } from './performance-config.js';
 import { PerformanceMetrics, instrumentGame, startEventLoopMetrics } from './metrics.js';
 import { scheduleTicks } from './tick-scheduler.js';
+import { createGpuEvolution } from './evolution/gpu.js';
+import { PacketHistory } from './packet-history.js';
+import { staticAssets } from './static-assets.js';
 
 const ROOT = fileURLToPath(new URL('../public/', import.meta.url));
 const LIBRARY_DIR = fileURLToPath(new URL('../图案集_128/', import.meta.url));
@@ -37,11 +40,13 @@ const readBody = req => new Promise((resolve, reject) => {
   req.on('error', reject);
 });
 
-export function createServer({ port = Number(process.env.PORT) || 3000, host = '0.0.0.0', trace = performanceConfig().enabled, boardProtocol = Number(process.env.LIFEWAR_BOARD_PROTOCOL ?? 1), scheduler = scheduleTicks } = {}) {
+export function createServer({ port = Number(process.env.PORT) || 3000, host = '0.0.0.0', trace = performanceConfig().enabled, boardProtocol = Number(process.env.LIFEWAR_BOARD_PROTOCOL ?? 1), scheduler = scheduleTicks, evolutionMode = process.env.LIFEWAR_EVOLUTION ?? 'auto', compression = process.env.LIFEWAR_COMPRESSION === '1', onRoomError = (error, room) => console.error(`[room ${room.code}] simulation stopped`, error) } = {}) {
   if(![1,2].includes(boardProtocol))throw new Error('Invalid LIFEWAR_BOARD_PROTOCOL');
   const metrics = trace ? new PerformanceMetrics({ capacity: performanceConfig().capacity }) : null;
   const eventLoop = metrics ? startEventLoopMetrics() : null;
   const rooms = new Map();
+  const serveStatic = staticAssets();
+  let gpuEvolution;
   let serverGen = 0; // 服务器全局演化代数，用于按代判断的房间清理
   const server = http.createServer(async (req, res) => {
     try {
@@ -163,12 +168,13 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
       }
       const file = path.resolve(ROOT, '.' + (pathname === '/' ? '/index.html' : pathname));
       if (!file.startsWith(ROOT) || pathname.includes('..')) { res.writeHead(403); return res.end('Forbidden'); }
-      const data = await readFile(file);
-      res.writeHead(200, { 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-cache', 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' ws: wss:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'" });
-      res.end(data);
+      await serveStatic(req, res, file, { 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-cache', 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' ws: wss:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'" });
     } catch { res.writeHead(404); res.end('Not found'); }
   });
-  const wss = new WebSocketServer({ noServer: true, maxPayload: 16384, perMessageDeflate: false });
+  const wss = new WebSocketServer({ noServer: true, maxPayload: 16384, perMessageDeflate: compression ? {
+    threshold: 4096, serverNoContextTakeover: true, clientNoContextTakeover: true,
+    concurrencyLimit: 2, zlibDeflateOptions: { level: 1, memLevel: 7, chunkSize: 4 * 1024 * 1024 }
+  } : false });
   server.on('upgrade', (req, socket, head) => {
     let allowed = (req.url === '/ws' || req.url === '/ws?trace=1') && wss.clients.size < 64;
     try { if (req.headers.origin && new URL(req.headers.origin).host !== req.headers.host) allowed = false; } catch { allowed = false; }
@@ -181,7 +187,7 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
   function broadcastRoom(room) { for (const m of room.members) send(m.ws, roomView(room)); }
   let nextRoomEpoch=randomBytes(4).readUInt32LE(0)||1;
   function boardPacket(ws,room,snapshot=false,cache=new Map()) {
-    const ordered=ws.v2NeedsOrdered;
+    const ordered=ws.boardVersion===2 && ws.v2NeedsOrdered;
     const key=`${ws.boardVersion}:${snapshot}:${!!ordered}`;
     if(!cache.has(key))cache.set(key,ws.boardVersion===2
       ?room.game.packetV2({roomEpoch:room.epoch,baseGeneration:room.boardGeneration,previous:room.broadcastBoard,snapshot,forceOrdered:ordered})
@@ -192,15 +198,16 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
   function sendBoard(ws, room, packet, snapshot = false) {
     const game = room.game, start = metrics ? metrics.now() : 0;
     ws.send(packet);
+    ws.sentGeneration = new DataView(packet).getUint32(ws.boardVersion === 2 ? 12 : 4, true);
     ws.v2NeedsOrdered=snapshot;
     if(snapshot)ws.needsSnapshot=false;
     if (metrics) {
       const stream = `${room.code}/${ws.member?.id ?? 0}`, epoch = String(room.startedAt);
-      metrics.record('sentGeneration', packet.byteLength, game.generation, stream, epoch);
-      metrics.record('sendSubmit.ms', metrics.now() - start, game.generation, stream, epoch);
-      metrics.record('bufferedBytes', ws.bufferedAmount, game.generation, stream, epoch);
-      if (snapshot) metrics.record('snapshot', 1, game.generation, stream, epoch);
-      if (ws.trace) send(ws, { type: 'performance', epoch, generation: game.generation });
+      metrics.record('sentGeneration', packet.byteLength, ws.sentGeneration, stream, epoch);
+      metrics.record('sendSubmit.ms', metrics.now() - start, ws.sentGeneration, stream, epoch);
+      metrics.record('bufferedBytes', ws.bufferedAmount, ws.sentGeneration, stream, epoch);
+      if (snapshot) metrics.record('snapshot', 1, ws.sentGeneration, stream, epoch);
+      if (ws.trace) send(ws, { type: 'performance', epoch, generation: ws.sentGeneration });
     }
   }
   function lobbyList(ws) { send(ws, { type: 'rooms', rooms: [...rooms.values()].map(r => ({ code: r.code, name: `${r.members[0]?.name || '未知'} 的战区`, count: r.members.length, status: r.game?.status || 'lobby' })) }); }
@@ -234,7 +241,9 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
     const hostMember = room.members.find(m => m.id === room.host);
     room.members.forEach((m, i) => { m.id = i + 1; });
     room.host = hostMember.id;
-    room.game = new Game(room.members); room.startedGen = serverGen; room.startedAt = room.game.startedAt; room.lastActiveGen = serverGen; room.finishedBroadcast = false;
+    room.game = new Game(room.members, { evolutionMode }); room.game.gpuEvolution = gpuEvolution;
+    room.history = new PacketHistory(); room.fault = null;
+    room.startedGen = serverGen; room.startedAt = room.game.startedAt; room.lastActiveGen = serverGen; room.finishedBroadcast = false;
     room.epoch=nextRoomEpoch;nextRoomEpoch=(nextRoomEpoch+1)>>>0||1;
     room.broadcastBoard=boardProtocol===2?room.game.board.slice():null;room.boardGeneration=room.game.generation;
     if (metrics) instrumentGame(room.game, metrics, room.code);
@@ -347,10 +356,11 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
   const timer = scheduler(() => {
     const now = Date.now();
     for (const room of rooms.values()) {
+      try {
       if (room.members.some(m => m.ws)) room.lastActive = now;
       else if (now - room.lastActive > 90000) { rooms.delete(room.code); updateLists(); continue; }
       const game = room.game;
-      if (!game) continue;
+      if (!game || room.fault) continue;
       const tickStart = metrics ? metrics.now() : 0;
       for (const m of room.members) if (game.status === 'playing' && !m.bot && !m.ws && m.offlineAt && now - m.offlineAt > 90000 && !game.players[m.id-1].eliminated) {
         game.eliminate(m.id); game.checkVictory();
@@ -373,17 +383,54 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
         broadcastRoom(room); updateLists();
       }
       const packets=new Map();
+      // Store canonical independent deltas once per room, never merge generations.
+      const historyPackets = new Map();
+      for (const version of new Set(room.members.filter(m => m.ws).map(m => m.ws.boardVersion))) {
+        const peer = { boardVersion: version, v2NeedsOrdered: false };
+        historyPackets.set(version, boardPacket(peer, room, false, packets));
+      }
+      if (room.members.some(m => m.ws?.boardVersion === 2 && m.ws.v2NeedsOrdered)) {
+        historyPackets.set('2ordered', boardPacket({boardVersion:2,v2NeedsOrdered:true}, room, false, packets));
+      }
+      room.history ??= new PacketHistory();
+      if (!room.history.frames.has(game.generation)) room.history.add(game.generation, historyPackets);
+      else if (game.changes.size) {
+        // Out-of-tick elimination may revise an already broadcast final generation.
+        // Its former delta is no longer a complete baseline for replay.
+        room.history.add(game.generation, historyPackets);
+        for (const m of room.members) if (m.ws) m.ws.needsSnapshot = true;
+      }
       for (const m of room.members) {
         const ws=m.ws;
         if (ws?.readyState !== WebSocket.OPEN) continue;
-        if (ws.bufferedAmount > 262144) { ws.needsSnapshot = true; if (metrics) metrics.record('backpressureSkip', ws.bufferedAmount, game.generation, `${room.code}/${m.id}`, String(room.startedAt)); continue; }
-        sendBoard(ws, room, boardPacket(ws,room,!!ws.needsSnapshot,packets), !!ws.needsSnapshot); ws.needsSnapshot = false;
+        if (ws.bufferedAmount > 262144) { if (metrics) metrics.record('backpressureSkip', ws.bufferedAmount, game.generation, `${room.code}/${m.id}`, String(room.startedAt)); continue; }
+        if (!ws.needsSnapshot && ws.sentGeneration < game.generation) {
+          const replay = room.history.after(ws.sentGeneration, game.generation, ws.boardVersion);
+          if (replay && ws.boardVersion === 2 && ws.v2NeedsOrdered) {
+            const ordered = room.history.frames.get(ws.sentGeneration + 1)?.packets.get('2ordered');
+            if (ordered) replay[0] = ordered; else ws.needsSnapshot = true;
+          }
+          if (replay && !ws.needsSnapshot) {
+            for (const packet of replay) {
+              if (ws.bufferedAmount > 262144) break;
+              sendBoard(ws, room, packet);
+            }
+            if (ws.sentGeneration !== game.generation) continue;
+          } else ws.needsSnapshot = true;
+        }
+        if (ws.needsSnapshot) sendBoard(ws, room, boardPacket(ws,room,true,packets), true);
         if (game.generation % Math.max(1, Math.round(RULES.hz / 5)) === 0 || game.status === 'finished') send(ws, { ...game.state(m.id), tickMs: Math.round((room.tickMs || 0) * 100) / 100 }); // 状态推送保持约 5Hz，与 hz 解耦
       }
       if(room.broadcastBoard)for(let i=0;i<game.changes.size;i++){const key=game.changes.order[i];room.broadcastBoard[key]=game.changes.owners[key];}
       room.boardGeneration=game.generation;game.changes.clear();
       if (metrics) metrics.record('tick.ms', metrics.now() - tickStart, game.generation, room.code, String(room.startedAt));
-      if (game.status === 'finished') room.finishedBroadcast = true;
+      if (game.status === 'finished') room.finishedBroadcast = room.members.every(m => !m.ws || (m.ws.sentGeneration === game.generation && !m.ws.needsSnapshot));
+      } catch (error) {
+        // Do not continue a potentially half-settled game. Isolate that room.
+        room.fault = String(error?.message ?? error);
+        try { onRoomError(error, room); } catch {}
+        for (const m of room.members) try { send(m.ws, { type: 'error', message: '战区演化异常，已停止推进，请退出后重新创建战区。' }); } catch {}
+      }
     }
   }, { periodMs: 1000 / RULES.hz, onTiming: metrics ? timing => {
     for (const [key, value] of Object.entries(timing)) if (key.endsWith('Ms') && value !== null) metrics.record(`scheduler.${key}`, value);
@@ -391,10 +438,16 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
   const heartbeat = setInterval(() => {
     for (const ws of wss.clients) { if (!ws.alive) ws.terminate(); else { ws.alive = false; ws.ping(); } }
   }, 15000);
-  const closed = () => { timer.stop(); clearInterval(heartbeat); eventLoop?.close(); for (const ws of wss.clients) ws.terminate(); wss.close(); };
+  const closed = () => { timer.stop(); clearInterval(heartbeat); eventLoop?.close(); void gpuEvolution?.close(); for (const ws of wss.clients) ws.terminate(); wss.close(); };
   server.on('close', closed);
   return { server, rooms, wss, performanceReport: () => metrics ? { ...metrics.export(), eventLoop: eventLoop.export() } : null,
-    listen: () => new Promise(resolve => server.listen(port, host, () => resolve(server.address()))), close: () => new Promise(resolve => { closed(); server.close(resolve); }) };
+    listen: async () => {
+      if (evolutionMode === 'gpu') {
+        try { gpuEvolution = await createGpuEvolution({ size: RULES.size }); console.log('WebGPU evolution:', gpuEvolution.adapter); }
+        catch (error) { console.warn('WebGPU unavailable; using CPU:', error.message); }
+      }
+      return new Promise(resolve => server.listen(port, host, () => resolve(server.address())));
+    }, close: () => new Promise(resolve => { closed(); server.close(resolve); }) };
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

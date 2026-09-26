@@ -731,7 +731,8 @@ for(const name of ['grid','ranges','motion','sound'])$('#setting-'+name).onchang
 $('#toggle-sound').onclick=()=>{settings.sound=!settings.sound;syncSettings();sound();};syncSettings();
 
 battlefield.onPresentedState=msg=>onMessage({...msg,type:'presented_state'});
-battlefield.onPresented=generation=>{$('#generation').textContent='GEN '+String(generation).padStart(6,'0');};
+const generationLabel=$('#generation');let shownGeneration;
+battlefield.onPresented=generation=>{if(generation!==shownGeneration){shownGeneration=generation;generationLabel.textContent='GEN '+String(generation).padStart(6,'0');}};
 let recoveryTimer;
 function requestPresentationRecovery(){
   clearTimeout(recoveryTimer);
@@ -1164,7 +1165,12 @@ function makePanelDraggable(handle, panel, ignore) {
 }
 makePanelDraggable($('.minimap-panel .panel-heading'), $('.minimap-panel'));
 makePanelDraggable($('.map-controls'), $('.map-controls'), e => e.target.closest('button, a'));
-battlefield.onCamera=camera=>{$('#zoom-label').textContent=Math.round(camera.zoom*100)+'%';$('#camera-coordinates').textContent=`X ${String(Math.round(camera.x)).padStart(4,'0')} / Y ${String(Math.round(camera.y)).padStart(4,'0')}`;};
+const zoomLabel=$('#zoom-label'),cameraCoordinates=$('#camera-coordinates');let shownZoom,shownX,shownY;
+battlefield.onCamera=camera=>{
+  const zoom=Math.round(camera.zoom*100),x=Math.round(camera.x),y=Math.round(camera.y);
+  if(zoom!==shownZoom){shownZoom=zoom;zoomLabel.textContent=zoom+'%';}
+  if(x!==shownX||y!==shownY){shownX=x;shownY=y;cameraCoordinates.textContent=`X ${String(x).padStart(4,'0')} / Y ${String(y).padStart(4,'0')}`;}
+};
 battlefield.onPreview=(p,pointer)=>{const tip=$('#placement-tooltip');tip.classList.toggle('hidden',!p);if(!p)return;tip.classList.toggle('invalid',!p.valid);tip.textContent=p.isCard?(p.valid?`${p.x}, ${p.y}  /  点击施放`:p.reason):(p.valid?`${p.x}, ${p.y}  /  ${p.cost ?? selected.cells.length} EN`:p.reason);tip.style.left=Math.min(pointer.x+20,innerWidth-180)+'px';tip.style.top=Math.min(pointer.y+24,innerHeight-32)+'px';};
 function toggleHUD(){const hidden=$('#game-hud').classList.toggle('hidden');$('#restore-hud').classList.toggle('hidden',!hidden);}
 $('#toggle-hud').onclick=toggleHUD;$('#restore-hud').onclick=toggleHUD;

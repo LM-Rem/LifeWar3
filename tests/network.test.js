@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { WebSocket } from 'ws';
 import { createServer } from '../src/server.js';
+import { decodeBoardPacket, orderedBoardEntries } from '../public/board-protocol.js';
 
 async function client(url){
   const ws=new WebSocket(url),messages=[],listeners=[];
@@ -13,6 +14,32 @@ async function client(url){
     const listener=msg=>{if(msg.type===type&&predicate(msg)){clearTimeout(timer);listeners.splice(listeners.indexOf(listener),1);messages.splice(messages.indexOf(msg),1);resolve(msg);}};listeners.push(listener);
   })};
 }
+
+for (const version of [1,2]) test(`v${version} backpressure replays each generation without a snapshot or merge`,async t=>{
+  let tick;
+  const app=createServer({port:0,host:'127.0.0.1',boardProtocol:version,compression:true,scheduler:fn=>{tick=fn;return{stop(){}};}});
+  const {port}=await app.listen(),a=await client(`ws://127.0.0.1:${port}/ws`);
+  t.after(async()=>{a.ws.terminate();await app.close();});
+  assert.match(a.ws.extensions,/permessage-deflate/);
+  if(version===2){a.send({type:'protocol',version});await a.wait('protocol');}
+  a.send({type:'create',name:'Slow',practice:true});await a.wait('started');await a.wait('binary');
+  const room=[...app.rooms.values()][0],peer=room.members[0].ws;
+  a.send({type:'deploy',x:200,y:200,cells:[[0,0],[1,0],[2,0]]});await a.wait('deployed');
+  let blocked=true;Object.defineProperty(peer,'bufferedAmount',{get:()=>blocked?300000:0});
+  tick();tick();tick();assert.equal(peer.sentGeneration,0);
+  blocked=false;tick();
+  const board=new Uint8Array(1000000);
+  for(let generation=1;generation<=4;generation++){
+    const message=await a.wait('binary');const decoded=decodeBoardPacket(message.data.buffer.slice(message.data.byteOffset,message.data.byteOffset+message.data.byteLength));
+    assert.equal(decoded.snapshot,false);assert.equal(decoded.generation,generation);
+    for(const value of orderedBoardEntries(decoded,board))board[value%1000000]=Math.floor(value/1000000);
+  }
+  assert.deepEqual(board,room.game.board);assert.equal(peer.sentGeneration,4);
+  // A finished room must still drain its final generation to a slow peer.
+  blocked=true;room.game.status='finished';room.game.generation++;tick();assert.equal(room.finishedBroadcast,false);
+  blocked=false;tick();const last=await a.wait('binary');assert.equal(decodeBoardPacket(last.data.buffer.slice(last.data.byteOffset,last.data.byteOffset+last.data.byteLength)).generation,5);
+  assert.equal(room.finishedBroadcast,true);
+});
 test('real 4-client lobby, authority, synchronization, resume and host migration',async t=>{
   const app=createServer({port:0,host:'127.0.0.1'}),addr=await app.listen(),url=`ws://127.0.0.1:${addr.port}/ws`,clients=[];
   t.after(async()=>{for(const c of clients)c.ws.terminate();await app.close();});

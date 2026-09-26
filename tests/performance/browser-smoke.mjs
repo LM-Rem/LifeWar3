@@ -50,9 +50,11 @@ try {
     for (const [kind, data] of Object.entries(result)) writeFileSync(`${values.output}/${label}-${kind}.png`, Buffer.from(data.split(',')[1], 'base64'));
     await view.close();
   }
-  assert.deepEqual(images[1], images[0], 'fixed-time main and minimap pixels must match frozen renderer');
+  assert.equal(images[1].main, images[0].main, 'fixed-time main pixels must match frozen renderer');
+  // Minimap intentionally uses approximate texture downsampling. Its spatial
+  // color assertions and dense-load benchmark live in overview-performance.mjs.
   assert.deepEqual(errors, [], 'browser exceptions');
-  const result = { status: 'PASS', browser: browser.version(), traceSequences: 5, fixedTimePixelComparison: 'main + minimap byte-identical PNG',
+  const result = { status: 'PASS', browser: browser.version(), traceSequences: 5, fixedTimePixelComparison: 'main byte-identical PNG; minimap approximation tested separately',
     scope: 'headless desktop smoke, not frame-rate certification or physical presentation', pageErrors: errors };
   writeFileSync(`${values.output}/summary.json`, JSON.stringify(result, null, 2)); console.log(JSON.stringify(result));
 } finally { await browser?.close(); await app.close(); await oracle.close(); }

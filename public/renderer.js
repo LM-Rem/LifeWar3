@@ -2,6 +2,7 @@ import { GenerationQueue } from './generation-queue.js';
 import { decodeBoardPacket, orderedBoardEntries } from './board-protocol.js';
 import { WorldTexture } from './world-texture.js';
 import { MinimapCache } from './minimap-cache.js';
+import { CellStore } from './cell-store.js';
 import { BASE_HIT_RADIUS, createTerritories, territoryOwner, canDeployInTerritory, territoryAt, adjacentNeutralTerritories } from './territory.js';
 import { browserMetrics } from './performance-metrics.js';
 export const COLORS = ['#67f5d1', '#ff796c', '#ac98ff', '#f4cc75'];
@@ -31,7 +32,7 @@ export class Battlefield {
     this.presentationEpoch=0;
     this.presentation=new GenerationQueue({onEvent:(name,value)=>{browserMetrics?.record(name,value,this.generation);this.onPresentationEvent?.(name,value);},onRecovery:reason=>this.onRecovery?.(reason)});
     this.boardRevision=0;this.boundsCache=new WeakMap();
-    this.cells = new Map(); this.effects = []; this.pointer = null; this.pattern = []; this.keys = new Set(); this.active = false;
+    this.cells = new CellStore(this.board); this.effects = []; this.pointer = null; this.pattern = []; this.keys = new Set(); this.active = false;
     this.state = null; this.territories = []; this.me = 1; this.generation = 0; this.baseHP = 240; this.playerCells = 6000; this.baseHitRadius = BASE_HIT_RADIUS; this.captureTime = 30;
     this.cardTarget = null; // 道具卡选点模式：{ cardId, radius }
     if (browserMetrics) {
@@ -187,7 +188,8 @@ export class Battlefield {
       this.draw(now);
       this.onPresented?.(this.generation);
       if (browserMetrics) browserMetrics.record('drawnGeneration', 0, this.generation);
-      if(now-(this.lastMini||0)>33){this.drawMinimap();this.lastMini=now;this.onCamera?.(this.camera);}
+      if(now-(this.lastMini||0)>=100){this.drawMinimap();this.lastMini=now;}
+      this.onCamera?.(this.camera);
     }
     if (browserMetrics && this.active) browserMetrics.duration('frame.ms', traceStart, this.generation);
     requestAnimationFrame(this.frame);
