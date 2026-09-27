@@ -28,7 +28,8 @@
     "benchmark:minimap:background": "node tests/performance/minimap-background.mjs",
     "benchmark:minimap:layers": "node tests/performance/minimap-layers.mjs",
     "benchmark:gpu": "node --import ./tests/setup.js tests/performance/gpu.mjs",
-    "benchmark:overview": "node tests/browser/overview-performance.mjs"
+    "benchmark:overview": "node tests/browser/overview-performance.mjs",
+    "benchmark:rooms": "node tests/performance/room-workers.mjs"
   },
   "dependencies": {
     "ws": "^8.18.0"

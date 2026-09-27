@@ -13,6 +13,7 @@ import { scheduleTicks } from './tick-scheduler.js';
 import { createGpuEvolution } from './evolution/gpu.js';
 import { PacketHistory } from './packet-history.js';
 import { staticAssets } from './static-assets.js';
+import { RoomWorkerClient } from './room-worker-client.js';
 
 const ROOT = fileURLToPath(new URL('../public/', import.meta.url));
 const LIBRARY_DIR = fileURLToPath(new URL('../图案集_128/', import.meta.url));
@@ -44,7 +45,7 @@ const readBody = req => new Promise((resolve, reject) => {
   req.on('error', reject);
 });
 
-export function createServer({ port = Number(process.env.PORT) || 3000, host = '0.0.0.0', trace = performanceConfig().enabled, boardProtocol = Number(process.env.LIFEWAR_BOARD_PROTOCOL ?? 1), scheduler = scheduleTicks, evolutionMode = process.env.LIFEWAR_EVOLUTION ?? 'auto', compression = process.env.LIFEWAR_COMPRESSION === '1', onRoomError = (error, room) => console.error(`[room ${room.code}] simulation stopped`, error) } = {}) {
+export function createServer({ port = Number(process.env.PORT) || 3000, host = '0.0.0.0', trace = performanceConfig().enabled, boardProtocol = Number(process.env.LIFEWAR_BOARD_PROTOCOL ?? 1), scheduler = scheduleTicks, evolutionMode = process.env.LIFEWAR_EVOLUTION ?? 'auto', roomWorkers = process.env.LIFEWAR_ROOM_WORKERS === '1', roomWorkerFactory = (options,callbacks)=>new RoomWorkerClient(options,callbacks), compression = process.env.LIFEWAR_COMPRESSION === '1', onRoomError = (error, room) => console.error(`[room ${room.code}] simulation stopped`, error) } = {}) {
   if(![1,2].includes(boardProtocol))throw new Error('Invalid LIFEWAR_BOARD_PROTOCOL');
   const metrics = trace ? new PerformanceMetrics({ capacity: performanceConfig().capacity }) : null;
   const eventLoop = metrics ? startEventLoopMetrics() : null;
@@ -52,6 +53,13 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
   const serveStatic = staticAssets();
   let gpuEvolution;
   let serverGen = 0; // 服务器全局演化代数，用于按代判断的房间清理
+  let nextSession = 0;
+  const retiringWorkers = new Set();
+  function retireWorker(room) {
+    if(!room.worker)return;
+    const worker=room.worker;room.worker=null;
+    const closing=worker.close();retiringWorkers.add(closing);closing.finally(()=>retiringWorkers.delete(closing));
+  }
   const server = http.createServer(async (req, res) => {
     try {
       const pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
@@ -191,6 +199,7 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
   function broadcastRoom(room) { for (const m of room.members) send(m.ws, roomView(room)); }
   function sendCards(room, member) {
     if (!room.game || !member.ws) return;
+    if(room.worker){room.worker.command(member.id,member.ws.roomSession,{type:'cards'});return;}
     const target = member.control?.readyState === WebSocket.OPEN ? member.control : member.ws;
     if (target.bufferedAmount > 65536) return; // Latest state replaces missed updates; never queue unbounded JSON.
     const state = room.game.state(member.id);
@@ -200,6 +209,50 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
     });
   }
   let nextRoomEpoch=randomBytes(4).readUInt32LE(0)||1;
+  const workerMember = member => ({id:member.id,name:member.name,bot:member.bot,
+    session:member.ws?.roomSession??null,boardVersion:member.ws?.boardVersion??1,deltaVarint:!!member.ws?.deltaVarint});
+  function failRoom(room,error) {
+    if(room.fault)return;
+    room.fault=String(error?.message??error);
+    try{onRoomError(error,room);}catch{}
+    for(const m of room.members)send(m.ws,{type:'error',message:'战区演化异常，已停止推进，请退出后重新创建战区。'});
+  }
+  function startWorker(room) {
+    room.game={status:'starting',generation:0,players:[]};room.fault=null;
+    room.epoch=nextRoomEpoch;nextRoomEpoch=(nextRoomEpoch+1)>>>0||1;
+    for(const m of room.members)m.cardSequence=0;
+    const bridge=room.worker=roomWorkerFactory({members:room.members.map(workerMember),epoch:room.epoch,evolutionMode},{
+      onFault:error=>{if(room.worker===bridge)failRoom(room,error);},
+      onMessage:message=>{
+        if(room.worker!==bridge)return;
+        if(message.type==='adapter') {
+          if(message.adapter)console.log(`[room ${room.code}] WebGPU evolution:`,message.adapter);
+          else console.warn(`[room ${room.code}] WebGPU unavailable; CPU fallback:`,message.warning);
+          return;
+        }
+        const oldStatus=room.game.status;
+        if(message.meta){room.game=message.meta;room.startedAt=message.meta.startedAt;}
+        for(const event of message.events??[]) {
+          const member=room.members.find(m=>m.id===event.id),ws=member?.ws;
+          if(ws?.readyState!==WebSocket.OPEN||ws.roomSession!==event.session)continue;
+          if(event.packet)sendBoard(ws,room,event.packet,event.snapshot);
+          else if(event.data.type==='card_state') {
+            const target=member.control?.readyState===WebSocket.OPEN?member.control:ws;
+            if(target.bufferedAmount<=65536)send(target,{...event.data,sequence:++member.cardSequence});
+          }else send(ws,event.data);
+        }
+        if(message.type==='frame') {
+          room.tickMs=message.tickMs;
+          if(metrics){metrics.record('tick.ms',message.tickMs,room.game.generation,room.code,String(room.startedAt));metrics.record('computedGeneration',0,room.game.generation,room.code,String(room.startedAt));}
+          bridge.post({type:'ack',buffers:room.members.filter(m=>m.ws).map(m=>({id:m.id,session:m.ws.roomSession,bufferedAmount:m.ws.bufferedAmount}))});
+        }
+        const oldHost=room.host;
+        if(!room.members.find(m=>m.id===room.host)?.ws && (room.game.status==='finished'||room.game.players.some(p=>p.id===room.host&&p.eliminated)))room.host=room.members.find(m=>m.ws)?.id??room.host;
+        if(oldStatus!==room.game.status||oldHost!==room.host){broadcastRoom(room);updateLists();}
+      }
+    });
+    broadcastRoom(room);updateLists();
+  }
   const boardVariant=ws=>ws.boardVersion===2&&ws.deltaVarint?'2-varint':ws.boardVersion;
   function boardPacket(ws,room,snapshot=false,cache=new Map()) {
     const ordered=ws.boardVersion===2 && ws.v2NeedsOrdered;
@@ -228,36 +281,41 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
   function lobbyList(ws) { send(ws, { type: 'rooms', rooms: [...rooms.values()].map(r => ({ code: r.code, name: `${r.members[0]?.name || '未知'} 的战区`, count: r.members.length, status: r.game?.status || 'lobby' })) }); }
   function updateLists() { for (const ws of wss.clients) if (!ws.member && !ws.controlMember) lobbyList(ws); }
   function unlink(ws, explicit = false) {
+    if(shuttingDown)return;
     const room = ws.room, member = ws.member;
     if (!room || !member) return;
     member.control?.close(4000, 'Primary disconnected'); member.control = null;
-    if (room.game && room.game.status === 'playing') {
-      member.ws = null; member.offlineGen = room.game.generation;
+    if (room.game && ['playing','starting'].includes(room.game.status)) {
+      room.worker?.post({type:'disconnect',id:member.id,session:ws.roomSession,explicit});
+      member.ws = null; member.offlineGen = room.game.generation; member.offlineAt=Date.now();
       if (explicit) {
-        member.token = ''; room.game.eliminate(member.id); room.game.checkVictory();
+        member.token = ''; if(!room.worker){room.game.eliminate(member.id); room.game.checkVictory();}
         if (room.host === member.id) room.host = room.members.find(m => m !== member && m.ws)?.id ?? room.host;
       }
     } else {
+      room.worker?.post({type:'disconnect',id:member.id,session:ws.roomSession,explicit});
       room.members = room.members.filter(m => m !== member);
       if (room.host === member.id) room.host = room.members.find(m => !m.bot)?.id;
     }
     ws.room = null; ws.member = null;
-    if (!room.members.some(m => !m.bot)) rooms.delete(room.code);
+    if (!room.members.some(m => !m.bot)) {retireWorker(room);rooms.delete(room.code);}
     else broadcastRoom(room);
     updateLists();
   }
   function attach(ws, room, member) {
-    ws.room = room; ws.member = member; member.ws = ws; member.offlineGen = null;
+    ws.room = room; ws.member = member; member.ws = ws; member.offlineGen = null;member.offlineAt=null;ws.roomSession=++nextSession;
     member.cardSequence = 0;
     send(ws, { type: 'welcome', id: member.id, token: member.token, code: room.code });
     broadcastRoom(room);
-    if (room.game) { started(ws,room,member.id); sendCards(room, member); send(ws, room.game.state(member.id)); sendBoard(ws, room, boardPacket(ws,room,true), true); }
+    if (room.worker)room.worker.post({type:'attach',member:workerMember(member)});
+    else if (room.game) { started(ws,room,member.id); sendCards(room, member); send(ws, room.game.state(member.id)); sendBoard(ws, room, boardPacket(ws,room,true), true); }
     updateLists();
   }
   function start(room) {
     const hostMember = room.members.find(m => m.id === room.host);
     room.members.forEach((m, i) => { m.id = i + 1; });
     room.host = hostMember.id;
+    if(roomWorkers){startWorker(room);return;}
     room.game = new Game(room.members, { evolutionMode }); room.game.gpuEvolution = gpuEvolution;
     room.history = new PacketHistory(); room.fault = null;
     room.startedGen = serverGen; room.startedAt = room.game.startedAt; room.lastActiveGen = serverGen; room.finishedBroadcast = false;
@@ -294,6 +352,15 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
       }
       const room = ws.room, member = ws.member;
       const fail = message => send(ws, { type: 'error', message });
+      if(room?.worker && ['deploy','pick_card','play_card','resync'].includes(msg.type)) {
+        if(room.fault)return fail('战区已停止，请退出后重新创建');
+        if(msg.type==='resync') {
+          if(ws.lastResyncAt && Date.now()-ws.lastResyncAt<1000)return;
+          ws.lastResyncAt=Date.now();
+        }
+        if(!room.worker.command(member.id,ws.roomSession,msg))fail('战区操作队列繁忙，请稍后重试');
+        return;
+      }
       switch (msg.type) {
         case 'protocol': {
           if(room)return fail('请在加入战区前协商协议');
@@ -352,6 +419,7 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
         }
         case 'rematch': {
           if (!room || room.game?.status !== 'finished' || room.host !== member.id) return fail('对局结束后由房主返回备战');
+          retireWorker(room);
           room.game = null; room.members = room.members.filter(m => m.ws || m.bot); room.members.forEach(m => { m.ready = m.bot || m.id === room.host; });
           for (const m of room.members) send(m.ws, { type: 'lobby' }); broadcastRoom(room); updateLists(); return;
         }
@@ -393,7 +461,8 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
     for (const room of rooms.values()) {
       try {
       if (room.members.some(m => m.ws)) room.lastActive = now;
-      else if (now - room.lastActive > 90000) { rooms.delete(room.code); updateLists(); continue; }
+      else if (now - room.lastActive > 90000) { retireWorker(room);rooms.delete(room.code); updateLists(); continue; }
+      if(room.worker)continue;
       const game = room.game;
       if (!game || room.fault) continue;
       const tickStart = metrics ? metrics.now() : 0;
@@ -473,16 +542,17 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
   const heartbeat = setInterval(() => {
     for (const ws of wss.clients) { if (!ws.alive) ws.terminate(); else { ws.alive = false; ws.ping(); } }
   }, 15000);
-  const closed = () => { timer.stop(); clearInterval(heartbeat); eventLoop?.close(); void gpuEvolution?.close(); for (const ws of wss.clients) ws.terminate(); wss.close(); };
+  let shuttingDown=false;
+  const closed = () => { if(shuttingDown)return;shuttingDown=true;timer.stop(); clearInterval(heartbeat); eventLoop?.close(); void gpuEvolution?.close();for(const room of rooms.values())retireWorker(room); for (const ws of wss.clients) ws.terminate(); wss.close(); };
   server.on('close', closed);
   return { server, rooms, wss, performanceReport: () => metrics ? { ...metrics.export(), eventLoop: eventLoop.export() } : null,
     listen: async () => {
-      if (evolutionMode === 'gpu') {
+      if (evolutionMode === 'gpu' && !roomWorkers) {
         try { gpuEvolution = await createGpuEvolution({ size: RULES.size }); console.log('WebGPU evolution:', gpuEvolution.adapter); }
         catch (error) { console.warn('WebGPU unavailable; using CPU:', error.message); }
       }
       return new Promise(resolve => server.listen(port, host, () => resolve(server.address())));
-    }, close: () => new Promise(resolve => { closed(); server.close(resolve); }) };
+    }, close: async () => {closed();await Promise.all([new Promise(resolve=>server.close(resolve)),...retiringWorkers]);} };
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

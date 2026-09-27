@@ -2,3 +2,4 @@
 // Keep imported createServer() and benchmark/test defaults independent.
 process.env.LIFEWAR_EVOLUTION ??= 'gpu';
 process.env.LIFEWAR_BOARD_PROTOCOL ??= '2';
+process.env.LIFEWAR_ROOM_WORKERS ??= '1';
