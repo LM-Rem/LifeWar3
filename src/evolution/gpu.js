@@ -1,4 +1,5 @@
 import { Worker } from 'node:worker_threads';
+import { ruleMask } from './rule-table.js';
 
 // Synchronous, bounded bridge preserves Game.step's atomic command boundary.
 // This is experimental: readback + candidate/settlement CPU cost is measured too.
@@ -38,9 +39,11 @@ export async function createGpuEvolution({ size = 1000, timeoutMs = 100, startup
     get healthy() { return healthy; },
     get reason() { return reason; },
     compute(game, rules) {
-      if (!healthy || game.size !== size || game.localIndex.active) return null;
+      if (!healthy || game.size !== size || game.localRules.length > 64) return null;
+      if (game.localRules.some(r => ![r.x,r.y,r.radius].every(v => Number.isInteger(v) && v >= 0 && v <= 10000))) return null;
       input.set(game.board); Atomics.store(control, 0, 0);
-      worker.postMessage({ size, generation: game.generation, ...rules });
+      worker.postMessage({ size, generation: game.generation, ...rules,
+        localRules: game.localRules.map(r => [r.x,r.y,r.radius,ruleMask(r.birth),ruleMask(r.survival),0,0,0]) });
       Atomics.wait(control, 0, 0, timeoutMs);
       if (Atomics.load(control, 0) !== 1) { Atomics.store(control, 0, -2); disable('GPU failed or timed out; CPU fallback'); return null; }
       return output;

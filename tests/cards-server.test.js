@@ -15,6 +15,36 @@ async function client(url){
   })};
 }
 
+test('card control bypasses board backpressure, isolates private state and expires with the primary session',async t=>{
+  let tick;
+  const app=createServer({port:0,host:'127.0.0.1',scheduler:fn=>{tick=fn;return{stop(){}};}});
+  const {port}=await app.listen(),url=`ws://127.0.0.1:${port}/ws`;
+  const a=await client(url),control=await client(url),stranger=await client(url);
+  t.after(async()=>{for(const c of [a,control,stranger])c.ws.terminate();await app.close();});
+  a.send({type:'create',name:'Control',practice:true});const session=await a.wait('welcome');await a.wait('started');await a.wait('binary');
+  stranger.send({type:'bind_control',code:session.code,token:'incorrect'});await stranger.wait('control_rejected');
+  control.send({type:'bind_control',code:session.code,token:session.token});await control.wait('control_ready');
+  const room=app.rooms.get(session.code),peer=room.members[0].ws;
+  Object.defineProperty(peer,'bufferedAmount',{get:()=>300000});
+  room.game.cardDrawTimes=[0];for(let i=0;i<4;i++)tick();
+  const live=await control.wait('card_state',s=>s.cardDraft);
+  assert.deepEqual(live.cardDraft.players.map(p=>p.playerId),[1]);assert.equal(live.cards.hand[1],null);
+  assert.equal(peer.sentGeneration,0,'board remains blocked');
+  const draft=live.cardDraft,cardId=draft.players[0].options[0].id;
+  control.send({type:'pick_card',cardId,draftRound:draft.round+1,draftGen:draft.gen});
+  assert.match((await control.wait('error')).message,/征召/);
+  control.send({type:'pick_card',cardId,draftRound:draft.round,draftGen:draft.gen});
+  await control.wait('card_picked');
+  const picked=await control.wait('card_state',s=>s.cards.hand[0].length===1);
+  assert.ok(picked.sequence>live.sequence);assert.equal(peer.sentGeneration,0);
+  control.send({type:'pick_card',cardId});await control.wait('error');assert.equal(room.game.cards.hand[0].length,1);
+  // Control connections cannot leave, deploy, or acquire room authority.
+  control.send({type:'leave'});control.send({type:'ping',time:42});await a.wait('pong',s=>s.time===42);
+  assert.equal(room.members[0].ws,peer);
+  const closed=new Promise(resolve=>control.ws.once('close',resolve));a.ws.terminate();await closed;
+  assert.equal(room.members[0].control,null);assert.equal(room.members[0].ws,null);
+});
+
 test('card protocol: draft, pick and play over WebSocket',async t=>{
   const app=createServer({port:0,host:'127.0.0.1'}),addr=await app.listen(),url=`ws://127.0.0.1:${addr.port}/ws`;
   const a=await client(url);

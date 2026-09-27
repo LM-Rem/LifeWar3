@@ -3,6 +3,41 @@ import { Battlefield, Ambient, COLORS, drawPattern } from './renderer.js';
 import { CARD_CONFIG, isTargetedCard, ruleLabel } from './cards.js';
 import { browserMetrics } from './performance-metrics.js';
 
+let cardState = null, cardEpoch = null, controlSocket = null, controlReady = false, controlSupported = false;
+let pendingCardPick = null, controlRetry;
+function openCardControl() {
+  clearTimeout(controlRetry);
+  if (!controlSupported || !session || socket?.readyState !== WebSocket.OPEN || cardEpoch === null) return;
+  controlSocket?.close(); controlReady = false;
+  const ws = controlSocket = new WebSocket(`${location.protocol==='https:'?'wss:':'ws:'}//${location.host}/ws`);
+  ws.onmessage = event => {
+    if (ws !== controlSocket) return;
+    const msg = JSON.parse(event.data);
+    if (msg.type === 'hello') ws.send(JSON.stringify({type:'bind_control',...session}));
+    else if (msg.type === 'control_ready') controlReady = true;
+    else if (['card_state','card_picked','card_played','error'].includes(msg.type)) onMessage(msg);
+  };
+  ws.onclose = () => {
+    if (ws !== controlSocket) return;
+    controlReady = false;
+    // Never replay a command whose acknowledgement may have been lost.
+    controlRetry = setTimeout(openCardControl, 1500);
+  };
+  ws.onerror = () => {};
+}
+function closeCardControl() {
+  clearTimeout(controlRetry); const old = controlSocket; controlSocket = null; controlReady = false; old?.close();
+}
+function receiveCardState(msg) {
+  if (msg.roomEpoch !== cardEpoch || (cardState && msg.sequence <= cardState.sequence)) return;
+  cardState = msg;
+  const entry = msg.cardDraft?.players.find(p => p.playerId === playerId);
+  if (!entry || entry.picked || pendingCardPick?.draftKey !== `${msg.cardDraft.round}:${msg.cardDraft.gen}`) pendingCardPick = null;
+  renderCards();
+  if (msg.cardDraft) showCardDraft(msg.cardDraft);
+  else { $('#open-draft').classList.add('hidden'); if ($('#card-draft-dialog').open) $('#card-draft-dialog').close(); }
+}
+
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
 const escapeHTML = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -460,7 +495,7 @@ if (cardGridEl) {
   // 拖出容器：使用卡牌，播放与卡牌本体完全一致的科幻粒子分解动画
   function useCard(card) {
     const name = card.querySelector('.card-name')?.textContent || '未知卡牌';
-    const cardObj = state?.cards?.hand?.[playerId - 1]?.find(c => c.id === card.dataset.cardId && c.instanceId === card.dataset.instanceId);
+    const cardObj = (cardState || state)?.cards?.hand?.[playerId - 1]?.find(c => c.id === card.dataset.cardId && c.instanceId === card.dataset.instanceId);
     const cardId = card.dataset.cardId || cardObj?.id;
     // 道具卡（需要选点）：进入选点模式，卡牌放回容器等待目标确认
     if (isTargetedCard(cardObj)) {
@@ -754,6 +789,7 @@ async function connect() {
     ws.onmessage=e=>{if(ws!==socket)return;if(e.data instanceof ArrayBuffer)battlefield.receivePacket(e.data);else{
       const traceStart=browserMetrics?browserMetrics.now():0;
       try{const msg=JSON.parse(e.data);if(msg.type==='hello'){
+        controlSupported = msg.cardControl === true;
         if(msg.boardProtocols?.includes(2))ws.send(JSON.stringify({type:'protocol',version:2,deltaVarint:msg.boardEncodings?.includes(2)===true}));
         if(session)ws.send(JSON.stringify({type:'resume',...session}));connectionPromise=null;resolve();
       }onMessage(msg);}catch(err){console.error('Message error',err);}
@@ -762,6 +798,7 @@ async function connect() {
     ws.onerror=()=>{if(ws.readyState!==WebSocket.OPEN)reject(new Error('无法连接服务器，请确认服务器仍在运行'));};
     ws.onclose=e=>{
       if(ws!==socket)return;
+      closeCardControl(); pendingCardPick = null;
       connectionPromise=null;$('#connection-status').textContent='服务器连接中断';
       if(e.code===4001){session=null;saveStorage('lifewar.session',null,sessionStorage);toast('此会话已在其他页面恢复',true);showPage('lobby');return;}
       if(page==='game')$('#connection-banner').classList.remove('hidden');
@@ -771,9 +808,15 @@ async function connect() {
   });
   return connectionPromise;
 }
-async function send(message) { try { await connect();if(['deploy','play_card'].includes(message.type))browserMetrics?.record('action.generationLag',Math.max(0,battlefield.presentation.received-battlefield.generation),battlefield.generation);socket.send(JSON.stringify(message));return true; }catch(e){toast(e.message,true);return false;} }
+async function send(message) { try { await connect();if(['deploy','play_card'].includes(message.type))browserMetrics?.record('action.generationLag',Math.max(0,battlefield.presentation.received-battlefield.generation),battlefield.generation);const target = ['pick_card','play_card'].includes(message.type) && controlReady && controlSocket?.readyState === WebSocket.OPEN ? controlSocket : socket;target.send(JSON.stringify(message));return true; }catch(e){toast(e.message,true);return false;} }
 const getName=()=>{const name=$('#commander-name').value.trim()||'指挥官';saveStorage('lifewar.name',name);return name;};
 function onMessage(msg) {
+  if (['left','lobby','resume_failed'].includes(msg.type)) { closeCardControl(); cardEpoch=null; cardState=null; pendingCardPick=null; }
+  if (msg.type === 'error' && pendingCardPick) {
+    pendingCardPick=null;
+    const draft=(cardState || state)?.cardDraft;
+    if(draft)showCardDraft(draft,{force:true});
+  }
   switch(msg.type){
     case 'performance':
       if (browserMetrics) {
@@ -786,9 +829,11 @@ function onMessage(msg) {
     case 'welcome': playerId=msg.id;session={code:msg.code,token:msg.token};saveStorage('lifewar.session',session,sessionStorage);break;
     case 'room':room=msg;renderRoom();if(msg.status==='lobby')showPage('lobby');break;
     case 'started':
+      closeCardControl(); cardState=null; cardEpoch=msg.roomEpoch; pendingCardPick=null; openCardControl();
       if (typeof browserMetrics !== 'undefined' && browserMetrics) browserMetrics.resetEpoch(msg.startedAt);
       state=null;pendingCardPlay=false;shownDraftGen=0;renderCards(true);
       playerId=msg.id;if(msg.rules?.hz)gameHz=msg.rules.hz;if(msg.rules?.baseHP){maxHP=msg.rules.baseHP;battlefield.baseHP=maxHP;}if(msg.rules?.maxEnergy)maxEnergy=msg.rules.maxEnergy;if(msg.rules?.regen)energyRegen=msg.rules.regen;if(msg.rules?.nodeRegen)energyNodeRegen=msg.rules.nodeRegen;if(msg.rules?.playerCells)battlefield.playerCells=msg.rules.playerCells;if(msg.rules?.baseHitRadius)battlefield.baseHitRadius=msg.rules.baseHitRadius;if(msg.rules?.captureTime)battlefield.captureTime=msg.rules.captureTime;startedAt=msg.startedAt||Date.now();battlefield.me=playerId;battlefield.reset();battlefield.presentation.configure(msg.boardProtocol??1,msg.roomEpoch);eventIds.clear();resultShown=false;state=null;closeDialogs();showPage('game');renderPatterns();if(selected)selectPattern(selected);sound('capture');break;
+    case 'card_state':receiveCardState(msg);break;
     case 'state':battlefield.receiveState(msg);break;
     case 'presented_state':{
       const first=!state;
@@ -796,11 +841,11 @@ function onMessage(msg) {
         showDormancyNotice(lastDormancyThreshold,msg.dormancyThreshold);
       }
       if(typeof msg.dormancyThreshold==='number')lastDormancyThreshold=msg.dormancyThreshold;
-      state=msg;
-      renderCards();if(msg.cardDraft)showCardDraft(msg.cardDraft);else { $('#open-draft').classList.add('hidden'); if($('#card-draft-dialog').open)$('#card-draft-dialog').close(); }
+      state=cardState ? {...msg,cards:cardState.cards,cardDraft:cardState.cardDraft} : msg;
+      renderCards();if(state.cardDraft)showCardDraft(state.cardDraft);else { $('#open-draft').classList.add('hidden'); if($('#card-draft-dialog').open)$('#card-draft-dialog').close(); }
       if(first)battlefield.focusBase();updateGameHUD();break;
     }
-    case 'card_picked': if (msg.playerId === playerId) { $('#open-draft').classList.add('hidden'); if($('#card-draft-dialog').open)$('#card-draft-dialog').close(); } break;
+    case 'card_picked': if (msg.playerId === playerId) { pendingCardPick=null; $('#open-draft').classList.add('hidden'); if($('#card-draft-dialog').open)$('#card-draft-dialog').close(); } break;
     case 'card_played': if (msg.playerId === playerId) { pendingCardPlay = false; battlefield.cardTarget = null; } break;
     case 'deployed':battlefield.effect(msg.x,msg.y);sound('deploy');if(state){const me=state.players.find(p=>p.id===playerId);if(me)me.energy=Math.max(0,me.energy-msg.cost);}break;
     case 'error':browserMetrics?.record('action.rejectedWithBacklog',Math.max(0,battlefield.presentation.received-battlefield.generation),battlefield.generation);if(pendingCardPlay){const target=pendingCardPlay.target;pendingCardPlay=false;renderCards(true);battlefield.cardTarget=target;}toast(msg.message,true);break;
@@ -906,9 +951,9 @@ initPatterns();
 
 // 阶段3：动态渲染手牌（来自 state.cards.hand），替换静态示例卡
 function renderCards(force = false) {
-  const hand = state?.cards?.hand?.[playerId - 1] || [];
+  const hand = (cardState || state)?.cards?.hand?.[playerId - 1] || [];
   if (pendingCardPlay && !force) {
-    if ((!state?.status || state.status === 'playing') && hand.some(c => c.id === pendingCardPlay.cardId && c.instanceId === pendingCardPlay.instanceId)) return;
+    if ((!(cardState || state)?.status || (cardState || state).status === 'playing') && hand.some(c => c.id === pendingCardPlay.cardId && c.instanceId === pendingCardPlay.instanceId)) return;
     force = true; // Ended matches and removed cards invalidate the delayed request.
   }
   // state 每秒更新约 5 次；相同手牌不能重建，否则会复制拖动中的卡牌并丢失触摸选择。
@@ -943,8 +988,8 @@ function showCardDraft(draft, { force = false } = {}) {
   const entry = draft.players.find(p => p.playerId === playerId);
   // 没有候选或自己已选完：隐藏按钮，不再打开弹窗
   if (!entry || entry.picked) { draftButton.classList.add('hidden'); if($('#card-draft-dialog').open)$('#card-draft-dialog').close(); return; }
-  const remaining = Math.max(0, Math.ceil((draft.deadlineAt - state.serverTime) / 1000));
-  $('.draft-note').textContent = `剩余 ${remaining} 秒 · 法则 / 增益 / 道具各一张。选择后加入手牌；超时自动选择增益卡。`;
+  const remaining = Math.max(0, Math.ceil((draft.deadlineAt - (cardState || state).serverTime) / 1000));
+  $('.draft-note').textContent = pendingCardPick ? '正在提交选择，请等待服务器确认…' : `剩余 ${remaining} 秒 · 法则 / 增益 / 道具各一张。选择后加入手牌；超时自动选择增益卡。`;
   // 按钮手动打开（force）时忽略 shownDraftGen；自动推送同一代候选不重复弹窗
   const draftKey = `${draft.round}:${draft.gen}`;
   if (draftKey === shownDraftGen && !force) return;
@@ -957,7 +1002,20 @@ function showCardDraft(draft, { force = false } = {}) {
     el.className = `card draft-card ${card.type}`;
     el.innerHTML = `<span class="card-type">${typeLabel[card.type] || '卡牌'}</span><strong class="card-name">${escapeHTML(card.name)}</strong><p class="card-desc">${escapeHTML(card.desc)}</p><span class="card-cost">点击选择</span>`;
     el.addEventListener('click', () => {
-      send({ type: 'pick_card', cardId: card.id });
+      if (pendingCardPick) return;
+      const operation = pendingCardPick = {cardId:card.id,draftKey};
+      el.classList.add('selected');
+      $('.draft-note').textContent = '正在提交选择，请等待服务器确认…';
+      for (const option of box.children) option.setAttribute('aria-disabled','true');
+      send({ type: 'pick_card', cardId: card.id, draftRound:draft.round, draftGen:draft.gen }).then(sent => {
+        if (!sent && pendingCardPick === operation) { pendingCardPick=null; showCardDraft(draft,{force:true}); }
+      });
+      setTimeout(() => {
+        if (pendingCardPick !== operation) return;
+        pendingCardPick=null;
+        showCardDraft((cardState || state)?.cardDraft || draft,{force:true});
+        toast('尚未收到选卡确认，可重试；最终结果以服务器为准',true);
+      },8000);
     });
     box.appendChild(el);
   }
@@ -965,7 +1023,7 @@ function showCardDraft(draft, { force = false } = {}) {
   draftButton.classList.remove('hidden');
   openDialog('#card-draft-dialog');
 }
-$('#open-draft').onclick = () => { if (state?.cardDraft) showCardDraft(state.cardDraft, { force: true }); };
+$('#open-draft').onclick = () => { const draft=(cardState || state)?.cardDraft; if (draft) showCardDraft(draft, { force: true }); };
 
 $('#cancel-card-target').onclick = () => { battlefield.cardTarget = null; updateCardStatus(); };
 function updateCardStatus() {

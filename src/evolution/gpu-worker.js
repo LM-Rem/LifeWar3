@@ -22,11 +22,14 @@ try {
   const target = device.createBuffer({ size: bytes, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC });
   const readback = device.createBuffer({ size: bytes, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST });
   const params = device.createBuffer({ size: 32, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+  const localRules = device.createBuffer({ size: 64 * 32, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST });
   const shader = device.createShaderModule({ code: `
-struct Params { size: u32, generation: u32, birth: u32, survival: u32, priority: u32 }
+struct Params { size: u32, generation: u32, birth: u32, survival: u32, priority: u32, localCount: u32 }
+struct LocalRule { x: u32, y: u32, radius: u32, birth: u32, survival: u32, pad0: u32, pad1: u32, pad2: u32 }
 @group(0) @binding(0) var<storage, read> board: array<u32>;
 @group(0) @binding(1) var<storage, read_write> next: array<u32>;
 @group(0) @binding(2) var<uniform> p: Params;
+@group(0) @binding(3) var<storage, read> locals: array<LocalRule>;
 @compute @workgroup_size(256)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let key = gid.x;
@@ -42,7 +45,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
   }
   var owner = board[key];
-  let mask = select(p.birth, p.survival, owner > 0u);
+  var mask = select(p.birth, p.survival, owner > 0u);
+  for (var i = p.localCount; i > 0u; i--) {
+    let rule = locals[i - 1u];
+    let dx = x - i32(rule.x); let dy = y - i32(rule.y);
+    if (dx * dx + dy * dy <= i32(rule.radius * rule.radius)) {
+      mask = select(rule.birth, rule.survival, owner > 0u); break;
+    }
+  }
   if ((mask & (1u << count)) == 0u) { next[key] = 0u; return; }
   if (owner == 0u) {
     var best = 0u;
@@ -58,12 +68,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   const errors = diagnostics.messages.filter(m => m.type === 'error');
   if (errors.length) throw new Error(errors.map(m => m.message).join('\n'));
   const pipeline = await device.createComputePipelineAsync({ layout: 'auto', compute: { module: shader, entryPoint: 'main' } });
-  const bindings = device.createBindGroup({ layout: pipeline.getBindGroupLayout(0), entries: [source, target, params].map((buffer, binding) => ({ binding, resource: { buffer } })) });
+  const bindings = device.createBindGroup({ layout: pipeline.getBindGroupLayout(0), entries: [source, target, params, localRules].map((buffer, binding) => ({ binding, resource: { buffer } })) });
   const info = adapter.info;
   parentPort.postMessage({ ready: true, adapter: { vendor: info.vendor, architecture: info.architecture, device: info.device, description: info.description } });
   const close = () => {
     closing = true;
-    source.destroy(); target.destroy(); readback.destroy(); params.destroy();
+    source.destroy(); target.destroy(); readback.destroy(); params.destroy(); localRules.destroy();
     device.destroy(); device = null; gpu = null;
     parentPort.removeAllListeners('message'); parentPort.close();
   };
@@ -76,7 +86,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     busy = true;
     try {
       device.queue.writeBuffer(source, 0, input);
-      device.queue.writeBuffer(params, 0, new Uint32Array([job.size, job.generation, job.birthMask, job.survivalMask, job.priorityOwner, 0, 0, 0]));
+      device.queue.writeBuffer(params, 0, new Uint32Array([job.size, job.generation, job.birthMask, job.survivalMask, job.priorityOwner, job.localRules.length, 0, 0]));
+      if (job.localRules.length) device.queue.writeBuffer(localRules, 0, new Uint32Array(job.localRules.flat()));
       const commands = device.createCommandEncoder();
       const pass = commands.beginComputePass(); pass.setPipeline(pipeline); pass.setBindGroup(0, bindings);
       pass.dispatchWorkgroups(Math.ceil(job.size * job.size / 256)); pass.end();

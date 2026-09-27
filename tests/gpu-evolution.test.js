@@ -43,8 +43,15 @@ test('hardware GPU: all 512 masks, edges, owners, priority and sequential steps 
       }
       for(let n=0;n<3;n++){a.step();b.step();equal(a,b);assert.equal(b.lastBackend,'gpu');a.changes.clear();b.changes.clear();}
     }
-    for(const g of [a,b])g.localRules=[{x:10,y:10,radius:7,birth:new Set([2]),survival:new Set([0,1,2]),endsAt:100}];
-    a.step();b.step();equal(a,b);assert.equal(b.lastBackend,'gpu-fallback-sparse');
+    for (let count of [1,2,64,65,0]) {
+      const cells=Array.from({length:400},(_,k)=>[k,1+k%4]).filter(()=>random()<.55);
+      for(const g of [a,b]) {
+        g.board.fill(0);g.alive.length=0;g.changes.clear();g.marks.fill(0);
+        for(const [k,o] of cells){g.board[k]=o;g.alive.push(k);}
+        g.localRules=Array.from({length:count},(_,i)=>({x:i%2?0:10,y:10,radius:i%2?10:7,birth:new Set([i%2?3:2]),survival:new Set([0,1,2,i%2?3:4]),endsAt:100}));
+      }
+      for(let n=0;n<3;n++){a.step();b.step();equal(a,b);assert.equal(b.lastBackend,count>64?'gpu-fallback-sparse':'gpu');a.changes.clear();b.changes.clear();}
+    }
     await gpu.close();
     for(const g of [a,b])g.localRules=[];
     a.step();b.step();equal(a,b);assert.equal(b.lastBackend,'gpu-fallback-sparse');

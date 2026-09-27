@@ -19,7 +19,11 @@ const LIBRARY_DIR = fileURLToPath(new URL('../图案集_128/', import.meta.url))
 const PATTERNS_FILE = fileURLToPath(new URL('../public/patterns.json', import.meta.url));
 const TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.ico': 'image/x-icon' };
 const safeName = name => String(name ?? '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 16) || '匿名指挥官';
-const send = (ws, value) => { if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(value)); };
+const send = (ws, value) => {
+  if (['card_picked','card_played','error'].includes(value.type) && ws?.member?.control?.readyState === WebSocket.OPEN)
+    return ws.member.control.send(JSON.stringify(value));
+  if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(value));
+};
 // 递归遍历图案集目录，收集文件名/路径包含关键词的 .cells 文件（相对路径）
 async function walkLibrary(dir, q, base, out = []) {
   const entries = await readdir(dir, { withFileTypes: true });
@@ -185,6 +189,16 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
     return { type: 'room', code: room.code, host: room.host, status: room.game?.status || 'lobby', players: room.members.map(m => ({ id: m.id, name: m.name, ready: m.ready, bot: m.bot, connected: !!m.ws || m.bot })), capacity: 4 };
   }
   function broadcastRoom(room) { for (const m of room.members) send(m.ws, roomView(room)); }
+  function sendCards(room, member) {
+    if (!room.game || !member.ws) return;
+    const target = member.control?.readyState === WebSocket.OPEN ? member.control : member.ws;
+    if (target.bufferedAmount > 65536) return; // Latest state replaces missed updates; never queue unbounded JSON.
+    const state = room.game.state(member.id);
+    send(target, {
+      type:'card_state', roomEpoch:room.epoch, sequence:++member.cardSequence,
+      cards:state.cards, cardDraft:state.cardDraft, status:state.status, serverTime:state.serverTime
+    });
+  }
   let nextRoomEpoch=randomBytes(4).readUInt32LE(0)||1;
   const boardVariant=ws=>ws.boardVersion===2&&ws.deltaVarint?'2-varint':ws.boardVersion;
   function boardPacket(ws,room,snapshot=false,cache=new Map()) {
@@ -212,10 +226,11 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
     }
   }
   function lobbyList(ws) { send(ws, { type: 'rooms', rooms: [...rooms.values()].map(r => ({ code: r.code, name: `${r.members[0]?.name || '未知'} 的战区`, count: r.members.length, status: r.game?.status || 'lobby' })) }); }
-  function updateLists() { for (const ws of wss.clients) if (!ws.member) lobbyList(ws); }
+  function updateLists() { for (const ws of wss.clients) if (!ws.member && !ws.controlMember) lobbyList(ws); }
   function unlink(ws, explicit = false) {
     const room = ws.room, member = ws.member;
     if (!room || !member) return;
+    member.control?.close(4000, 'Primary disconnected'); member.control = null;
     if (room.game && room.game.status === 'playing') {
       member.ws = null; member.offlineGen = room.game.generation;
       if (explicit) {
@@ -233,9 +248,10 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
   }
   function attach(ws, room, member) {
     ws.room = room; ws.member = member; member.ws = ws; member.offlineGen = null;
+    member.cardSequence = 0;
     send(ws, { type: 'welcome', id: member.id, token: member.token, code: room.code });
     broadcastRoom(room);
-    if (room.game) { started(ws,room,member.id); send(ws, room.game.state(member.id)); sendBoard(ws, room, boardPacket(ws,room,true), true); }
+    if (room.game) { started(ws,room,member.id); sendCards(room, member); send(ws, room.game.state(member.id)); sendBoard(ws, room, boardPacket(ws,room,true), true); }
     updateLists();
   }
   function start(room) {
@@ -249,19 +265,33 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
     room.broadcastBoard=boardProtocol===2?room.game.board.slice():null;room.boardGeneration=room.game.generation;
     if (metrics) instrumentGame(room.game, metrics, room.code);
     const snapshots=new Map();
-    for (const m of room.members) { started(m.ws,room,m.id); send(m.ws, room.game.state(m.id)); if (m.ws?.readyState === WebSocket.OPEN) sendBoard(m.ws, room, boardPacket(m.ws,room,true,snapshots), true); }
+    for (const m of room.members) { m.cardSequence=0; started(m.ws,room,m.id); sendCards(room,m); send(m.ws, room.game.state(m.id)); if (m.ws?.readyState === WebSocket.OPEN) sendBoard(m.ws, room, boardPacket(m.ws,room,true,snapshots), true); }
     broadcastRoom(room); updateLists();
   }
   wss.on('connection', ws => {
     ws.alive = true; ws.budget = 40; ws.refillAt = Date.now();ws.boardVersion=1;
     ws.on('pong', () => { ws.alive = true; });
-    send(ws, { type: 'hello', version: '1.0.0',boardProtocols:boardProtocol===2?[1,2]:[1],boardEncodings:boardProtocol===2?[0,1,2]:[] }); lobbyList(ws);
+    send(ws, { type: 'hello', version: '1.0.0',cardControl:true,boardProtocols:boardProtocol===2?[1,2]:[1],boardEncodings:boardProtocol===2?[0,1,2]:[] }); lobbyList(ws);
     ws.on('error', () => {});
     ws.on('message', (raw, isBinary) => {
       ws.budget = Math.min(40, ws.budget + (Date.now() - ws.refillAt) / 100); ws.refillAt = Date.now();
       if (--ws.budget < 0) return send(ws, { type: 'error', message: '操作过快，请稍后重试' });
       let msg;
       try { if (isBinary) return; msg = JSON.parse(raw.toString()); if (!msg || typeof msg !== 'object') return; } catch { return; }
+      if (ws.controlMember) {
+        const m = ws.controlMember;
+        if (m.control !== ws || m.ws?.readyState !== WebSocket.OPEN) return ws.close(4000, 'Session expired');
+        if (!['pick_card','play_card','ping'].includes(msg.type)) return;
+        m.ws.emit('message', raw, false); return;
+      }
+      if (msg.type === 'bind_control') {
+        if (ws.member) return;
+        const r = rooms.get(String(msg.code || ''));
+        const m = r?.members.find(m => m.token && m.token === msg.token && m.ws?.readyState === WebSocket.OPEN);
+        if (!m) { send(ws,{type:'control_rejected'}); return; }
+        m.control?.close(4000, 'Control replaced'); m.control = ws; ws.controlMember = m;
+        send(ws,{type:'control_ready'}); sendCards(r,m); return;
+      }
       const room = ws.room, member = ws.member;
       const fail = message => send(ws, { type: 'error', message });
       switch (msg.type) {
@@ -297,7 +327,7 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
           if (room) return;
           const r = rooms.get(String(msg.code || '')), m = r?.members.find(m => m.token && m.token === msg.token);
           if (!m) return send(ws, { type: 'resume_failed' });
-          if (m.ws && m.ws !== ws) { const old = m.ws; old.member = null; old.room = null; old.close(4001, 'Session resumed elsewhere'); }
+          if (m.ws && m.ws !== ws) { m.control?.close(4000,'Session resumed'); m.control=null; const old = m.ws; old.member = null; old.room = null; old.close(4001, 'Session resumed elsewhere'); }
           attach(ws, r, m); return;
         }
         case 'resync': {
@@ -333,9 +363,12 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
         }
         case 'pick_card': {
           if (!room?.game || !member) return fail('尚未进入对局');
+          const draft = room.game.state(member.id).cardDraft;
+          if (msg.draftRound !== undefined && (msg.draftRound !== draft?.round || msg.draftGen !== draft?.gen)) return fail('本轮征召已结束，请重新选择');
           const result = room.game.pickCard(member.id, String(msg.cardId || ''));
           if (result.error) return fail(result.error);
           send(ws, { type: 'card_picked', playerId: member.id, cardId: result.card.id });
+          sendCards(room,member);
           send(ws, room.game.state(member.id));
           return;
         }
@@ -345,13 +378,14 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
           if (result.error) return fail(result.error);
           for (const m of room.members) {
             send(m.ws, { type: 'card_played', playerId: member.id, cardId: String(msg.cardId || ''), x: msg.x, y: msg.y });
+            sendCards(room,m);
             send(m.ws, room.game.state(m.id));
           }
           return;
         }
       }
     });
-    ws.on('close', () => unlink(ws));
+    ws.on('close', () => { if(ws.controlMember?.control===ws)ws.controlMember.control=null; unlink(ws); });
   });
 
   const timer = scheduler(() => {
@@ -403,6 +437,7 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
       for (const m of room.members) {
         const ws=m.ws;
         if (ws?.readyState !== WebSocket.OPEN) continue;
+        if (game.generation % Math.max(1, Math.round(RULES.hz / 5)) === 0 || game.status === 'finished') sendCards(room,m);
         if (ws.bufferedAmount > 262144) { if (metrics) metrics.record('backpressureSkip', ws.bufferedAmount, game.generation, `${room.code}/${m.id}`, String(room.startedAt)); continue; }
         if (!ws.needsSnapshot && ws.sentGeneration < game.generation) {
           const replay = room.history.after(ws.sentGeneration, game.generation, boardVariant(ws));

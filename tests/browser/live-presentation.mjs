@@ -3,13 +3,15 @@ import {parseArgs} from 'node:util';
 import {fileURLToPath} from 'node:url';
 import {mkdirSync,writeFileSync} from 'node:fs';
 import assert from 'node:assert/strict';
+import {execFileSync} from 'node:child_process';
 import {setTimeout as delay} from 'node:timers/promises';
-const {values}=parseArgs({options:{playwright:{type:'string'},executable:{type:'string'}}});
+const {values}=parseArgs({options:{playwright:{type:'string'},executable:{type:'string'},baseline:{type:'string'}}});
 process.env.LIFEWAR_CONFIG_PATH=fileURLToPath(new URL('../fixtures/performance/production-20hz.json',import.meta.url));
 const {createServer}=await import('../../src/server.js');
 const {chromium}=createRequire(import.meta.url)(values.playwright||'playwright');const app=createServer({port:0,host:'127.0.0.1',trace:true});let browser;
 try{
  const {port}=await app.listen();browser=await chromium.launch({headless:true,executablePath:values.executable});const page=await browser.newPage({viewport:{width:1280,height:900}});const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ if(values.baseline)await page.route('**/app.js',route=>route.fulfill({contentType:'text/javascript',body:execFileSync('git',['show',`${values.baseline}:public/app.js`],{encoding:'utf8',maxBuffer:2e6})}));
  await page.goto(`http://127.0.0.1:${port}/?trace=1`);
  await page.evaluate(async()=>{const {Battlefield}=await import('/renderer.js');window.stateAlignment=[];const original=Battlefield.prototype.setState;Battlefield.prototype.setState=function(s){window.stateAlignment.push({state:s.generation,displayed:this.generation});return original.call(this,s);};});
  await page.locator('#practice').click();await page.waitForFunction(()=>window.lifeWarPerformance.export().records.some(r=>r.name==='drawnGeneration'&&r.generation>=100));
@@ -18,7 +20,9 @@ try{
  const normal=await page.evaluate(()=>({trace:window.lifeWarPerformance.export(),alignment:window.stateAlignment}));
  const records=normal.trace.records,received=[...new Set(records.filter(r=>r.name==='receivedGeneration').map(r=>r.generation))],drawn=new Set(records.filter(r=>r.name==='drawnGeneration').map(r=>r.generation));
  const cutoff=Math.max(...received)-2;assert.ok(received.filter(g=>g<=cutoff).every(g=>drawn.has(g)),'every received generation before the tail must be submitted');
- assert.ok(normal.alignment.every(r=>r.state<=r.displayed));assert.ok(!records.some(r=>r.name==='presentation.failure'));assert.ok(Math.max(...records.filter(r=>r.name==='presentation.queueDepth').map(r=>r.value))<=5);
+ assert.ok(normal.alignment.every(r=>r.state<=r.displayed));assert.ok(!records.some(r=>r.name==='presentation.failure'));
+ const queueDepthMax=Math.max(...records.filter(r=>r.name==='presentation.queueDepth').map(r=>r.value));
+ assert.ok(queueDepthMax<=5,`queue depth ${queueDepthMax} exceeds 5; baseline=${values.baseline||'current'}`);
  // Exercise the browser's visibility handler deterministically; not an OS tab-throttling certification.
  await page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,value:true});document.dispatchEvent(new Event('visibilitychange'));});await delay(250);
  await page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,value:false});document.dispatchEvent(new Event('visibilitychange'));});await delay(1000);
