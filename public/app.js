@@ -790,7 +790,7 @@ async function connect() {
       const traceStart=browserMetrics?browserMetrics.now():0;
       try{const msg=JSON.parse(e.data);if(msg.type==='hello'){
         controlSupported = msg.cardControl === true;
-        if(msg.boardProtocols?.includes(2))ws.send(JSON.stringify({type:'protocol',version:2,deltaVarint:msg.boardEncodings?.includes(2)===true}));
+        if(msg.boardProtocols?.includes(2))ws.send(JSON.stringify({type:'protocol',version:2,deltaVarint:msg.boardEncodings?.includes(2)===true,bitmapTiles:msg.boardEncodings?.includes(3)===true}));
         if(session)ws.send(JSON.stringify({type:'resume',...session}));connectionPromise=null;resolve();
       }onMessage(msg);}catch(err){console.error('Message error',err);}
       finally{if(browserMetrics)browserMetrics.duration('json.decodeDispatch.ms',traceStart,battlefield.generation);}
@@ -832,7 +832,7 @@ function onMessage(msg) {
       closeCardControl(); cardState=null; cardEpoch=msg.roomEpoch; pendingCardPick=null; openCardControl();
       if (typeof browserMetrics !== 'undefined' && browserMetrics) browserMetrics.resetEpoch(msg.startedAt);
       state=null;pendingCardPlay=false;shownDraftGen=0;renderCards(true);
-      playerId=msg.id;if(msg.rules?.hz)gameHz=msg.rules.hz;if(msg.rules?.baseHP){maxHP=msg.rules.baseHP;battlefield.baseHP=maxHP;}if(msg.rules?.maxEnergy)maxEnergy=msg.rules.maxEnergy;if(msg.rules?.regen)energyRegen=msg.rules.regen;if(msg.rules?.nodeRegen)energyNodeRegen=msg.rules.nodeRegen;if(msg.rules?.playerCells)battlefield.playerCells=msg.rules.playerCells;if(msg.rules?.baseHitRadius)battlefield.baseHitRadius=msg.rules.baseHitRadius;if(msg.rules?.captureTime)battlefield.captureTime=msg.rules.captureTime;startedAt=msg.startedAt||Date.now();battlefield.me=playerId;battlefield.reset();battlefield.presentation.configure(msg.boardProtocol??1,msg.roomEpoch);eventIds.clear();resultShown=false;state=null;closeDialogs();showPage('game');renderPatterns();if(selected)selectPattern(selected);sound('capture');break;
+      playerId=msg.id;if(msg.rules?.hz)gameHz=msg.rules.hz;if(msg.rules?.baseHP){maxHP=msg.rules.baseHP;battlefield.baseHP=maxHP;}if(msg.rules?.maxEnergy)maxEnergy=msg.rules.maxEnergy;if(msg.rules?.regen)energyRegen=msg.rules.regen;if(msg.rules?.nodeRegen)energyNodeRegen=msg.rules.nodeRegen;if(msg.rules?.playerCells)battlefield.playerCells=msg.rules.playerCells;if(msg.rules?.baseHitRadius)battlefield.baseHitRadius=msg.rules.baseHitRadius;if(msg.rules?.captureTime)battlefield.captureTime=msg.rules.captureTime;startedAt=msg.startedAt||Date.now();battlefield.me=playerId;battlefield.reset();battlefield.presentation.configure(msg.boardProtocol??1,msg.roomEpoch,{bitmapTiles:msg.bitmapTiles===true});eventIds.clear();resultShown=false;state=null;closeDialogs();showPage('game');renderPatterns();if(selected)selectPattern(selected);sound('capture');break;
     case 'card_state':receiveCardState(msg);break;
     case 'state':battlefield.receiveState(msg);break;
     case 'presented_state':{

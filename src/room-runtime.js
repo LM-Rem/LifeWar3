@@ -1,8 +1,7 @@
 import { Game, RULES } from './engine.js';
 import { runBots } from './bots.js';
 import { PacketHistory } from './packet-history.js';
-
-const variantOf = peer => peer.boardVersion === 2 ? (peer.deltaVarint ? '2-varint' : 2) : 1;
+import { boardVariant as variantOf } from '../public/board-protocol.js';
 
 // Owns all mutable game state. Called only on the room thread (or directly by
 // deterministic tests). Commands and ticks are synchronous, atomic boundaries.
@@ -47,7 +46,7 @@ export class RoomRuntime {
   packet(variant, snapshot = false, ordered = false) {
     return variant===1 ? this.game.packet(snapshot) : this.game.packetV2({
       roomEpoch:this.epoch, baseGeneration:this.baseGeneration, previous:this.baseline,
-      snapshot, forceOrdered:ordered, allowVarint:variant==='2-varint'
+      snapshot, forceOrdered:ordered, allowVarint:String(variant).endsWith('-varint'), allowBitmap:String(variant).startsWith('2-bitmap')
     });
   }
   recordFrame() {
@@ -132,14 +131,14 @@ export class RoomRuntime {
       if(!cache.has(packet))cache.set(packet,packet.slice(0));
       events.push({id:peer.id,session:peer.session,packet:cache.get(packet),snapshot});
       peer.sentGeneration=new DataView(packet).getUint32(peer.boardVersion===2?12:4,true);
-      peer.v2NeedsOrdered=snapshot;
-      if(snapshot){peer.needsSnapshot=false;if(peer.boardVersion===2)this.orderedNext.add(variantOf(peer));}
+      peer.v2NeedsOrdered=snapshot&&!peer.bitmapTiles;
+      if(snapshot){peer.needsSnapshot=false;if(peer.boardVersion===2&&!peer.bitmapTiles)this.orderedNext.add(variantOf(peer));}
     };
     const snapshots=new Map();
     for(const peer of this.peers.values()) {
       if(peer.session===null || peer.bot)continue;
       if(peer.awaitingStart) {
-        events.push(this.json(peer,{type:'started',id:peer.id,rules:RULES,startedAt:g.startedAt,roomEpoch:this.epoch,boardProtocol:peer.boardVersion}));
+        events.push(this.json(peer,{type:'started',id:peer.id,rules:RULES,startedAt:g.startedAt,roomEpoch:this.epoch,boardProtocol:peer.boardVersion,bitmapTiles:!!peer.bitmapTiles}));
         events.push(...this.states(peer));peer.awaitingStart=false;
       } else if(this.stateDue)events.push(...this.states(peer).filter(e=>e.control));
       if(peer.bufferedAmount>262144)continue;

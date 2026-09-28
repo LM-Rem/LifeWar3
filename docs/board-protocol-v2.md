@@ -20,14 +20,14 @@
 |---:|---:|---|---|
 | 0 | 4 | magic | `0x3252574c`，字节 ASCII `LWR2`，与 v1 的 0/1 标记不混淆 |
 | 4 | 1 | version | 2 |
-| 5 | 1 | encoding | 0 = ordered24；1 = tiled；2 = delta-varint（另行协商） |
+| 5 | 1 | encoding | 0 = ordered24；1 = tiled；2 = delta-varint；3 = bitmap-tiles（2/3分别另行协商） |
 | 6 | 2 | flags | 0 = 增量；1 = 快照；其他拒绝 |
 | 8 | 4 | roomEpoch | 非零，与 started 一致 |
 | 12 | 4 | generation | 本消息的棋盘代 |
 | 16 | 4 | baseGeneration | 增量依赖代；快照固定 `0xffffffff` |
 | 20 | 4 | payloadLength | 必须等于消息长度减 32 |
-| 24 | 4 | entryCount | ordered24 的条目数；tiled 的有效棋盘坐标条目数，含 dense 中未变化格；≤1,000,000 |
-| 28 | 4 | insertionCount | tiled 的有序新生表长度；ordered24 / delta-varint 固定 0 |
+| 24 | 4 | entryCount | ordered24/delta-varint 的条目数；tiled/bitmap-tiles 的有效棋盘坐标条目数，含密集块中未变化格；≤1,000,000 |
+| 28 | 4 | insertionCount | tiled 的有序新生表长度；其他编码固定 0 |
 
 v1 格式、字段与封包顺序保持不变。v2 客户端只接受协商版本的包，不按长度或猜测内容降级。
 
@@ -77,3 +77,29 @@ room 维护上一次广播后的棋盘（启用 v2 的服务额外 1,000,000 字
 encoding 2 的每个条目按原始 keys 顺序编码：初始 `last=0`，`delta=key-last`，`zigzag=(delta<<1)^(delta>>31)`，`value=zigzag*8+owner`，使用 unsigned LEB128 写出 value，再更新 last。每条 1–4 字节，第四字节小于 8。owner 取低三位且只能为 0–4，快照不可为 0；key 只能为 0–999999，不可重复。拒绝截断、溢出、非最短编码、额外尾部字节及条目数不符。该编码既支持增量也支持快照，insertionCount 为 0。
 
 编码器比较三种完整包长度，仅当差值编码更小时采用；不排序、不合并代数。首次快照之后的增量仍强制有序（0 或 2），历史缓存按客户端协商能力区分包，避免把扩展发送给旧客户端。解码必须完整校验后才修改棋盘。性能代价见 README 与本轮报告。
+
+
+## 无序自适应位图扩展（2026-09-28）
+
+新服务器 hello 发送 `boardEncodings:[0,1,2,3]`。新客户端在加入房间前请求 `{type:"protocol",version:2,deltaVarint:true,bitmapTiles:true}`，仅在 hello 分别提供对应编码时请求。服务器确认 `bitmapTiles`，并在 started 中再次声明；客户端据此配置呈现队列，未协商时拒绝 encoding 3。bitmapTiles 和 deltaVarint 是独立能力；支持只启用位图。旧客户端继续接收 0/1/2，新客户端连接旧服务器自动回退。
+
+能力表示客户端只要求**每一代每个坐标最终状态准确**，不再要求细胞集合具有原始插入顺序。服务器 alive、变化首次触及顺序、AI 与全部结算保持不变；当前主图和小地图都基于世界纹理，写入不同坐标的顺序不改变最终像素。CellStore 保留为兼容集合，新能力不承诺遍历顺序。
+
+### encoding 3：bitmap-tiles
+
+包头复用 v2，insertionCount 必须为0。payload 为 uint16 tileCount、uint16 保留0，然后逐瓦片记录；tileCount 为1–1024，tileId 不可重复。瓦片划分、local 编号与 encoding 1 相同。
+
+每个瓦片头为 uint16 tileId、uint16 mode：
+
+- `1..1024`：sparse，后跟 mode 个 uint16 `local + owner*1024`，owner 为0–4，快照只允许1–4。坐标有效且不重复。
+- `0x8001`：完整瓦片位图。先128字节存活位，local 对应第 local>>3 字节的第 local&7 位，低位优先；再按local递增顺序，为每个活格写2bit的 owner-1，低位优先，每字节4个。长度为128+ceil(活格数/4)。地图边缘外存活位必须为0，末字节未用阵营位必须为0。其他mode拒绝。
+
+位图代表该瓦片**全部有效格子的最终状态**，空位会清除既有细胞，未变化格也被表示。快照允许位图中有空格，未出现的瓦片由快照清空语义处理。entryCount 是 sparse 条目数与 bitmap 有效面积之和，不计地图外填充；须与实际解码数量完全一致。解码得到的有界 Uint32Array 计入队列内存，数据完整校验后才应用。没有新生表，也不依赖客户端旧插入基准。
+
+编码器统计触及瓦片，对每块比较 `2*变化数` 和 `128+ceil(活格数/4)`；快照使用活细胞作为稀疏候选。再比较整个瓦片包和 ordered24 / 已协商 delta-varint 包的大小，仅在更小时选择位图包。旧 tiled 被新瓦片方案覆盖：稀疏成本相同、密集成本更低且没有新生表。小包、空代自然保留旧编码，不改变逐代发送。
+
+### 缓存与恢复
+
+主线程与房间worker使用独立变体：1、2、2-varint、2-bitmap、2-bitmap-varint。相同能力客户端共享编码结果。位图连接快照后的首个增量无需 ordered 特例，既有协议继续保留该保护；代号、baseGeneration、epoch、队列容量、时延和历史上限保持不变。重连必须重新协商，不复用旧连接能力。
+
+实测与范围见 `performance/2026-09-28-adaptive-bitmap.md`。50万高变化约260KB/代（含包头，具体取决于边缘与瓦片），不是固定250KB；解码的整块状态会增加客户端应用遍历量。

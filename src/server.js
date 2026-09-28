@@ -14,6 +14,7 @@ import { createGpuEvolution } from './evolution/gpu.js';
 import { PacketHistory } from './packet-history.js';
 import { staticAssets } from './static-assets.js';
 import { RoomWorkerClient } from './room-worker-client.js';
+import { boardVariant } from '../public/board-protocol.js';
 
 const ROOT = fileURLToPath(new URL('../public/', import.meta.url));
 const LIBRARY_DIR = fileURLToPath(new URL('../图案集_128/', import.meta.url));
@@ -210,7 +211,7 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
   }
   let nextRoomEpoch=randomBytes(4).readUInt32LE(0)||1;
   const workerMember = member => ({id:member.id,name:member.name,bot:member.bot,
-    session:member.ws?.roomSession??null,boardVersion:member.ws?.boardVersion??1,deltaVarint:!!member.ws?.deltaVarint});
+    session:member.ws?.roomSession??null,boardVersion:member.ws?.boardVersion??1,deltaVarint:!!member.ws?.deltaVarint,bitmapTiles:!!member.ws?.bitmapTiles});
   function failRoom(room,error) {
     if(room.fault)return;
     room.fault=String(error?.message??error);
@@ -253,21 +254,20 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
     });
     broadcastRoom(room);updateLists();
   }
-  const boardVariant=ws=>ws.boardVersion===2&&ws.deltaVarint?'2-varint':ws.boardVersion;
   function boardPacket(ws,room,snapshot=false,cache=new Map()) {
-    const ordered=ws.boardVersion===2 && ws.v2NeedsOrdered;
+    const ordered=ws.boardVersion===2 && !ws.bitmapTiles && ws.v2NeedsOrdered;
     const key=`${boardVariant(ws)}:${snapshot}:${!!ordered}`;
     if(!cache.has(key))cache.set(key,ws.boardVersion===2
-      ?room.game.packetV2({roomEpoch:room.epoch,baseGeneration:room.boardGeneration,previous:room.broadcastBoard,snapshot,forceOrdered:ordered,allowVarint:!!ws.deltaVarint})
+      ?room.game.packetV2({roomEpoch:room.epoch,baseGeneration:room.boardGeneration,previous:room.broadcastBoard,snapshot,forceOrdered:ordered,allowVarint:!!ws.deltaVarint,allowBitmap:!!ws.bitmapTiles})
       :room.game.packet(snapshot));
     return cache.get(key);
   }
-  function started(ws,room,id) {send(ws,{type:'started',id,rules:RULES,startedAt:room.startedAt,roomEpoch:room.epoch,boardProtocol:ws?.boardVersion??1});}
+  function started(ws,room,id) {send(ws,{type:'started',id,rules:RULES,startedAt:room.startedAt,roomEpoch:room.epoch,boardProtocol:ws?.boardVersion??1,bitmapTiles:!!ws?.bitmapTiles});}
   function sendBoard(ws, room, packet, snapshot = false) {
     const game = room.game, start = metrics ? metrics.now() : 0;
     ws.send(packet);
     ws.sentGeneration = new DataView(packet).getUint32(ws.boardVersion === 2 ? 12 : 4, true);
-    ws.v2NeedsOrdered=snapshot;
+    ws.v2NeedsOrdered=snapshot&&!ws.bitmapTiles;
     if(snapshot)ws.needsSnapshot=false;
     if (metrics) {
       const stream = `${room.code}/${ws.member?.id ?? 0}`, epoch = String(room.startedAt);
@@ -329,7 +329,7 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
   wss.on('connection', ws => {
     ws.alive = true; ws.budget = 40; ws.refillAt = Date.now();ws.boardVersion=1;
     ws.on('pong', () => { ws.alive = true; });
-    send(ws, { type: 'hello', version: '1.0.0',cardControl:true,boardProtocols:boardProtocol===2?[1,2]:[1],boardEncodings:boardProtocol===2?[0,1,2]:[] }); lobbyList(ws);
+    send(ws, { type: 'hello', version: '1.0.0',cardControl:true,boardProtocols:boardProtocol===2?[1,2]:[1],boardEncodings:boardProtocol===2?[0,1,2,3]:[] }); lobbyList(ws);
     ws.on('error', () => {});
     ws.on('message', (raw, isBinary) => {
       ws.budget = Math.min(40, ws.budget + (Date.now() - ws.refillAt) / 100); ws.refillAt = Date.now();
@@ -365,7 +365,7 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
         case 'protocol': {
           if(room)return fail('请在加入战区前协商协议');
           if(msg.version!==1&&(msg.version!==2||boardProtocol!==2))return fail('不支持的棋盘协议版本');
-          ws.boardVersion=msg.version;ws.deltaVarint=msg.version===2&&msg.deltaVarint===true;send(ws,{type:'protocol',version:ws.boardVersion,deltaVarint:ws.deltaVarint});return;
+          ws.boardVersion=msg.version;ws.deltaVarint=msg.version===2&&msg.deltaVarint===true;ws.bitmapTiles=msg.version===2&&msg.bitmapTiles===true;send(ws,{type:'protocol',version:ws.boardVersion,deltaVarint:ws.deltaVarint,bitmapTiles:ws.bitmapTiles});return;
         }
         case 'ping': return send(ws, { type: 'pong', time: msg.time });
         case 'list': return lobbyList(ws);
@@ -492,7 +492,7 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
       for (const {ws} of room.members) {
         if(!ws)continue;
         const variant=boardVariant(ws);
-        if(!historyPackets.has(variant))historyPackets.set(variant,boardPacket({boardVersion:ws.boardVersion,deltaVarint:ws.deltaVarint,v2NeedsOrdered:false},room,false,packets));
+        if(!historyPackets.has(variant))historyPackets.set(variant,boardPacket({boardVersion:ws.boardVersion,deltaVarint:ws.deltaVarint,bitmapTiles:ws.bitmapTiles,v2NeedsOrdered:false},room,false,packets));
         if(ws.boardVersion===2&&ws.v2NeedsOrdered)historyPackets.set(`${variant}ordered`,boardPacket(ws,room,false,packets));
       }
       room.history ??= new PacketHistory();

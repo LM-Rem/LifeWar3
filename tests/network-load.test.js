@@ -7,24 +7,24 @@ import {createServer} from '../src/server.js';
 import {decodeBoardPacket,orderedBoardEntries} from '../public/board-protocol.js';
 
 const ab=data=>data instanceof ArrayBuffer?data:data.buffer.slice(data.byteOffset,data.byteOffset+data.byteLength);
-function consumer(){const board=new Uint8Array(1000000),cells=new Map();return buffer=>{
+function consumer(unordered=false){const board=new Uint8Array(1000000),cells=new Map();return buffer=>{
   const p=decodeBoardPacket(ab(buffer)),entries=orderedBoardEntries(p,board);if(p.snapshot){board.fill(0);cells.clear();}
   for(const v of entries){const key=v%1000000,owner=Math.floor(v/1000000);board[key]=owner;if(owner)cells.set(key,owner);else cells.delete(key);}
   const words=new Uint32Array(cells.size);let i=0;for(const [k,o] of cells)words[i++]=k+o*1000000;
-  return {...p,entries:undefined,insertions:undefined,insertionFlags:undefined,hash:createHash('sha256').update(board).update(new Uint8Array(words.buffer)).digest('hex')};
+  return {...p,entries:undefined,insertions:undefined,insertionFlags:undefined,hash:createHash('sha256').update(board).update(unordered?new Uint8Array(0):new Uint8Array(words.buffer)).digest('hex')};
 };}
 async function until(predicate){const end=Date.now()+6000;while(!predicate()){assert.ok(Date.now()<end,'network condition timed out');await new Promise(r=>setTimeout(r,10));}}
-async function client(url,version,deltaVarint=false){const ws=new WebSocket(url),messages=[],records=[],errors=[],apply=consumer();
+async function client(url,version,deltaVarint=false,bitmapTiles=false){const ws=new WebSocket(url),messages=[],records=[],errors=[],apply=consumer(bitmapTiles);
   ws.on('message',(data,binary)=>{try{if(binary)records.push(apply(data));else messages.push(JSON.parse(data));}catch(e){errors.push(e);}});
   await new Promise((resolve,reject)=>{ws.once('open',resolve);ws.once('error',reject);});
-  const send=msg=>ws.send(JSON.stringify(msg));if(version===2){send({type:'protocol',version:2,deltaVarint});await until(()=>messages.some(m=>m.type==='protocol'));}
-  return {ws,messages,records,errors,send,version};
+  const send=msg=>ws.send(JSON.stringify(msg));if(version===2){send({type:'protocol',version:2,deltaVarint,bitmapTiles});await until(()=>messages.some(m=>m.type==='protocol'));}
+  return {ws,messages,records,errors,send,version,bitmapTiles};
 }
 
-test('four mixed v1/v2 clients preserve per-connection v1 order through dense updates and slow recovery',async t=>{
+for(const bitmapTiles of [false,true])test(`four mixed clients, bitmap=${bitmapTiles}: dense updates, per-connection state and slow recovery`,async t=>{
   const app=createServer({port:0,host:'127.0.0.1',boardProtocol:2}),addr=await app.listen(),url=`ws://127.0.0.1:${addr.port}/ws`,clients=[];
   t.after(async()=>{for(const c of clients)c.ws.terminate();await app.close();});
-  for(const [version,varint] of [[1,false],[2,false],[2,true],[2,true]])clients.push(await client(url,version,varint));
+  for(const [version,varint] of [[1,false],[2,false],[2,true],[2,true]])clients.push(await client(url,version,varint,bitmapTiles&&clients.length===3));
   const [a,b,c,d]=clients;a.send({type:'create',name:'A'});await until(()=>a.messages.some(m=>m.type==='welcome'));
   const code=a.messages.find(m=>m.type==='welcome').code;
   for(const peer of [b,c,d]){peer.send({type:'join',code,name:'Peer'});await until(()=>peer.messages.some(m=>m.type==='welcome'));peer.send({type:'ready'});}
@@ -32,7 +32,7 @@ test('four mixed v1/v2 clients preserve per-connection v1 order through dense up
   const room=app.rooms.get(code),expected=clients.map(()=>[]),traffic=clients.map(()=>({binaryBytes:0,v1EquivalentBytes:0,jsonBytes:0,messages:0})),v1History=new Map();
   const framed=n=>n+(n<126?2:n<65536?4:10);
   for(let i=0;i<4;i++){
-    const ws=room.members[i].ws,send=ws.send.bind(ws),apply=consumer();
+    const ws=room.members[i].ws,send=ws.send.bind(ws),apply=consumer(clients[i].bitmapTiles);
     ws.send=(data,...args)=>{if(data instanceof ArrayBuffer){const meta=decodeBoardPacket(data),v1=meta.generation===room.game.generation?room.game.packet(meta.snapshot):v1History.get(meta.generation);assert.ok(v1);if(!meta.snapshot)v1History.set(meta.generation,v1);expected[i].push(apply(v1));traffic[i].binaryBytes+=framed(data.byteLength);traffic[i].v1EquivalentBytes+=framed(v1.byteLength);traffic[i].messages++;}else if(typeof data==='string')traffic[i].jsonBytes+=framed(Buffer.byteLength(data));return send(data,...args);};
   }
   a.send({type:'start'});await until(()=>clients.every(p=>p.records.length));
@@ -45,7 +45,7 @@ test('four mixed v1/v2 clients preserve per-connection v1 order through dense up
     }
   };
   await until(()=>clients.every(p=>p.records.length>=5));
-  assert.ok(c.records.some(r=>r.encoding===2));assert.ok(b.records.every(r=>r.encoding!==2));
+  assert.ok(c.records.some(r=>r.encoding===2));assert.ok(b.records.every(r=>r.encoding!==2&&r.encoding!==3));if(bitmapTiles)assert.ok(d.records.some(r=>r.encoding===3));
   const slow=room.members[3].ws;Object.defineProperty(slow,'bufferedAmount',{configurable:true,get:()=>300000});
   const before=d.records.length,gen=game.generation;
   await until(()=>game.generation>=gen+4);assert.equal(d.records.length,before);assert.ok(!slow.needsSnapshot);

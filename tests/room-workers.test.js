@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {WebSocket} from 'ws';
 import {createServer} from '../src/server.js';
 import {RoomWorkerClient} from '../src/room-worker-client.js';
+import {decodeBoardPacket,orderedBoardEntries} from '../public/board-protocol.js';
 
 async function client(url){
   const ws=new WebSocket(url),messages=[];let changed;
@@ -16,6 +17,38 @@ async function client(url){
   }};
 }
 const factory=(options,callbacks)=>new RoomWorkerClient({...options,gameOptions:{cardDrawTimes:[0]},bots:false},{...callbacks,workerURL:new URL('./fixtures/room-worker-instrumented.mjs',import.meta.url)});
+
+test('real dense worker negotiates bitmap and legacy peers independently and resumes bitmap sessions',async t=>{
+  const app=createServer({port:0,host:'127.0.0.1',roomWorkers:true,boardProtocol:2,evolutionMode:'sparse',
+    roomWorkerFactory:(options,callbacks)=>new RoomWorkerClient({...options,testLoad:true,bots:false,gameOptions:{cardDrawTimes:[]}},{...callbacks,workerURL:new URL('./fixtures/room-worker-instrumented.mjs',import.meta.url)})});
+  const {port}=await app.listen(),url=`ws://127.0.0.1:${port}/ws`,peers=[];
+  t.after(async()=>{for(const p of peers)p.ws.terminate();await app.close();});
+  const a=await client(url),b=await client(url);peers.push(a,b);
+  for(const [peer,bitmapTiles] of [[a,true],[b,false]]){
+    assert.ok((await peer.wait('hello')).boardEncodings.includes(3));
+    peer.send({type:'protocol',version:2,deltaVarint:true,bitmapTiles});assert.equal((await peer.wait('protocol')).bitmapTiles,bitmapTiles);
+  }
+  a.send({type:'create',name:'Bitmap'});const welcome=await a.wait('welcome');
+  b.send({type:'join',code:welcome.code,name:'Legacy'});await b.wait('welcome');b.send({type:'ready'});
+  await a.wait('room',m=>m.players.length===2&&m.players.every(p=>p.ready));a.send({type:'start'});
+  assert.equal((await a.wait('started')).bitmapTiles,true);assert.equal((await b.wait('started')).bitmapTiles,false);
+  const boards=[new Uint8Array(1000000),new Uint8Array(1000000)];
+  for(let generation=0;generation<5;generation++){
+    for(let i=0;i<2;i++){
+      const {data}=await peers[i].wait('binary'),p=decodeBoardPacket(data.buffer.slice(data.byteOffset,data.byteOffset+data.byteLength));
+      assert.equal(p.generation,generation);if(generation>0)assert.equal(p.encoding===3,i===0);
+      if(p.snapshot)boards[i].fill(0);
+      for(const value of orderedBoardEntries(p,boards[i]))boards[i][value%1000000]=Math.floor(value/1000000);
+    }
+    assert.deepEqual(boards[0],boards[1]);
+  }
+  a.ws.terminate();const resumed=await client(url);peers.push(resumed);
+  // Bitmap without varint is a distinct, supported capability combination.
+  resumed.send({type:'protocol',version:2,bitmapTiles:true});assert.equal((await resumed.wait('protocol')).deltaVarint,false);
+  resumed.send({type:'resume',code:welcome.code,token:welcome.token});assert.equal((await resumed.wait('started')).bitmapTiles,true);
+  const snapshot=(await resumed.wait('binary')).data;assert.equal(snapshot.readUInt16LE(6),1);assert.equal(snapshot[5],3);
+  const next=(await resumed.wait('binary')).data;assert.equal(next.readUInt32LE(12),snapshot.readUInt32LE(12)+1);assert.equal(next.readUInt16LE(6),0);assert.equal(next[5],3);
+});
 
 test('worker disconnect expiry migrates host before a three-player match finishes',async t=>{
   const app=createServer({port:0,host:'127.0.0.1',roomWorkers:true,roomWorkerFactory:factory});

@@ -1,4 +1,5 @@
 // All multibyte fields are little-endian. See docs/board-protocol-v2.md.
+import {planBitmap,writeBitmap,readBitmap} from './bitmap-codec.js';
 export const BOARD_SIZE=1000, CELL_COUNT=1000000, MAGIC=0x3252574c, HEADER_BYTES=32;
 export const MAX_PACKET_BYTES=4*1024*1024;
 const PACK=1048576, TILE_COUNT=1024;
@@ -11,14 +12,18 @@ const keyOf=(tile,local)=>((tile>>>5)*32+(local>>>5))*1000+(tile%32)*32+(local&3
 const validLocal=(tile,local)=>(tile%32)*32+(local&31)<1000&&(tile>>>5)*32+(local>>>5)<1000;
 const check=(condition,message)=>{if(!condition)throw new Error('board-protocol: '+message);};
 
-export function encodeBoardV2({keys,ownerAt,board,previous,generation,baseGeneration,roomEpoch,snapshot=false,forceOrdered=false,allowVarint=false}) {
+export function boardVariant(peer) {
+  return peer.boardVersion===2 ? (peer.bitmapTiles ? (peer.deltaVarint?'2-bitmap-varint':'2-bitmap') : (peer.deltaVarint?'2-varint':2)) : 1;
+}
+
+export function encodeBoardV2({keys,ownerAt,board,previous,generation,baseGeneration,roomEpoch,snapshot=false,forceOrdered=false,allowVarint=false,allowBitmap=false}) {
   const count=keys.length;
   check(count<=CELL_COUNT&&Number.isInteger(roomEpoch)&&roomEpoch>0&&roomEpoch<=0xffffffff&&Number.isInteger(generation)&&generation>=0&&generation<=0xffffffff,'encoder bounds');
   check(snapshot||(Number.isInteger(baseGeneration)&&baseGeneration>=0&&baseGeneration<=generation&&generation-baseGeneration<=1),'encoder base');
   let encoding=0,births=0,counts,tiles=[],payload=3*count;
   // Tiled metadata cannot beat ordered24 for tiny updates. Snapshots must keep
   // every live key in order, so adding a dense image cannot reduce their size.
-  if(!snapshot&&!forceOrdered&&previous&&count>=64){
+  if(!allowBitmap&&!snapshot&&!forceOrdered&&previous&&count>=64){
     counts=new Uint16Array(TILE_COUNT);
     for(let i=0;i<count;i++){const key=keys[i];const tile=tileOf(key);if(!counts[tile])tiles.push(tile);counts[tile]++;
       if(!previous[key]&&ownerAt(key))births++;
@@ -35,11 +40,16 @@ export function encodeBoardV2({keys,ownerAt,board,previous,generation,baseGenera
     }
     if(bytes<payload){encoding=2;payload=bytes;}
   }
+  // Unordered tiles dominate legacy tiled (same sparse cost, smaller dense cost,
+  // no insertion table). They also work immediately after a mid-tick snapshot.
+  const bitmap=allowBitmap&&count>=8?planBitmap(keys,board):null;
+  if(bitmap&&bitmap.payload<payload){encoding=3;payload=bitmap.payload;}
   const buffer=new ArrayBuffer(HEADER_BYTES+payload),v=new DataView(buffer);
   v.setUint32(0,MAGIC,true);v.setUint8(4,2);v.setUint8(5,encoding);v.setUint16(6,+snapshot,true);
   v.setUint32(8,roomEpoch,true);v.setUint32(12,generation,true);v.setUint32(16,snapshot?0xffffffff:baseGeneration,true);
   v.setUint32(20,payload,true);v.setUint32(24,count,true);v.setUint32(28,encoding===1?births:0,true);
   let p=HEADER_BYTES;
+  if(encoding===3){v.setUint32(24,bitmap.represented,true);writeBitmap(buffer,bitmap,keys,ownerAt,board);return buffer;}
   if(!encoding){for(let i=0;i<count;i++){const key=keys[i];write24(v,p,key+ownerAt(key)*PACK);p+=3;}return buffer;}
   if(encoding===2){
     const bytes=new Uint8Array(buffer);let last=0;
@@ -83,9 +93,13 @@ export function decodeBoardPacket(buffer) {
   check(type===MAGIC&&buffer.byteLength>=HEADER_BYTES,'magic/header');
   const version=v.getUint8(4),encoding=v.getUint8(5),flags=v.getUint16(6,true),roomEpoch=v.getUint32(8,true),generation=v.getUint32(12,true),baseGeneration=v.getUint32(16,true);
   const payload=v.getUint32(20,true),count=v.getUint32(24,true),insertCount=v.getUint32(28,true),snapshot=flags===1;
-  check(version===2&&encoding<=2&&flags<=1&&roomEpoch!==0,'version/flags/epoch');
+  check(version===2&&encoding<=3&&flags<=1&&roomEpoch!==0,'version/flags/epoch');
   check(payload===buffer.byteLength-HEADER_BYTES&&count<=CELL_COUNT&&insertCount<=count,'length/count');
   check(snapshot?baseGeneration===0xffffffff&&encoding!==1:baseGeneration<=generation&&generation-baseGeneration<=1,'base generation');
+  if(encoding===3){
+    check(insertCount===0,'bitmap insertion count');const entries=readBitmap(buffer,count,snapshot);
+    return {version,encoding,snapshot,roomEpoch,generation,baseGeneration,entries,memoryBytes:entries.byteLength};
+  }
   const tiled=encoding===1;
   const entries=new Uint32Array(count),seen=count&&(tiled?insertCount:count>=4096)?new Uint8Array(CELL_COUNT):null;
   const smallSeen=!tiled&&!seen?new Set():null;
@@ -142,8 +156,8 @@ export function decodeBoardPacket(buffer) {
     memoryBytes:entries.byteLength+(insertions?.byteLength??0)+(tiled?(seen?.byteLength??0):0)};
 }
 
-// Existing cells retain their Map position. Deaths commute; births must follow
-// the sender's first-touch order, not tile or row order.
+// Legacy tiled packets retain first-touch order. Encoding 3 promises only final
+// per-coordinate values; texture rendering does not consume insertion order.
 export function orderedBoardEntries(packet,board) {
   if(packet.encoding!==1)return packet.entries;
   let births=0,n=0;const result=new Uint32Array(packet.entries.length);

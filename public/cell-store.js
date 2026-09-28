@@ -1,5 +1,7 @@
 // Dense-key linked list: Map-compatible iteration order without boxed entries.
 // Owners live in the authoritative client board; this only tracks membership.
+// Legacy protocols retain sender insertion order. Negotiated bitmap packets
+// retain incidental application order only; rendering uses board/world texture.
 export class CellStore {
   constructor(board) {
     this.board = board; this.next = new Uint32Array(board.length); this.previous = new Uint32Array(board.length);
