@@ -14,17 +14,17 @@ function consumer(unordered=false){const board=new Uint8Array(1000000),cells=new
   return {...p,entries:undefined,insertions:undefined,insertionFlags:undefined,hash:createHash('sha256').update(board).update(unordered?new Uint8Array(0):new Uint8Array(words.buffer)).digest('hex')};
 };}
 async function until(predicate){const end=Date.now()+6000;while(!predicate()){assert.ok(Date.now()<end,'network condition timed out');await new Promise(r=>setTimeout(r,10));}}
-async function client(url,version,deltaVarint=false,bitmapTiles=false){const ws=new WebSocket(url),messages=[],records=[],errors=[],apply=consumer(bitmapTiles);
+async function client(url,version,deltaVarint=false,bitmapTiles=false,paletteTiles=false){const ws=new WebSocket(url),messages=[],records=[],errors=[],apply=consumer(bitmapTiles);
   ws.on('message',(data,binary)=>{try{if(binary)records.push(apply(data));else messages.push(JSON.parse(data));}catch(e){errors.push(e);}});
   await new Promise((resolve,reject)=>{ws.once('open',resolve);ws.once('error',reject);});
-  const send=msg=>ws.send(JSON.stringify(msg));if(version===2){send({type:'protocol',version:2,deltaVarint,bitmapTiles});await until(()=>messages.some(m=>m.type==='protocol'));}
+  const send=msg=>ws.send(JSON.stringify(msg));if(version===2){send({type:'protocol',version:2,deltaVarint,bitmapTiles,paletteTiles});await until(()=>messages.some(m=>m.type==='protocol'));}
   return {ws,messages,records,errors,send,version,bitmapTiles};
 }
 
-for(const bitmapTiles of [false,true])test(`four mixed clients, bitmap=${bitmapTiles}: dense updates, per-connection state and slow recovery`,async t=>{
+for(const [bitmapTiles,paletteTiles] of [[false,false],[true,false],[true,true]])test(`four mixed clients, bitmap=${bitmapTiles}, palette=${paletteTiles}: dense updates, per-connection state and slow recovery`,async t=>{
   const app=createServer({port:0,host:'127.0.0.1',boardProtocol:2}),addr=await app.listen(),url=`ws://127.0.0.1:${addr.port}/ws`,clients=[];
   t.after(async()=>{for(const c of clients)c.ws.terminate();await app.close();});
-  for(const [version,varint] of [[1,false],[2,false],[2,true],[2,true]])clients.push(await client(url,version,varint,bitmapTiles&&clients.length===3));
+  for(const [version,varint] of [[1,false],[2,false],[2,true],[2,true]])clients.push(await client(url,version,varint,bitmapTiles&&(clients.length===3||(paletteTiles&&clients.length===2)),paletteTiles&&clients.length===3));
   const [a,b,c,d]=clients;a.send({type:'create',name:'A'});await until(()=>a.messages.some(m=>m.type==='welcome'));
   const code=a.messages.find(m=>m.type==='welcome').code;
   for(const peer of [b,c,d]){peer.send({type:'join',code,name:'Peer'});await until(()=>peer.messages.some(m=>m.type==='welcome'));peer.send({type:'ready'});}
@@ -40,12 +40,12 @@ for(const bitmapTiles of [false,true])test(`four mixed clients, bitmap=${bitmapT
   // Deterministic dense network workload, independent of evolutionary cost.
   game.step=()=>{
     game.generation++;game.alive.length=0;
-    for(let i=0;i<16384;i++){const j=i,key=Math.floor(j/128)*1000+j%128,owner=(i+game.generation)%7===0?0:(i+game.generation)%4+1;
+    for(let i=0;i<16384;i++){const j=i,key=Math.floor(j/128)*1000+j%128,owner=(i+game.generation)%7===0?0:paletteTiles?1:(i+game.generation)%4+1;
       game.board[key]=owner;game.changes.set(key,owner);if(owner)game.alive.push(key);
     }
   };
   await until(()=>clients.every(p=>p.records.length>=5));
-  assert.ok(c.records.some(r=>r.encoding===2));assert.ok(b.records.every(r=>r.encoding!==2&&r.encoding!==3));if(bitmapTiles)assert.ok(d.records.some(r=>r.encoding===3));
+  assert.ok(c.records.some(r=>r.encoding===(paletteTiles?3:2)));assert.ok(c.records.every(r=>r.encoding!==4));assert.ok(b.records.every(r=>r.encoding!==2&&r.encoding!==3));if(bitmapTiles)assert.ok(d.records.some(r=>r.encoding===(paletteTiles?4:3)));
   const slow=room.members[3].ws;Object.defineProperty(slow,'bufferedAmount',{configurable:true,get:()=>300000});
   const before=d.records.length,gen=game.generation;
   await until(()=>game.generation>=gen+4);assert.equal(d.records.length,before);assert.ok(!slow.needsSnapshot);

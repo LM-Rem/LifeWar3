@@ -12,12 +12,13 @@ import {summarize} from './statistics.mjs';
 import {environment} from './environment.mjs';
 import {monitorEventLoopDelay} from 'node:perf_hooks';
 import {scheduleTicks} from '../../src/tick-scheduler.js';
-const {values:v}=parseArgs({options:{'baseline-renderer':{type:'string'},bitmap:{type:'boolean'},gpu:{type:'boolean'},'legacy-v2':{type:'boolean'},playwright:{type:'string'},executable:{type:'string'},variant:{type:'string'},scenario:{type:'string'},scheduler:{type:'string',default:'deadline'},rounds:{type:'string',default:'3'},generations:{type:'string',default:'100'},warmup:{type:'string',default:'100'},clients:{type:'string',default:'4'},dpr:{type:'string',default:'1'},output:{type:'string',default:'artifacts/performance/2026-09-25/e2e'},'minimap-trace':{type:'boolean'},help:{type:'boolean'}}});
-if(v.help){console.log('end-to-end.mjs [--variant initial|current-v1|current-v2] [--scenario P01|P03|P04] [--bitmap (current-v2 unordered tiles)] [--scheduler interval|deadline (current only)] [--rounds 3] [--generations 100] [--warmup 100] [--clients 0..4 (0 = isolated server)] [--dpr 1|2] [--minimap-trace (diagnostic overhead)] [--playwright PATH] [--executable PATH] [--output DIR]');process.exit(0);}
+const {values:v}=parseArgs({options:{'baseline-renderer':{type:'string'},bitmap:{type:'boolean'},palette:{type:'boolean'},gpu:{type:'boolean'},'legacy-v2':{type:'boolean'},playwright:{type:'string'},executable:{type:'string'},variant:{type:'string'},scenario:{type:'string'},scheduler:{type:'string',default:'deadline'},rounds:{type:'string',default:'3'},generations:{type:'string',default:'100'},warmup:{type:'string',default:'100'},clients:{type:'string',default:'4'},dpr:{type:'string',default:'1'},output:{type:'string',default:'artifacts/performance/2026-09-25/e2e'},'minimap-trace':{type:'boolean'},help:{type:'boolean'}}});
+if(v.palette)assert.ok(v.bitmap,'--palette requires --bitmap');
+if(v.help){console.log('end-to-end.mjs [--variant initial|current-v1|current-v2] [--scenario P01|P03|P04|P05] [--bitmap (current-v2 unordered tiles)] [--palette (requires --bitmap)] [--scheduler interval|deadline (current only)] [--rounds 3] [--generations 100] [--warmup 100] [--clients 0..4 (0 = isolated server)] [--dpr 1|2] [--minimap-trace (diagnostic overhead)] [--playwright PATH] [--executable PATH] [--output DIR]');process.exit(0);}
 for(const k of ['rounds','generations','warmup','dpr'])assert.ok(Number.isSafeInteger(+v[k])&&+v[k]>0,k);
 assert.ok(Number.isInteger(+v.clients)&&+v.clients>=0);assert.ok(['interval','deadline'].includes(v.scheduler));
 assert.ok(+v.clients<=4&&[1,2].includes(+v.dpr));
-const variants=['initial','current-v1','current-v2'],scenarios=['P01','P03','P04'];
+const variants=['initial','current-v1','current-v2'],scenarios=['P01','P03','P04','P05'];
 if(v.variant)assert.ok(variants.includes(v.variant));if(v.scenario)assert.ok(scenarios.includes(v.scenario));
 mkdirSync(v.output,{recursive:true});
 if(!v.variant){
@@ -27,7 +28,7 @@ if(!v.variant){
   const args=[fileURLToPath(import.meta.url),'--variant',variant,'--scenario',id,'--output',output];
   for(const k of ['playwright','executable','generations','warmup','clients','dpr','scheduler'])if(v[k])args.push('--'+k,v[k]);
   if(v['minimap-trace'])args.push('--minimap-trace');
-  if(v.bitmap)args.push('--bitmap');if(v.gpu)args.push('--gpu');if(v['legacy-v2'])args.push('--legacy-v2');
+  if(v.bitmap)args.push('--bitmap');if(v.palette)args.push('--palette');if(v.gpu)args.push('--gpu');if(v['legacy-v2'])args.push('--legacy-v2');
   const r=spawnSync(process.execPath,args,{stdio:'inherit',windowsHide:true});
   if(r.status!==0)throw new Error(`Run failed: ${id}/${variant}/${round+1}`);
   const report=JSON.parse(readFileSync(`${output}/report.json`));reports.push({round:round+1,...report.summary});
@@ -82,12 +83,12 @@ try{
   }
   await page.route('**/app.js',r=>r.fulfill({contentType:'text/javascript',body:''}));
   await page.goto(`http://127.0.0.1:${port}/`);
-  await page.evaluate(async({initial,version,minimapTrace,bitmap})=>{
+  await page.evaluate(async({initial,version,minimapTrace,bitmap,palette})=>{
    const {Battlefield}=await import('/renderer.js');
    document.body.innerHTML='<canvas id="main" style="width:1600px;height:900px"></canvas><canvas id="mini" width="180" height="180"></canvas>';
-   const b=window.bench={received:[],drawn:[],frames:[],raf:[],decode:[],apply:[],mini:[],queue:[],failures:[],memory:[],measuring:false,ready:false};
+   const b=window.bench={progress:[],rtt:[],received:[],drawn:[],frames:[],raf:[],decode:[],apply:[],mini:[],queue:[],failures:[],memory:[],measuring:false,ready:false};
    const f=window.field=new Battlefield(document.querySelector('#main'),document.querySelector('#mini'),{grid:true,ranges:true,motion:true});
-   f.me=1;f.camera={x:500,y:500,zoom:.8};if(!initial)f.presentation.configure(version,7,{bitmapTiles:bitmap});
+   f.me=1;f.camera={x:500,y:500,zoom:.8};if(!initial)f.presentation.configure(version,7,{bitmapTiles:bitmap,paletteTiles:palette});
    // Wrap the bound RAF callback before the first callback runs.
    const frame=f.frame;let last;
    f.frame=now=>{const t=performance.now();if(b.measuring&&last)b.raf.push(now-last);last=now;frame(now);if(b.measuring){b.frames.push(performance.now()-t);b.queue.push(f.presentation?.packets.length??null);if(!b.lastMemory||now-b.lastMemory>1000){b.lastMemory=now;b.memory.push({atMs:now,used:performance.memory?.usedJSHeapSize??null,total:performance.memory?.totalJSHeapSize??null});}}};
@@ -109,23 +110,24 @@ try{
    const ws=window.socket=new WebSocket(`ws://${location.host}/ws`);ws.binaryType='arraybuffer';
    f.onRecovery=reason=>{if(b.tracking)b.failures.push(reason);ws.send(JSON.stringify({type:'resync'}));};
    ws.onmessage=e=>{
-    if(typeof e.data==='string'){const s=JSON.parse(e.data);if(s.type==='state'){if(initial)f.setState(s);else f.receiveState(s);}return;}
+    if(typeof e.data==='string'){const s=JSON.parse(e.data);if(s.type==='network_status'&&b.measuring)b.progress.push({...s,sampledAt:performance.now()});if(s.type==='pong'&&b.measuring)b.rtt.push(performance.now()-s.time);if(s.type==='state'){if(initial)f.setState(s);else f.receiveState(s);}return;}
     const view=new DataView(e.data),generation=view.getUint32(version===2?12:4,true),t=performance.now();
     if(b.tracking)b.received.push(generation);
     if(initial)f.updatePacket(e.data);else f.receivePacket(e.data);
     if(b.measuring)b.decode.push(performance.now()-t);
    };
+   if(!initial)setInterval(()=>{if(ws.readyState===1&&b.measuring){const progress=f.networkProgress();if(progress.received>=0)ws.send(JSON.stringify(progress));ws.send(JSON.stringify({type:'ping',time:performance.now()}));}},500);
    ws.onopen=()=>{b.ready=true;};ws.onerror=()=>{b.socketError=true;};f.active=true;
-  },{initial,version,minimapTrace:!!v['minimap-trace'],bitmap:!!v.bitmap});
+  },{initial,version,minimapTrace:!!v['minimap-trace'],bitmap:!!v.bitmap,palette:!!v.palette});
   await page.waitForFunction(()=>window.bench.ready||window.bench.socketError);assert.ok(await page.evaluate(()=>window.bench.ready),'WebSocket failed');
   sessions.push(await page.context().newCDPSession(page));
  }
  const sockets=[...app.wss.clients];assert.equal(sockets.length,+v.clients);
  const room={code:'BENCH1',host:1,epoch:7,startedAt:game.startedAt,lastActive:Date.now(),lastActiveGen:0,boardGeneration:startGeneration,broadcastBoard:version===2?game.board.slice():null,members:[]};
  for(let i=0;i<sockets.length;i++){
-  const ws=sockets[i],member={id:i+1,name:'P'+(i+1),ws,bot:false,ready:true};room.members.push(member);ws.room=room;ws.member=member;ws.boardVersion=version;ws.deltaVarint=version===2&&!v['legacy-v2'];ws.bitmapTiles=version===2&&!!v.bitmap;ws.sentGeneration=startGeneration;ws.v2NeedsOrdered=version===2&&!ws.bitmapTiles;
+  const ws=sockets[i],member={id:i+1,name:'P'+(i+1),ws,bot:false,ready:true};room.members.push(member);ws.room=room;ws.member=member;ws.boardVersion=version;ws.deltaVarint=version===2&&!v['legacy-v2'];ws.bitmapTiles=version===2&&!!v.bitmap;ws.paletteTiles=ws.bitmapTiles&&!!v.palette;ws.sentGeneration=startGeneration;ws.v2NeedsOrdered=version===2&&!ws.bitmapTiles;
   const send=ws.send;ws.send=function(data,...args){if(measuring){const bytes=typeof data==='string'?Buffer.byteLength(data):data.byteLength;wireBytes+=bytes+(bytes<126?2:bytes<65536?4:10);if(typeof data!=='string'){const a=data instanceof ArrayBuffer?new DataView(data):new DataView(data.buffer,data.byteOffset,data.byteLength);if(version===2?a.getUint16(6,true)===1:a.getUint32(0,true)===1)snapshotCount++;}}return send.call(this,data,...args);};
-  ws.send(JSON.stringify(game.state(i+1)));ws.send(version===2?game.packetV2({roomEpoch:7,snapshot:true,allowVarint:ws.deltaVarint,allowBitmap:ws.bitmapTiles}):game.packet(true));
+  ws.send(JSON.stringify(game.state(i+1)));ws.send(version===2?game.packetV2({roomEpoch:7,snapshot:true,allowVarint:ws.deltaVarint,allowBitmap:ws.bitmapTiles,allowPalette:ws.paletteTiles}):game.packet(true));
  }
  await Promise.all(pages.map(p=>p.waitForFunction(g=>window.bench.lastDraw===g,startGeneration,{timeout:60000})));
  const step=game.step.bind(game),clear=game.changes.clear.bind(game.changes);
@@ -149,11 +151,12 @@ try{
  }
  assert.deepEqual(errors,[]);assert.deepEqual(hashes(),sourceHashes,'sources changed');
  const summary={variant:v.variant,scenario:v.scenario||'P01',clients:+v.clients,dpr:+v.dpr,generations:+v.generations,warmup:+v.warmup,warmBoardHash,finalBoardHash:hash(game.board),tickMs:summarize(samples.map(s=>s.tickMs)),stepMs:summarize(samples.map(s=>s.stepMs)),L:summarize(samples.map(s=>s.L)),D:summarize(samples.map(s=>s.D)),deadlineMisses:samples.filter(s=>s.tickMs>50).length,elapsedMs,observedHz:+v.generations*1000/elapsedMs,wireBytes,wireBytesPerSecond:wireBytes*1000/elapsedMs,wireBytesPerGeneration:wireBytes/(+v.generations),snapshotCount,serverMemory:memory.at(-1),clientMetrics:clients.map(c=>c.summary)};
+ summary.network=clients.map(c=>({samples:c.raw.progress?.length??0,rttMs:summarize(c.raw.rtt??[]),sendLag:summarize((c.raw.progress??[]).map(p=>p.computedGeneration-p.sentGeneration)),receiveLag:summarize((c.raw.progress??[]).map(p=>p.sentGeneration-p.received)),drawLag:summarize((c.raw.progress??[]).map(p=>p.received-p.displayed)),bufferedBytes:summarize((c.raw.progress??[]).map(p=>p.bufferedBytes))}));
  summary.scheduler={mode:initial?'original interval':v.scheduler,intervalMs:summarize(timings.map(t=>t.intervalMs).filter(n=>n!==null)),latenessMs:summarize(timings.map(t=>t.latenessMs)),rebaseMs:timings.reduce((n,t)=>n+t.rebaseMs,0),cpuMs:(cpu.user+cpu.system)/1000,eventLoopP99Ms:loop.percentile(99)/1e6};
  summary.steadyHz=(samples.length-1)*1000/(samples.at(-1).atMs-samples[0].atMs);
  summary.scheduler.measuredDriftMs=timings.length>1?timings.at(-1).startedAt-timings[0].startedAt-(timings.length-1)*50:null;
  summary.realtimePass=clients.length>0&&summary.tickMs.p95<=25&&summary.tickMs.p99<=40&&summary.deadlineMisses===0&&summary.observedHz>=19.5&&snapshotCount===0&&clients.every(c=>c.summary.frameMs.p95<=8&&c.summary.frameMs.p99<=12&&c.summary.rafMs.p99<=25&&!c.summary.undrawnGenerations&&!c.summary.missingGenerations&&!c.summary.failures&&(initial||c.summary.queuePeak<=2));
- summary.baselineRenderer=v['baseline-renderer']??null;summary.bitmapTiles=version===2&&!!v.bitmap;summary.deltaVarint=version===2&&!v['legacy-v2'];summary.evolutionBackend=game.lastBackend;summary.gpuAdapter=gpu?.adapter;
+ summary.baselineRenderer=v['baseline-renderer']??null;summary.bitmapTiles=version===2&&!!v.bitmap;summary.paletteTiles=version===2&&!!v.palette;summary.deltaVarint=version===2&&!v['legacy-v2'];summary.evolutionBackend=game.lastBackend;summary.gpuAdapter=gpu?.adapter;
  const report={summary,environment:env,sourceHashes,harnessHash:hash(readFileSync(fileURLToPath(import.meta.url))),scope:'Production server loop and renderer, headless same-machine loopback clients. Tick from step entry through changes.clear includes encode/state/send/baseline maintenance; excludes preceding no-op AI/connection bookkeeping. Synthetic fixed rules/time, no HUD/app input handler, no physical scanout or LAN certification. Tail gets one second to drain with idle frame timings excluded. Heap excludes GPU memory; short-run memory is not a soak certificate. wireBytes measures pre-compression application packets plus frame headers, NOT compressed socket traffic.',samples,memory,clients};
  report.schedulerTimings=timings;
  writeFileSync(`${v.output}/report.json`,JSON.stringify(report,null,2));console.log(JSON.stringify(summary));

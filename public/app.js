@@ -790,7 +790,7 @@ async function connect() {
       const traceStart=browserMetrics?browserMetrics.now():0;
       try{const msg=JSON.parse(e.data);if(msg.type==='hello'){
         controlSupported = msg.cardControl === true;progressSupported=msg.clientProgress===true;
-        if(msg.boardProtocols?.includes(2))ws.send(JSON.stringify({type:'protocol',version:2,deltaVarint:msg.boardEncodings?.includes(2)===true,bitmapTiles:msg.boardEncodings?.includes(3)===true}));
+        if(msg.boardProtocols?.includes(2))ws.send(JSON.stringify({type:'protocol',version:2,deltaVarint:msg.boardEncodings?.includes(2)===true,bitmapTiles:msg.boardEncodings?.includes(3)===true,paletteTiles:msg.boardEncodings?.includes(3)===true&&msg.boardEncodings?.includes(4)===true}));
         if(session)ws.send(JSON.stringify({type:'resume',...session}));connectionPromise=null;resolve();
       }onMessage(msg);}catch(err){console.error('Message error',err);}
       finally{if(browserMetrics)browserMetrics.duration('json.decodeDispatch.ms',traceStart,battlefield.generation);}
@@ -820,7 +820,7 @@ function onMessage(msg) {
   if(msg.type==='network_status'){
     if(msg.roomEpoch!==battlefield.presentation.roomEpoch)return;
     window.lifeWarNetwork=msg;
-    $('#ping').title=`服务器 ${msg.computedGeneration}代 · 已发送 ${msg.sentGeneration}代 · 已接收 ${msg.received}代 · 已绘制 ${msg.displayed}代\n队列 ${msg.queueDepth}代 / ${Math.round(msg.oldestMs)}ms · 解码 ${msg.decodeMs.toFixed(1)}ms · 应用 ${msg.applyMs.toFixed(1)}ms`;
+    $('#ping').title=`服务器 ${msg.computedGeneration}代 · 已发送 ${msg.sentGeneration}代 · 已接收 ${msg.received}代 · 已绘制 ${msg.displayed}代\n发送缓冲 ${Math.round((msg.bufferedBytes??0)/1024)}KiB · 队列 ${msg.queueDepth}代 / ${Math.round(msg.oldestMs)}ms · 解码 ${msg.decodeMs.toFixed(1)}ms · 应用 ${msg.applyMs.toFixed(1)}ms`;
     return;
   }
   if (['left','lobby','resume_failed'].includes(msg.type)) { closeCardControl(); cardEpoch=null; cardState=null; pendingCardPick=null; }
@@ -844,7 +844,7 @@ function onMessage(msg) {
       closeCardControl(); cardState=null; cardEpoch=msg.roomEpoch; pendingCardPick=null; openCardControl();
       if (typeof browserMetrics !== 'undefined' && browserMetrics) browserMetrics.resetEpoch(msg.startedAt);
       state=null;pendingCardPlay=false;shownDraftGen=0;renderCards(true);
-      playerId=msg.id;if(msg.rules?.hz)gameHz=msg.rules.hz;if(msg.rules?.baseHP){maxHP=msg.rules.baseHP;battlefield.baseHP=maxHP;}if(msg.rules?.maxEnergy)maxEnergy=msg.rules.maxEnergy;if(msg.rules?.regen)energyRegen=msg.rules.regen;if(msg.rules?.nodeRegen)energyNodeRegen=msg.rules.nodeRegen;if(msg.rules?.playerCells)battlefield.playerCells=msg.rules.playerCells;if(msg.rules?.baseHitRadius)battlefield.baseHitRadius=msg.rules.baseHitRadius;if(msg.rules?.captureTime)battlefield.captureTime=msg.rules.captureTime;startedAt=msg.startedAt||Date.now();battlefield.me=playerId;battlefield.reset();battlefield.presentation.configure(msg.boardProtocol??1,msg.roomEpoch,{bitmapTiles:msg.bitmapTiles===true});eventIds.clear();resultShown=false;state=null;closeDialogs();showPage('game');renderPatterns();if(selected)selectPattern(selected);sound('capture');break;
+      playerId=msg.id;if(msg.rules?.hz)gameHz=msg.rules.hz;if(msg.rules?.baseHP){maxHP=msg.rules.baseHP;battlefield.baseHP=maxHP;}if(msg.rules?.maxEnergy)maxEnergy=msg.rules.maxEnergy;if(msg.rules?.regen)energyRegen=msg.rules.regen;if(msg.rules?.nodeRegen)energyNodeRegen=msg.rules.nodeRegen;if(msg.rules?.playerCells)battlefield.playerCells=msg.rules.playerCells;if(msg.rules?.baseHitRadius)battlefield.baseHitRadius=msg.rules.baseHitRadius;if(msg.rules?.captureTime)battlefield.captureTime=msg.rules.captureTime;startedAt=msg.startedAt||Date.now();battlefield.me=playerId;battlefield.reset();battlefield.presentation.configure(msg.boardProtocol??1,msg.roomEpoch,{bitmapTiles:msg.bitmapTiles===true,paletteTiles:msg.paletteTiles===true});eventIds.clear();resultShown=false;state=null;closeDialogs();showPage('game');renderPatterns();if(selected)selectPattern(selected);sound('capture');break;
     case 'card_state':receiveCardState(msg);break;
     case 'state':battlefield.receiveState(msg);break;
     case 'presented_state':{

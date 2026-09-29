@@ -20,7 +20,7 @@
 |---:|---:|---|---|
 | 0 | 4 | magic | `0x3252574c`，字节 ASCII `LWR2`，与 v1 的 0/1 标记不混淆 |
 | 4 | 1 | version | 2 |
-| 5 | 1 | encoding | 0 = ordered24；1 = tiled；2 = delta-varint；3 = bitmap-tiles（2/3分别另行协商） |
+| 5 | 1 | encoding | 0 = ordered24；1 = tiled；2 = delta-varint；3 = bitmap-tiles；4 = palette-tiles（2/3/4分别另行协商） |
 | 6 | 2 | flags | 0 = 增量；1 = 快照；其他拒绝 |
 | 8 | 4 | roomEpoch | 非零，与 started 一致 |
 | 12 | 4 | generation | 本消息的棋盘代 |
@@ -114,3 +114,28 @@ encoding 2 的每个条目按原始 keys 顺序编码：初始 `last=0`，`delta
 hello增加 `clientProgress:true`。支持的客户端每500ms在前台游戏中发送一次 `client_progress`，优先已绑定控制连接，否则主连接；发送缓冲高时跳过。字段为roomEpoch、received（收到并校验代号）、displayed（主图draw提交后的代号）、queueDepth、oldestMs、decodeMs、applyMs。displayed不是物理显示器扫描确认。服务器按当前绑定连接和房间epoch校验，received不得超出已发送代，displayed不得超过received，代号不能回退，队列0–32，时长有限且0–60000ms，最快接受间隔250ms。
 
 服务器保留每连接最新一份诊断并返回network_status，附加computedGeneration/sentGeneration。它不用于权威结算、删历史、自动丢代或送达确认。新客户端连接未声明能力的旧服务器时不发送。页面延迟数字的悬停提示显示最近诊断，控制台 `window.lifeWarNetwork` 可查看完整字段；诊断是取样值，不是当前瞬时值。
+
+
+## 局部调色板扩展（2026-09-29）
+
+hello 的 `boardEncodings` 增加4。客户端仅在同时提供3和4时请求 `bitmapTiles:true,paletteTiles:true`；服务端仅在v2且bitmapTiles成立时接受paletteTiles，在protocol确认及started中声明。旧v2无4时继续使用位图；v1保持原样。GenerationQueue未协商paletteTiles时拒绝encoding 4，reset清除能力。编码API的allowPalette默认false，需同时allowBitmap才能生效。
+
+### encoding 4：palette-tiles
+
+复用encoding 3的头、瓦片头、entryCount与完整瓦片替换语义，insertionCount为0。允许原sparse、0x8001位图，再增加mode `0x8002`：
+
+1. 128字节存活位图，位序与0x8001相同。
+2. 1字节阵营mask，bit0..3对应owner1..4；高4位必须为0，恰有1或2位为1。活格数必须非零。
+3. mask中阵营按owner升序构成调色板。单阵营不写逐格阵营；双阵营按活格local递增顺序写1bit索引，低位优先，0/1分别指向较小/较大owner。字节数为ceil(live/8)。尾字节未用位必须为0。
+
+数据长度为单阵营129字节、双阵营129+ceil(live/8)字节（不含4字节瓦片头）。三/四阵营仍用0x8001的128+ceil(live/4)；空瓦片也用原位图。地图外存活位必须为0。非法mask、截断、padding、重复瓦片/坐标、计数、尾随字节在队列或绘制写入前拒绝。encoding 3不接受0x8002；不存在为旧客户端偷偷扩充mode的行为。
+
+编码器比较稀疏、原2bit和局部调色板的实际字节数，仅严格更小时采用。整包再与ordered24/已协商delta-varint比较；未选中调色板瓦片则仍标3，小包/空包可标0/2。局部最小化保证已协商bitmap的同样输入启用palette不会增大包。紧凑解码保留原buffer和3×tileCount个uint32索引，visitBitmap直接应用，无额外百万格展开数组。
+
+主线程和worker增加 `2-bitmap-palette` / `2-bitmap-palette-varint` 变体；不与旧bitmap共享不兼容包。逐代历史、快照首增量、epoch、内存和年龄上限保持；混用更多能力会存更多历史变体，总历史仍受16MiB约束。
+
+### 诊断采样补充
+
+network_status增加 `bufferedBytes`（采样时主棋盘socket的bufferedAmount），界面悬停延迟数字同步显示。它是待发送应用缓冲，不是客户端送达确认，也不包含全部操作系统/TLS/隧道队列。computed/sent是服务端处理反馈时的值，received/displayed是客户端更早采样的值，代号差不代表同时刻单向延迟。
+
+测量、场景定义、复现与真实线路采集入口见 [局部调色板结果](performance/2026-09-29-local-palette.md)。

@@ -54,15 +54,15 @@ for(const roomWorkers of [false,true])test(`real progress feedback roomWorkers=$
   const ws=new WebSocket(url),messages=[];let generation=-1;
   ws.on('message',(d,binary)=>{if(binary)generation=d.readUInt32LE(12);else messages.push(JSON.parse(d));});
   t.after(async()=>{ws.terminate();await app.close();});
-  await until(()=>ws.readyState===WebSocket.OPEN);ws.send(JSON.stringify({type:'protocol',version:2,bitmapTiles:true}));
+  await until(()=>ws.readyState===WebSocket.OPEN);ws.send(JSON.stringify({type:'protocol',version:2,bitmapTiles:true,paletteTiles:true}));
   ws.send(JSON.stringify({type:'create',name:'Feedback',practice:true}));await until(()=>generation>=0);
-  assert.equal(messages.find(m=>m.type==='hello').clientProgress,true);
+  assert.equal(messages.find(m=>m.type==='hello').clientProgress,true);assert.equal(messages.find(m=>m.type==='protocol').paletteTiles,true);assert.equal(messages.find(m=>m.type==='started').paletteTiles,true);
   const welcome=messages.find(m=>m.type==='welcome'),started=messages.find(m=>m.type==='started');
   const control=new WebSocket(url),controlMessages=[];control.on('message',d=>controlMessages.push(JSON.parse(d)));t.after(()=>control.terminate());
   await until(()=>control.readyState===WebSocket.OPEN);control.send(JSON.stringify({type:'bind_control',code:welcome.code,token:welcome.token}));await until(()=>controlMessages.some(m=>m.type==='control_ready'));
   const report={type:'client_progress',roomEpoch:started.roomEpoch,received:generation,displayed:generation,queueDepth:0,oldestMs:0,decodeMs:1,applyMs:2};
   control.send(JSON.stringify(report));await until(()=>controlMessages.some(m=>m.type==='network_status'));
-  assert.equal(controlMessages.find(m=>m.type==='network_status').received,report.received);
+  assert.equal(controlMessages.find(m=>m.type==='network_status').received,report.received);assert.ok(controlMessages.find(m=>m.type==='network_status').bufferedBytes>=0);
   assert.equal(app.rooms.get(welcome.code).members[0].ws.clientProgress.received,report.received);
 });
 

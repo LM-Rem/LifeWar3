@@ -1,6 +1,6 @@
 import { randomSource } from '../helpers/load-fixture.js';
 export function scenario(Game, id, seed = 91) {
-  if (!['P01', 'P03', 'P04'].includes(id)) throw new Error(`Unknown scenario ${id}; implemented: P01, P03, P04`);
+  if (!['P01', 'P03', 'P04', 'P05'].includes(id)) throw new Error(`Unknown scenario ${id}; implemented: P01, P03, P04, P05`);
   const g = new Game([1, 2, 3, 4].map(i => ({ name: `P${i}` })), { now: () => 0, random: randomSource(seed), cardDrawTimes: [] });
   g.players.forEach(p => p.hp = 1e12);
   // Synthetic sustained load, NOT a legal card-duration or dormancy gameplay test.
@@ -17,7 +17,7 @@ export function scenario(Game, id, seed = 91) {
     for (let key = 0; key < 800000; key++) add(key, 1);
   } else {
     const random = randomSource(seed); g.birthRule = new Set([1,3,5,7]); g.survivalRule = new Set([1,3,5,7]);
-    for (let key = 0; key < 1000000; key++) if (random() < .5) add(key, key % 4 + 1);
+    for (let key = 0; key < 1000000; key++) if (random() < .5) add(key, id==='P05'?1+(key%1000>=500?1:0)+(key>=500000?2:0):key%4+1);
   }
   return g;
 }
