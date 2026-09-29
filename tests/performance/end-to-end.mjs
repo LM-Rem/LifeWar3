@@ -12,7 +12,7 @@ import {summarize} from './statistics.mjs';
 import {environment} from './environment.mjs';
 import {monitorEventLoopDelay} from 'node:perf_hooks';
 import {scheduleTicks} from '../../src/tick-scheduler.js';
-const {values:v}=parseArgs({options:{bitmap:{type:'boolean'},gpu:{type:'boolean'},'legacy-v2':{type:'boolean'},playwright:{type:'string'},executable:{type:'string'},variant:{type:'string'},scenario:{type:'string'},scheduler:{type:'string',default:'deadline'},rounds:{type:'string',default:'3'},generations:{type:'string',default:'100'},warmup:{type:'string',default:'100'},clients:{type:'string',default:'4'},dpr:{type:'string',default:'1'},output:{type:'string',default:'artifacts/performance/2026-09-25/e2e'},'minimap-trace':{type:'boolean'},help:{type:'boolean'}}});
+const {values:v}=parseArgs({options:{'baseline-renderer':{type:'string'},bitmap:{type:'boolean'},gpu:{type:'boolean'},'legacy-v2':{type:'boolean'},playwright:{type:'string'},executable:{type:'string'},variant:{type:'string'},scenario:{type:'string'},scheduler:{type:'string',default:'deadline'},rounds:{type:'string',default:'3'},generations:{type:'string',default:'100'},warmup:{type:'string',default:'100'},clients:{type:'string',default:'4'},dpr:{type:'string',default:'1'},output:{type:'string',default:'artifacts/performance/2026-09-25/e2e'},'minimap-trace':{type:'boolean'},help:{type:'boolean'}}});
 if(v.help){console.log('end-to-end.mjs [--variant initial|current-v1|current-v2] [--scenario P01|P03|P04] [--bitmap (current-v2 unordered tiles)] [--scheduler interval|deadline (current only)] [--rounds 3] [--generations 100] [--warmup 100] [--clients 0..4 (0 = isolated server)] [--dpr 1|2] [--minimap-trace (diagnostic overhead)] [--playwright PATH] [--executable PATH] [--output DIR]');process.exit(0);}
 for(const k of ['rounds','generations','warmup','dpr'])assert.ok(Number.isSafeInteger(+v[k])&&+v[k]>0,k);
 assert.ok(Number.isInteger(+v.clients)&&+v.clients>=0);assert.ok(['interval','deadline'].includes(v.scheduler));
@@ -76,6 +76,10 @@ try{
   const page=await browser.newPage({viewport:{width:1920,height:1080},deviceScaleFactor:+v.dpr});pages.push(page);
   page.on('pageerror',e=>{errors.push(e.message);console.error('browser error:',e.message);});
   page.on('console',m=>{if(m.type()==='error')console.error(m.text());});
+  if(v['baseline-renderer']){
+    await page.route('**/renderer.js',r=>r.fulfill({contentType:'text/javascript',body:readFileSync(v['baseline-renderer'],'utf8')}));
+    await page.route('**/generation-queue.js',r=>r.fulfill({contentType:'text/javascript',body:readFileSync(new URL('public/generation-queue.js',base),'utf8').replace('compactBitmap:true','compactBitmap:false')}));
+  }
   await page.route('**/app.js',r=>r.fulfill({contentType:'text/javascript',body:''}));
   await page.goto(`http://127.0.0.1:${port}/`);
   await page.evaluate(async({initial,version,minimapTrace,bitmap})=>{
@@ -149,7 +153,7 @@ try{
  summary.steadyHz=(samples.length-1)*1000/(samples.at(-1).atMs-samples[0].atMs);
  summary.scheduler.measuredDriftMs=timings.length>1?timings.at(-1).startedAt-timings[0].startedAt-(timings.length-1)*50:null;
  summary.realtimePass=clients.length>0&&summary.tickMs.p95<=25&&summary.tickMs.p99<=40&&summary.deadlineMisses===0&&summary.observedHz>=19.5&&snapshotCount===0&&clients.every(c=>c.summary.frameMs.p95<=8&&c.summary.frameMs.p99<=12&&c.summary.rafMs.p99<=25&&!c.summary.undrawnGenerations&&!c.summary.missingGenerations&&!c.summary.failures&&(initial||c.summary.queuePeak<=2));
- summary.bitmapTiles=version===2&&!!v.bitmap;summary.deltaVarint=version===2&&!v['legacy-v2'];summary.evolutionBackend=game.lastBackend;summary.gpuAdapter=gpu?.adapter;
+ summary.baselineRenderer=v['baseline-renderer']??null;summary.bitmapTiles=version===2&&!!v.bitmap;summary.deltaVarint=version===2&&!v['legacy-v2'];summary.evolutionBackend=game.lastBackend;summary.gpuAdapter=gpu?.adapter;
  const report={summary,environment:env,sourceHashes,harnessHash:hash(readFileSync(fileURLToPath(import.meta.url))),scope:'Production server loop and renderer, headless same-machine loopback clients. Tick from step entry through changes.clear includes encode/state/send/baseline maintenance; excludes preceding no-op AI/connection bookkeeping. Synthetic fixed rules/time, no HUD/app input handler, no physical scanout or LAN certification. Tail gets one second to drain with idle frame timings excluded. Heap excludes GPU memory; short-run memory is not a soak certificate. wireBytes measures pre-compression application packets plus frame headers, NOT compressed socket traffic.',samples,memory,clients};
  report.schedulerTimings=timings;
  writeFileSync(`${v.output}/report.json`,JSON.stringify(report,null,2));console.log(JSON.stringify(summary));

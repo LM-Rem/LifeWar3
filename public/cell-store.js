@@ -30,3 +30,16 @@ export class CellStore {
   *entries() { for (const key of this.keys()) yield [key, this.board[key]]; }
   [Symbol.iterator]() { return this.entries(); }
 }
+
+// Bitmap connections need membership/count, not a historical linked-list order.
+export class BoardCells {
+  constructor(board,size=0){this.board=board;this.size=size;}
+  has(key){return this.board[key]!==0;}
+  get(key){return this.board[key]||undefined;}
+  set(key,owner){if(!this.board[key])this.size++;this.board[key]=owner;return this;}
+  delete(key){if(!this.board[key])return false;this.size--;this.board[key]=0;return true;}
+  clear(){this.board.fill(0);this.size=0;}
+  *keys(){for(let key=0;key<this.board.length;key++)if(this.board[key])yield key;}
+  *entries(){for(const key of this.keys())yield [key,this.board[key]];}
+  [Symbol.iterator](){return this.entries();}
+}

@@ -15,6 +15,7 @@ import { PacketHistory } from './packet-history.js';
 import { staticAssets } from './static-assets.js';
 import { RoomWorkerClient } from './room-worker-client.js';
 import { boardVariant } from '../public/board-protocol.js';
+import { acceptClientProgress } from './client-progress.js';
 
 const ROOT = fileURLToPath(new URL('../public/', import.meta.url));
 const LIBRARY_DIR = fileURLToPath(new URL('../图案集_128/', import.meta.url));
@@ -263,9 +264,39 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
     return cache.get(key);
   }
   function started(ws,room,id) {send(ws,{type:'started',id,rules:RULES,startedAt:room.startedAt,roomEpoch:room.epoch,boardProtocol:ws?.boardVersion??1,bitmapTiles:!!ws?.bitmapTiles});}
+  function requestBoardDrain(room) {
+    if(room.drainScheduled||shuttingDown||room.fault)return;
+    const worker=room.worker,game=room.game;
+    room.drainScheduled=setImmediate(()=>{
+      room.drainScheduled=null;
+      if(shuttingDown||room.fault||room.worker!==worker||(!worker&&room.game!==game))return;
+      if(worker){
+        worker.post({type:'drain',buffers:room.members.filter(m=>m.ws).map(m=>({id:m.id,session:m.ws.roomSession,bufferedAmount:m.ws.bufferedAmount}))});
+        return;
+      }
+      // Inline fallback uses the same bounded, independent history packets.
+      for(const {ws,id} of room.members){
+        if(ws?.readyState!==WebSocket.OPEN||ws.bufferedAmount>262144||!game)continue;
+        if(!ws.needsSnapshot&&ws.sentGeneration>=game.generation)continue;
+        const variant=boardVariant(ws),replay=room.history?.after(ws.sentGeneration,game.generation,variant);
+        if(replay&&ws.v2NeedsOrdered){
+          const ordered=room.history.frames.get(ws.sentGeneration+1)?.packets.get(`${variant}ordered`);
+          if(ordered)replay[0]=ordered;else ws.needsSnapshot=true;
+        }
+        if(!replay)ws.needsSnapshot=true;
+        if(ws.needsSnapshot)sendBoard(ws,room,boardPacket(ws,room,true),true);
+        else {
+          let bytes=0,count=0;
+          for(const packet of replay){if(ws.bufferedAmount>262144)break;sendBoard(ws,room,packet);bytes+=packet.byteLength;if(bytes>=262144||++count>=4)break;}
+        }
+        if(ws.sentGeneration===game.generation)send(ws,game.state(id));
+      }
+    });
+  }
   function sendBoard(ws, room, packet, snapshot = false) {
     const game = room.game, start = metrics ? metrics.now() : 0;
-    ws.send(packet);
+    const session=ws.roomSession;
+    ws.send(packet,error=>{if(!error&&ws.readyState===WebSocket.OPEN&&ws.roomSession===session&&ws.member?.ws===ws)requestBoardDrain(room);});
     ws.sentGeneration = new DataView(packet).getUint32(ws.boardVersion === 2 ? 12 : 4, true);
     ws.v2NeedsOrdered=snapshot&&!ws.bitmapTiles;
     if(snapshot)ws.needsSnapshot=false;
@@ -329,7 +360,7 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
   wss.on('connection', ws => {
     ws.alive = true; ws.budget = 40; ws.refillAt = Date.now();ws.boardVersion=1;
     ws.on('pong', () => { ws.alive = true; });
-    send(ws, { type: 'hello', version: '1.0.0',cardControl:true,boardProtocols:boardProtocol===2?[1,2]:[1],boardEncodings:boardProtocol===2?[0,1,2,3]:[] }); lobbyList(ws);
+    send(ws, { type: 'hello', version: '1.0.0',cardControl:true,clientProgress:true,boardProtocols:boardProtocol===2?[1,2]:[1],boardEncodings:boardProtocol===2?[0,1,2,3]:[] }); lobbyList(ws);
     ws.on('error', () => {});
     ws.on('message', (raw, isBinary) => {
       ws.budget = Math.min(40, ws.budget + (Date.now() - ws.refillAt) / 100); ws.refillAt = Date.now();
@@ -339,7 +370,7 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
       if (ws.controlMember) {
         const m = ws.controlMember;
         if (m.control !== ws || m.ws?.readyState !== WebSocket.OPEN) return ws.close(4000, 'Session expired');
-        if (!['pick_card','play_card','ping'].includes(msg.type)) return;
+        if (!['pick_card','play_card','ping','client_progress'].includes(msg.type)) return;
         m.ws.emit('message', raw, false); return;
       }
       if (msg.type === 'bind_control') {
@@ -362,6 +393,13 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
         return;
       }
       switch (msg.type) {
+        case 'client_progress': {
+          const progress=acceptClientProgress(ws,room,msg);if(!progress)return;
+          const target=member.control?.readyState===WebSocket.OPEN?member.control:ws;
+          if(target.bufferedAmount<65536)send(target,{type:'network_status',...progress,
+            computedGeneration:room.game.generation,sentGeneration:ws.sentGeneration});
+          return;
+        }
         case 'protocol': {
           if(room)return fail('请在加入战区前协商协议');
           if(msg.version!==1&&(msg.version!==2||boardProtocol!==2))return fail('不支持的棋盘协议版本');
@@ -515,9 +553,11 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
             if (ordered) replay[0] = ordered; else ws.needsSnapshot = true;
           }
           if (replay && !ws.needsSnapshot) {
+            let bytes=0,count=0;
             for (const packet of replay) {
               if (ws.bufferedAmount > 262144) break;
               sendBoard(ws, room, packet);
+              bytes+=packet.byteLength;if(bytes>=262144||++count>=4)break;
             }
             if (ws.sentGeneration !== game.generation) continue;
           } else ws.needsSnapshot = true;

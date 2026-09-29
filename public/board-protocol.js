@@ -79,7 +79,7 @@ export function encodeBoardV2({keys,ownerAt,board,previous,generation,baseGenera
 }
 
 // Validate the complete message before callers change either board or Map.
-export function decodeBoardPacket(buffer) {
+export function decodeBoardPacket(buffer,{compactBitmap=false}={}) {
   check(buffer instanceof ArrayBuffer&&buffer.byteLength>=8&&buffer.byteLength<=MAX_PACKET_BYTES,'length');
   const v=new DataView(buffer),type=v.getUint32(0,true);
   if(type<=1){
@@ -97,7 +97,9 @@ export function decodeBoardPacket(buffer) {
   check(payload===buffer.byteLength-HEADER_BYTES&&count<=CELL_COUNT&&insertCount<=count,'length/count');
   check(snapshot?baseGeneration===0xffffffff&&encoding!==1:baseGeneration<=generation&&generation-baseGeneration<=1,'base generation');
   if(encoding===3){
-    check(insertCount===0,'bitmap insertion count');const entries=readBitmap(buffer,count,snapshot);
+    check(insertCount===0,'bitmap insertion count');
+    if(compactBitmap){const bitmap=readBitmap(buffer,count,snapshot,true);return {version,encoding,snapshot,roomEpoch,generation,baseGeneration,entryCount:count,bitmap,memoryBytes:bitmap.tiles.byteLength};}
+    const entries=readBitmap(buffer,count,snapshot);
     return {version,encoding,snapshot,roomEpoch,generation,baseGeneration,entries,memoryBytes:entries.byteLength};
   }
   const tiled=encoding===1;

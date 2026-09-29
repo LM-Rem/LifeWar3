@@ -33,7 +33,7 @@ for(const bitmapTiles of [false,true])test(`four mixed clients, bitmap=${bitmapT
   const framed=n=>n+(n<126?2:n<65536?4:10);
   for(let i=0;i<4;i++){
     const ws=room.members[i].ws,send=ws.send.bind(ws),apply=consumer(clients[i].bitmapTiles);
-    ws.send=(data,...args)=>{if(data instanceof ArrayBuffer){const meta=decodeBoardPacket(data),v1=meta.generation===room.game.generation?room.game.packet(meta.snapshot):v1History.get(meta.generation);assert.ok(v1);if(!meta.snapshot)v1History.set(meta.generation,v1);expected[i].push(apply(v1));traffic[i].binaryBytes+=framed(data.byteLength);traffic[i].v1EquivalentBytes+=framed(v1.byteLength);traffic[i].messages++;}else if(typeof data==='string')traffic[i].jsonBytes+=framed(Buffer.byteLength(data));return send(data,...args);};
+    ws.send=(data,...args)=>{if(data instanceof ArrayBuffer){const meta=decodeBoardPacket(data),v1=meta.snapshot?room.game.packet(true):(v1History.get(meta.generation)??room.game.packet());assert.ok(v1);if(!meta.snapshot)v1History.set(meta.generation,v1);expected[i].push(apply(v1));traffic[i].binaryBytes+=framed(data.byteLength);traffic[i].v1EquivalentBytes+=framed(v1.byteLength);traffic[i].messages++;}else if(typeof data==='string')traffic[i].jsonBytes+=framed(Buffer.byteLength(data));return send(data,...args);};
   }
   a.send({type:'start'});await until(()=>clients.every(p=>p.records.length));
   const game=room.game;

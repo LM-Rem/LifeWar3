@@ -103,3 +103,14 @@ encoding 2 的每个条目按原始 keys 顺序编码：初始 `last=0`，`delta
 主线程与房间worker使用独立变体：1、2、2-varint、2-bitmap、2-bitmap-varint。相同能力客户端共享编码结果。位图连接快照后的首个增量无需 ordered 特例，既有协议继续保留该保护；代号、baseGeneration、epoch、队列容量、时延和历史上限保持不变。重连必须重新协商，不复用旧连接能力。
 
 实测与范围见 `performance/2026-09-28-adaptive-bitmap.md`。50万高变化约260KB/代（含包头，具体取决于边缘与瓦片），不是固定250KB；解码的整块状态会增加客户端应用遍历量。
+
+
+## 紧凑解码与传输反馈（2026-09-29）
+
+网络编码字节不变。浏览器队列使用 `decodeBoardPacket(buffer,{compactBitmap:true})`：encoding 3完整校验后保留原包及每瓦片3个uint32索引（tileId/mode/offset），不生成百万格条目数组；entryCount继续表示有效坐标数。队列计入原包与索引内存；旧协议和默认解码API继续返回展开entries。呈现时visitBitmap直接遍历已验证数据，比较现有棋盘后只更新实际变化。新路径切换到BoardCells棋盘视图，避免维护历史插入链表；reset恢复旧CellStore，旧能力的顺序语义保留。
+
+每批历史发送累计达到256KiB或4包即停止，允许单个合法大包超过预算；缓冲超过256KiB暂停。主线程发送完成后按房间合并通知，worker在输出ACK或缓冲更新后只在存在可发送积压时排空，不依赖新增演化tick。缓冲更新不能解除输出锁；发送回调不表示客户端已收到。主线程回退同样支持有界发送完成追赶。历史不足继续显式快照恢复，代号/epoch/队列上限不变。
+
+hello增加 `clientProgress:true`。支持的客户端每500ms在前台游戏中发送一次 `client_progress`，优先已绑定控制连接，否则主连接；发送缓冲高时跳过。字段为roomEpoch、received（收到并校验代号）、displayed（主图draw提交后的代号）、queueDepth、oldestMs、decodeMs、applyMs。displayed不是物理显示器扫描确认。服务器按当前绑定连接和房间epoch校验，received不得超出已发送代，displayed不得超过received，代号不能回退，队列0–32，时长有限且0–60000ms，最快接受间隔250ms。
+
+服务器保留每连接最新一份诊断并返回network_status，附加computedGeneration/sentGeneration。它不用于权威结算、删历史、自动丢代或送达确认。新客户端连接未声明能力的旧服务器时不发送。页面延迟数字的悬停提示显示最近诊断，控制台 `window.lifeWarNetwork` 可查看完整字段；诊断是取样值，不是当前瞬时值。

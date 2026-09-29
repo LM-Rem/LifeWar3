@@ -1,8 +1,9 @@
 import { GenerationQueue } from './generation-queue.js';
 import { decodeBoardPacket, orderedBoardEntries } from './board-protocol.js';
+import { visitBitmap } from './bitmap-codec.js';
 import { WorldTexture } from './world-texture.js';
 import { MinimapCache } from './minimap-cache.js';
-import { CellStore } from './cell-store.js';
+import { CellStore, BoardCells } from './cell-store.js';
 import { BASE_HIT_RADIUS, createTerritories, territoryOwner, canDeployInTerritory, territoryAt, adjacentNeutralTerritories } from './territory.js';
 import { browserMetrics } from './performance-metrics.js';
 export const COLORS = ['#67f5d1', '#ff796c', '#ac98ff', '#f4cc75'];
@@ -28,6 +29,7 @@ export class Battlefield {
     this.world = document.createElement('canvas'); this.world.width = 1000; this.world.height = 1000;
     this.wctx = this.world.getContext('2d'); this.board = new Uint8Array(1000000);
     this.texture = new WorldTexture(this.wctx, COLORS); this.minimapCache = new MinimapCache();
+    this.drawnGeneration=-1;this.lastDecodeMs=0;this.lastApplyMs=0;
     this.presentationEpoch=0;
     this.presentation=new GenerationQueue({onEvent:(name,value)=>{browserMetrics?.record(name,value,this.generation);this.onPresentationEvent?.(name,value);},onRecovery:reason=>this.onRecovery?.(reason)});
     this.boardRevision=0;this.boundsCache=new WeakMap();
@@ -49,11 +51,18 @@ export class Battlefield {
     this.dpr = Math.min(devicePixelRatio || 1, 2); this.canvas.width = Math.round(this.width * this.dpr); this.canvas.height = Math.round(this.height * this.dpr);
     this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
   }
-  reset() { this.presentation.reset(++this.presentationEpoch); this.presentation.visibility(document.hidden); this.boardRevision++; this.previewCache=null; this.cells.clear(); this.board.fill(0); this.texture.reset(); this.texture.flush(); this.minimapCache.invalidate(); this.effects = []; this.state = null; this.territories = []; this.generation = 0; this.keys.clear(); this.cameraTarget = null; }
+  reset() { this.drawnGeneration=-1;this.lastDecodeMs=0;this.lastApplyMs=0;this.presentation.reset(++this.presentationEpoch); this.presentation.visibility(document.hidden); this.boardRevision++; this.previewCache=null; this.cells.clear(); if(this.cells instanceof BoardCells)this.cells=new CellStore(this.board); this.board.fill(0); this.texture.reset(); this.texture.flush(); this.minimapCache.invalidate(); this.effects = []; this.state = null; this.territories = []; this.generation = 0; this.keys.clear(); this.cameraTarget = null; }
   receivePacket(buffer,epoch=this.presentation.epoch) {
-    const start=browserMetrics?browserMetrics.now():0,accepted=this.presentation.packet(buffer,epoch);
+    const start=performance.now(),accepted=this.presentation.packet(buffer,epoch);
+    this.lastDecodeMs=performance.now()-start;
     if(browserMetrics){browserMetrics.duration('packet.validateDecode.ms',start,this.presentation.received);if(accepted)browserMetrics.record('receivedGeneration',buffer.byteLength,this.presentation.received);}
     return accepted;
+  }
+  networkProgress() {
+    const q=this.presentation;
+    return {type:'client_progress',roomEpoch:q.roomEpoch,received:q.received,displayed:this.drawnGeneration,
+      queueDepth:q.packets.length,oldestMs:q.packets.length?Math.max(0,q.now()-q.packets[0].at):0,
+      decodeMs:this.lastDecodeMs,applyMs:this.lastApplyMs};
   }
   receiveState(state,epoch=this.presentation.epoch) {return this.presentation.state(state,epoch);}
   presentNext() {
@@ -73,24 +82,32 @@ export class Battlefield {
   }
   updatePacket(buffer,decoded) {
     const traceStart = browserMetrics ? browserMetrics.now() : 0;
-    decoded??=decodeBoardPacket(buffer);
-    const entries=orderedBoardEntries(decoded,this.board);
+    const applyStart=performance.now();
+    decoded??=decodeBoardPacket(buffer,{compactBitmap:true});
+    const entries=decoded.bitmap?null:orderedBoardEntries(decoded,this.board);
+    if(decoded.bitmap&&!(this.cells instanceof BoardCells))this.cells=new BoardCells(this.board,this.cells.size);
     this.boardRevision++;
     if (browserMetrics) {
       if (decoded.snapshot) browserMetrics.record('snapshot', 1, decoded.generation);
     }
     if (decoded.snapshot) { this.cells.clear(); this.board.fill(0); this.texture.reset(); this.minimapCache.invalidate(); }
     this.generation = decoded.generation;
-    for (const value of entries) {
+    if(decoded.bitmap)visitBitmap(decoded.bitmap,(key,owner)=>{
+      if(this.board[key]===owner)return;
+      if(owner)this.cells.set(key,owner);else this.cells.delete(key);
+      this.texture.set(key,owner);
+    });
+    else for (const value of entries) {
       const owner = Math.floor(value / 1000000), key = value % 1000000;
       // No-op entries (including dense tile padding on the board) must not
       // write cell storage or texture.
       if (this.board[key] === owner) continue;
-      this.board[key] = owner;
       if (owner) { this.cells.set(key,owner); this.texture.set(key,owner); }
       else { this.cells.delete(key); this.texture.set(key,0); }
+      this.board[key] = owner;
     }
     this.texture.flush();
+    this.lastApplyMs=performance.now()-applyStart;
     if (browserMetrics) {
       browserMetrics.duration('packet.decodeApplyTexture.ms', traceStart, this.generation);
       browserMetrics.record('appliedGeneration', 0, this.generation);
@@ -185,6 +202,7 @@ export class Battlefield {
       }
       this.camera.x=clamp(this.camera.x,0,1000);this.camera.y=clamp(this.camera.y,0,1000);
       this.draw(now);
+      this.drawnGeneration=this.generation;
       this.onPresented?.(this.generation);
       if (browserMetrics) browserMetrics.record('drawnGeneration', 0, this.generation);
       if(now-(this.lastMini||0)>=100){this.drawMinimap();this.lastMini=now;}

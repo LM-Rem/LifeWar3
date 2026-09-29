@@ -54,6 +54,7 @@ try{
   page.on('pageerror',e=>errors.push(e.message));page.on('websocket',socket=>socket.on('framereceived',({payload})=>{if(typeof payload==='string'){try{const msg=JSON.parse(payload);if(msg.type==='started'){started.push(msg.boardProtocol??1);capabilities.push(msg.bitmapTiles===true);epochs.push(msg.roomEpoch??msg.startedAt);}}catch{}}}));
   if(expected===1)await page.route('**/*.js',async route=>{const name=new URL(route.request().url()).pathname.slice(1);if(!/^[a-z0-9-]+\.js$/i.test(name))return route.continue();await route.fulfill({contentType:'text/javascript',body:readFileSync(new URL('../../public/'+name,import.meta.url),'utf8')});});
   await page.goto(`http://127.0.0.1:${port}/`);await page.locator('#practice').click();await page.waitForFunction(()=>Number(document.querySelector('#generation')?.textContent.replace(/\D/g,''))>=4);
+  if(expected===2)await page.waitForFunction(()=>window.lifeWarNetwork?.displayed>=0);
   assert.deepEqual(started,[expected]);await page.reload();await page.waitForFunction(()=>Number(document.querySelector('#generation')?.textContent.replace(/\D/g,''))>=6);
   assert.deepEqual(started,[expected,expected]);assert.deepEqual(capabilities,[expected===2,expected===2]);assert.equal(epochs[0],epochs[1],'resume keeps room epoch');await page.close();
  }

@@ -25,7 +25,8 @@ try {
     if(faulted||closing)return;
     try {
       switch(message.type) {
-        case 'ack':runtime.acknowledge(message.buffers);break;
+        case 'ack':runtime.acknowledge(message.buffers);runtime.drain();break;
+        case 'drain':runtime.updateBuffers(message.buffers);runtime.drain();break;
         case 'attach':runtime.attach(message.member);break;
         case 'disconnect':runtime.disconnect(message.id,message.session,message.explicit);break;
         case 'command': {

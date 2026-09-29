@@ -4,7 +4,7 @@ import { CARD_CONFIG, isTargetedCard, ruleLabel } from './cards.js';
 import { browserMetrics } from './performance-metrics.js';
 
 let cardState = null, cardEpoch = null, controlSocket = null, controlReady = false, controlSupported = false;
-let pendingCardPick = null, controlRetry;
+let pendingCardPick = null, controlRetry, progressSupported = false;
 function openCardControl() {
   clearTimeout(controlRetry);
   if (!controlSupported || !session || socket?.readyState !== WebSocket.OPEN || cardEpoch === null) return;
@@ -15,7 +15,7 @@ function openCardControl() {
     const msg = JSON.parse(event.data);
     if (msg.type === 'hello') ws.send(JSON.stringify({type:'bind_control',...session}));
     else if (msg.type === 'control_ready') controlReady = true;
-    else if (['card_state','card_picked','card_played','error'].includes(msg.type)) onMessage(msg);
+    else if (['card_state','card_picked','card_played','error','network_status'].includes(msg.type)) onMessage(msg);
   };
   ws.onclose = () => {
     if (ws !== controlSocket) return;
@@ -789,7 +789,7 @@ async function connect() {
     ws.onmessage=e=>{if(ws!==socket)return;if(e.data instanceof ArrayBuffer)battlefield.receivePacket(e.data);else{
       const traceStart=browserMetrics?browserMetrics.now():0;
       try{const msg=JSON.parse(e.data);if(msg.type==='hello'){
-        controlSupported = msg.cardControl === true;
+        controlSupported = msg.cardControl === true;progressSupported=msg.clientProgress===true;
         if(msg.boardProtocols?.includes(2))ws.send(JSON.stringify({type:'protocol',version:2,deltaVarint:msg.boardEncodings?.includes(2)===true,bitmapTiles:msg.boardEncodings?.includes(3)===true}));
         if(session)ws.send(JSON.stringify({type:'resume',...session}));connectionPromise=null;resolve();
       }onMessage(msg);}catch(err){console.error('Message error',err);}
@@ -810,7 +810,19 @@ async function connect() {
 }
 async function send(message) { try { await connect();if(['deploy','play_card'].includes(message.type))browserMetrics?.record('action.generationLag',Math.max(0,battlefield.presentation.received-battlefield.generation),battlefield.generation);const target = ['pick_card','play_card'].includes(message.type) && controlReady && controlSocket?.readyState === WebSocket.OPEN ? controlSocket : socket;target.send(JSON.stringify(message));return true; }catch(e){toast(e.message,true);return false;} }
 const getName=()=>{const name=$('#commander-name').value.trim()||'指挥官';saveStorage('lifewar.name',name);return name;};
+setInterval(()=>{
+  if(!progressSupported||page!=='game'||document.hidden||socket?.readyState!==WebSocket.OPEN)return;
+  const progress=battlefield.networkProgress();if(progress.received<0)return;
+  const target=controlReady&&controlSocket?.readyState===WebSocket.OPEN?controlSocket:socket;
+  if(target.bufferedAmount<16384)target.send(JSON.stringify(progress));
+},500);
 function onMessage(msg) {
+  if(msg.type==='network_status'){
+    if(msg.roomEpoch!==battlefield.presentation.roomEpoch)return;
+    window.lifeWarNetwork=msg;
+    $('#ping').title=`服务器 ${msg.computedGeneration}代 · 已发送 ${msg.sentGeneration}代 · 已接收 ${msg.received}代 · 已绘制 ${msg.displayed}代\n队列 ${msg.queueDepth}代 / ${Math.round(msg.oldestMs)}ms · 解码 ${msg.decodeMs.toFixed(1)}ms · 应用 ${msg.applyMs.toFixed(1)}ms`;
+    return;
+  }
   if (['left','lobby','resume_failed'].includes(msg.type)) { closeCardControl(); cardEpoch=null; cardState=null; pendingCardPick=null; }
   if (msg.type === 'error' && pendingCardPick) {
     pendingCardPick=null;

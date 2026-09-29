@@ -115,13 +115,21 @@ export class RoomRuntime {
       default:return fail('不支持的房间操作');
     }
   }
-  acknowledge(buffers) {
+  updateBuffers(buffers) {
     for(const {id,session,bufferedAmount} of buffers) {
       const peer=this.peers.get(id);
       if(peer?.session===session)peer.bufferedAmount=bufferedAmount;
     }
-    this.frameBusy=false;
-    // Do not spin on a blocked socket. The next tick or explicit request drains.
+  }
+  acknowledge(buffers) {
+    this.updateBuffers(buffers);this.frameBusy=false;
+  }
+  drain() {
+    if(this.closed||this.frameBusy)return;
+    // No empty-frame ACK loop. Backpressure notifications never release the
+    // output lock; only the ACK for a submitted frame may do that.
+    if([...this.peers.values()].some(p=>p.session!==null&&!p.bot&&p.bufferedAmount<=262144&&
+      (p.awaitingStart||p.needsSnapshot||p.sentGeneration<this.game.generation)))this.flush();
   }
   flush() {
     if(this.closed || this.frameBusy)return;
@@ -151,8 +159,8 @@ export class RoomRuntime {
         }
         if(replay && !peer.needsSnapshot) {
           // Submit only a bounded burst before learning the real socket buffer.
-          let bytes=0;
-          for(const packet of replay){board(peer,packet);bytes+=packet.byteLength;if(bytes>=262144)break;}
+          let bytes=0,count=0;
+          for(const packet of replay){board(peer,packet);bytes+=packet.byteLength;if(bytes>=262144||++count>=4)break;}
         }else peer.needsSnapshot=true;
       }
       if(peer.needsSnapshot) {

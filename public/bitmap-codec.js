@@ -44,42 +44,61 @@ export function writeBitmap(buffer,plan,keys,ownerAt,board) {
   }
 }
 
-export function readBitmap(buffer,count,snapshot) {
-  const v=new DataView(buffer),bytes=new Uint8Array(buffer),entries=new Uint32Array(count);
+// Validate the entire payload before exposing indexes to the renderer.
+export function readBitmap(buffer,count,snapshot,compact=false) {
+  const v=new DataView(buffer),bytes=new Uint8Array(buffer);
   check(buffer.byteLength>=36,'header');
   const tileCount=v.getUint16(32,true);check(tileCount>0&&tileCount<=TILES&&v.getUint16(34,true)===0,'tile count');
-  const seenTiles=new Uint8Array(TILES),seenLocals=new Uint8Array(1024);
+  const tiles=new Uint32Array(tileCount*3),seenTiles=new Uint8Array(TILES),seenLocals=new Uint8Array(1024);
   let p=36,n=0;
   for(let t=0;t<tileCount;t++){
     check(p+4<=bytes.length,'tile header');const tile=v.getUint16(p,true),mode=v.getUint16(p+2,true);p+=4;
     check(tile<TILES&&!seenTiles[tile],'tile duplicate');seenTiles[tile]=1;
+    tiles.set([tile,mode,p],t*3);
     const x=(tile&31)*32,y=(tile>>>5)*32,width=Math.min(32,SIZE-x),height=Math.min(32,SIZE-y);
     if(mode===BITMAP){
       check(p+128<=bytes.length&&n+width*height<=count,'bitmap length/count');
       let live=0;
-      for(let local=0;local<1024;local++){
-        const occupied=(bytes[p+(local>>>3)]>>>(local&7))&1;
-        if((local&31)>=width||(local>>>5)>=height)check(!occupied,'edge padding');
-        live+=occupied;
+      for(let row=0;row<32;row++)for(let byte=0;byte<4;byte++){
+        const mask=bytes[p+row*4+byte];
+        if(row>=height||byte*8>=width)check(!mask,'edge padding');
+        live+=POPCOUNT[mask];
       }
       const ownerBytes=Math.ceil(live/4),owners=p+128;
       check(owners+ownerBytes<=bytes.length,'owners truncated');
       if(live%4)check((bytes[owners+ownerBytes-1]>>((live%4)*2))===0,'owner padding');
-      let index=0;
-      for(let row=0;row<height;row++)for(let col=0;col<width;col++){
-        const local=row*32+col,occupied=(bytes[p+(local>>>3)]>>>(local&7))&1;
-        const owner=occupied?((bytes[owners+(index>>>2)]>>>((index++&3)*2))&3)+1:0;
-        entries[n++]=(y+row)*SIZE+x+col+owner*1000000;
-      }
-      p=owners+ownerBytes;
+      n+=width*height;p=owners+ownerBytes;
     }else{
       check(mode>0&&mode<=1024&&p+mode*2<=bytes.length&&n+mode<=count,'sparse mode/count');seenLocals.fill(0);
       for(let i=0;i<mode;i++){
         const value=v.getUint16(p,true);p+=2;const local=value&1023,owner=value>>>10;
         check((local&31)<width&&(local>>>5)<height&&!seenLocals[local]&&owner<=4&&(!snapshot||owner>0),'sparse entry');
-        seenLocals[local]=1;entries[n++]=(y+(local>>>5))*SIZE+x+(local&31)+owner*1000000;
+        seenLocals[local]=1;
       }
+      n+=mode;
     }
   }
-  check(n===count&&p===bytes.length,'trailing bytes/count');return entries;
+  check(n===count&&p===bytes.length,'trailing bytes/count');
+  const bitmap={buffer,tiles};
+  if(compact)return bitmap;
+  const entries=new Uint32Array(count);let i=0;visitBitmap(bitmap,(key,owner)=>{entries[i++]=key+owner*1000000;});return entries;
+}
+const POPCOUNT=Uint8Array.from({length:256},(_,n)=>{let count=0;while(n){n&=n-1;count++;}return count;});
+
+// The buffer/index pair comes only from readBitmap's full validation above.
+export function visitBitmap({buffer,tiles},visit) {
+  const bytes=new Uint8Array(buffer),v=new DataView(buffer);
+  for(let t=0;t<tiles.length;t+=3){
+    const tile=tiles[t],mode=tiles[t+1],p=tiles[t+2],x=(tile&31)*32,y=(tile>>>5)*32;
+    if(mode===BITMAP){
+      const width=Math.min(32,SIZE-x),height=Math.min(32,SIZE-y);let live=0;
+      for(let row=0;row<height;row++)for(let col=0;col<width;col++){
+        const local=row*32+col,occupied=(bytes[p+(local>>>3)]>>>(local&7))&1;
+        const owner=occupied?((bytes[p+128+(live>>>2)]>>>((live++&3)*2))&3)+1:0;
+        visit((y+row)*SIZE+x+col,owner);
+      }
+    }else for(let i=0;i<mode;i++){
+      const value=v.getUint16(p+i*2,true),local=value&1023;visit((y+(local>>>5))*SIZE+x+(local&31),value>>>10);
+    }
+  }
 }

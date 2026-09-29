@@ -18,7 +18,7 @@ export class GenerationQueue {
   }
   packet(buffer,epoch=this.epoch) {
     if(epoch!==this.epoch||this.paused)return false;
-    let decoded;try{decoded=decodeBoardPacket(buffer);}catch{this.fail('invalid-packet');return false;}
+    let decoded;try{decoded=decodeBoardPacket(buffer,{compactBitmap:true});}catch{this.fail('invalid-packet');return false;}
     if(decoded.version!==this.version){this.fail('protocol-version');return false;}
     if(decoded.version===2&&decoded.roomEpoch!==this.roomEpoch)return false;
     if(decoded.encoding===3&&!this.bitmapTiles){this.fail('protocol-encoding');return false;}
@@ -32,7 +32,7 @@ export class GenerationQueue {
       if(this.waiting)return false;
       if(generation<this.received)return false;
       if(generation===this.received){
-        if(!decoded.entries.length||this.samePacket(buffer))return false;
+        if(!(decoded.entryCount??decoded.entries.length)||this.samePacket(buffer))return false;
         this.onEvent('presentation.revision',{generation});
       }
       if(generation>this.received+1){this.fail('generation-gap');return false;}

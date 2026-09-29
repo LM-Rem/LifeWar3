@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {encodeBoardV2,decodeBoardPacket,orderedBoardEntries} from '../public/board-protocol.js';
+import {visitBitmap} from '../public/bitmap-codec.js';
 import {GenerationQueue} from '../public/generation-queue.js';
 import {randomSource} from './helpers/load-fixture.js';
 const N=1000000;
@@ -29,13 +30,16 @@ test('bitmap full-tile replacement handles edges, existing cells, deletions, sna
 });
 
 test('200 randomized mixed sparse/bitmap generations exactly reconstruct the authoritative board',()=>{
-  const random=randomSource(918),board=new Uint8Array(N),target=new Uint8Array(N),keys=[...tileKeys(0),...tileKeys(1),...tileKeys(1023)];
+  const random=randomSource(918),board=new Uint8Array(N),target=new Uint8Array(N),compactTarget=new Uint8Array(N),keys=[...tileKeys(0),...tileKeys(1),...tileKeys(1023)];
   let bitmap=0;
   for(let generation=1;generation<=200;generation++){
     const changes=new Set();for(let i=0;i<(generation%3?20:5000);i++){const k=keys[Math.floor(random()*keys.length)];board[k]=Math.floor(random()*5);changes.add(k);}
     const snapshot=generation%23===0,selected=snapshot?keys.filter(k=>board[k]):[...changes];
     const b=encode(board,selected,{snapshot,generation,baseGeneration:generation-1}),p=apply(b,target);
     bitmap+=p.encoding===3;assert.deepEqual(target,board,`generation ${generation}`);
+    const compact=decodeBoardPacket(b,{compactBitmap:true});if(compact.snapshot)compactTarget.fill(0);
+    if(compact.bitmap)visitBitmap(compact.bitmap,(k,o)=>{compactTarget[k]=o;});else for(const value of compact.entries)compactTarget[value%N]=Math.floor(value/N);
+    assert.deepEqual(compactTarget,board,`compact generation ${generation}`);
     assert.ok(b.byteLength<=encode(board,selected,{snapshot,generation,baseGeneration:generation-1,allowBitmap:false}).byteLength);
   }
   assert.ok(bitmap>0);
@@ -72,5 +76,5 @@ test('bitmap packets require explicit capability and decoded memory remains boun
   q.configure(2,7);assert.equal(q.packet(snapshot),false);assert.equal(q.lastFailure.reason,'protocol-encoding');
   q.configure(2,7,{bitmapTiles:true});assert.ok(q.packet(snapshot));q.take();
   assert.ok(q.packet(encode(board,keys)));assert.equal(q.take().packet.generation,1);
-  q.maxBytes=1000;assert.equal(q.packet(encode(board,keys,{generation:2,baseGeneration:1})),false);assert.equal(q.lastFailure.reason,'overflow');
+  q.maxBytes=100;assert.equal(q.packet(encode(board,keys,{generation:2,baseGeneration:1})),false);assert.equal(q.lastFailure.reason,'overflow');
 });
