@@ -2742,6 +2742,10 @@ body.no-motion *::after {
   min-height: 28px
 }
 
+.library-direction { display: flex; align-items: center; gap: 8px; color: #a4bbc2; font-size: 12px; }
+.library-direction select { background: #0a141b; color: #d9e8eb; border: 1px solid var(--line); border-radius: 4px; padding: 7px 9px; font: inherit; }
+.library-direction select:focus { outline: 1px solid var(--accent); }
+
 .library-actions .button {
   font-size: 10px;
   min-height: 32px;

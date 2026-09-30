@@ -1,4 +1,6 @@
-import { normalize } from './patterns.js';
+import { normalize, DIRECTIONS } from './patterns.js';
+
+document.querySelector('#library-direction').insertAdjacentHTML('beforeend', Object.keys(DIRECTIONS).map(d => `<option value="${d}">${d}</option>`).join(''));
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -297,6 +299,7 @@ function renderDetail() {
 }
 
 function fillEditorForm() {
+  $('#library-direction').value = selectedPattern?.direction || '';
   if (selectedPattern) {
     $('#library-name').value = selectedPattern.name || '';
     $('#library-en').value = selectedPattern.en || '';
@@ -346,6 +349,7 @@ async function addGamePattern() {
         role: role.slice(0, 32) || '图案库 / 导入',
         desc: desc.slice(0, 200) || `来自图案集 ${fileBase || '未命名'}，共 ${currentCells.length} 个细胞。`,
         category,
+        direction: $('#library-direction').value || null,
         cells: currentCells,
       }),
     });
@@ -368,7 +372,7 @@ async function saveGamePattern() {
     const res = await fetch('/api/patterns', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'update', id: selectedPattern.id, name, en, role, desc, category, cells }),
+      body: JSON.stringify({ action: 'update', id: selectedPattern.id, name, en, role, desc, category, cells, direction: $('#library-direction').value || null }),
     });
     const data = await res.json();
     if (data.ok) {

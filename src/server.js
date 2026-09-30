@@ -16,6 +16,7 @@ import { staticAssets } from './static-assets.js';
 import { RoomWorkerClient } from './room-worker-client.js';
 import { boardVariant } from '../public/board-protocol.js';
 import { acceptClientProgress } from './client-progress.js';
+import { normalizeDirection } from '../public/patterns.js';
 
 const ROOT = fileURLToPath(new URL('../public/', import.meta.url));
 const LIBRARY_DIR = fileURLToPath(new URL('../图案集_128/', import.meta.url));
@@ -134,6 +135,9 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
           res.writeHead(200, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({ ok: true }));
         }
+        let direction;
+        try { direction = normalizeDirection(input.direction); }
+        catch { res.writeHead(400, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify('方向仅允许为空或上、下、左、右、左上、右上、左下、右下')); }
         if (action === 'update') {
           const id = String(input.id || '');
           const index = data.patterns.findIndex(p => p.id === id);
@@ -146,6 +150,7 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
           const category = String(input.category || 'other').trim().slice(0, 20) || 'other';
           const updated = {
             ...data.patterns[index],
+            direction: input.direction === undefined ? (data.patterns[index].direction ?? null) : direction,
             name,
             en: String(input.en || '').trim().slice(0, 32) || data.patterns[index].en || 'LIFE DNA',
             role: String(input.role || '').trim().slice(0, 32) || data.patterns[index].role || '生命图谱',
@@ -167,6 +172,7 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
         const category = String(input.category || 'other').trim().slice(0, 20) || 'other';
         const pattern = {
           id: 'lib-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7),
+          direction,
           name,
           en: String(input.en || '').trim().slice(0, 32) || 'LIBRARY DNA',
           role: String(input.role || '').trim().slice(0, 32) || '图案库 / 导入',

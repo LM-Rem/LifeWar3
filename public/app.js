@@ -1,4 +1,4 @@
-import { PATTERNS, PATTERN_CATEGORIES, setPatternData, transform, normalize, parseRLE, toRLE } from './patterns.js';
+import { PATTERNS, PATTERN_CATEGORIES, setPatternData, transform, transformDirection, normalize, parseRLE, toRLE } from './patterns.js';
 import { Battlefield, Ambient, COLORS, drawPattern } from './renderer.js';
 import { CARD_CONFIG, isTargetedCard, ruleLabel } from './cards.js';
 import { browserMetrics } from './performance-metrics.js';
@@ -929,7 +929,7 @@ function cycleCategory(delta){
 function renderPatterns(){
   allPatterns=visiblePatterns();
   $('#pattern-list').innerHTML=allPatterns.map((p,i)=>`<button class="pattern-card ${selected&&p.id===selected.id?'selected':''}" data-pattern="${escapeHTML(p.id)}" title="${escapeHTML(p.desc)}"><span class="shortcut">${i<7?i+1:'C'}</span><canvas width="118" height="94"></canvas><strong>${escapeHTML(p.name)}</strong><span class="pattern-cost">${p.cells.length} EN</span></button>`).join('');
-  $$('.pattern-card').forEach((b,i)=>{drawPattern(b.querySelector('canvas'),allPatterns[i].cells,COLORS[playerId-1]);b.onclick=()=>{selectPattern(allPatterns[i]);sound();};});
+  $$('.pattern-card').forEach((b,i)=>{drawPattern(b.querySelector('canvas'),allPatterns[i].cells,COLORS[playerId-1],allPatterns[i].direction);b.onclick=()=>{selectPattern(allPatterns[i]);sound();};});
 }
 function selectPattern(pattern,keepTransform=false){
   if(selected)transformState.set(selected.id,{rotation,flipped});
@@ -940,7 +940,7 @@ function selectPattern(pattern,keepTransform=false){
   battlefield.pattern=transform(selected.cells,rotation,flipped);
   $('#selected-name').textContent=selected.name;$('#selected-en').textContent=selected.en;$('#selected-role').textContent=selected.role;$('#selected-description').textContent=selected.desc;$('#selected-cost').textContent=selected.cells.length;
   $('#transform-label').textContent=`${rotation*90}° / ${flipped?'镜像':'正向'}`;
-  drawPattern($('#selected-preview'),battlefield.pattern,COLORS[playerId-1]);
+  drawPattern($('#selected-preview'),battlefield.pattern,COLORS[playerId-1],transformDirection(selected.direction,rotation,flipped));
   $('.range-legend').style.color=COLORS[playerId-1];
   $('.range-legend i').style.borderColor=COLORS[playerId-1];
   $('.range-legend i').style.background=COLORS[playerId-1]+'1a';

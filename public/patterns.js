@@ -11,6 +11,24 @@ export function transform(cells, rotation = 0, flip = false) {
   }));
 }
 
+export const DIRECTIONS = Object.freeze({
+  上: [0, -1], 下: [0, 1], 左: [-1, 0], 右: [1, 0],
+  左上: [-1, -1], 右上: [1, -1], 左下: [-1, 1], 右下: [1, 1],
+});
+export function normalizeDirection(direction) {
+  if (direction == null || direction === '') return null;
+  if (!Object.hasOwn(DIRECTIONS, direction) || typeof direction !== 'string') throw new Error('图案方向无效');
+  return direction;
+}
+export function transformDirection(direction, rotation = 0, flip = false) {
+  direction = normalizeDirection(direction);
+  if (!direction) return null;
+  let [x, y] = DIRECTIONS[direction];
+  if (flip) x = -x;
+  for (let i = 0; i < rotation; i++) [x, y] = [-y, x];
+  return Object.keys(DIRECTIONS).find(key => DIRECTIONS[key][0] === x && DIRECTIONS[key][1] === y);
+}
+
 // 图案数据统一保存在 patterns.json（分类 + 图案列表）。
 // - Node 端（服务器 / 测试 / 实验脚本）：模块加载时同步读取 JSON，保证 PATTERNS 立即可用。
 // - 浏览器端：由 app.js 通过 fetch 加载 patterns.json 后调用 setPatternData 注入。
