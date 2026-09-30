@@ -228,8 +228,8 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
       onMessage:message=>{
         if(room.worker!==bridge)return;
         if(message.type==='adapter') {
-          if(message.adapter)console.log(`[room ${room.code}] WebGPU evolution:`,message.adapter);
-          else console.warn(`[room ${room.code}] WebGPU unavailable; CPU fallback:`,message.warning);
+          if(message.adapter)console.log(`[房间 ${room.code}] WebGPU 演化：`,message.adapter);
+          else console.warn(`[房间 ${room.code}] WebGPU 不可用，已回退 CPU 后端：`,message.warning);
           return;
         }
         const oldStatus=room.game.status;
@@ -588,8 +588,8 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
   return { server, rooms, wss, performanceReport: () => metrics ? { ...metrics.export(), eventLoop: eventLoop.export() } : null,
     listen: async () => {
       if (evolutionMode === 'gpu' && !roomWorkers) {
-        try { gpuEvolution = await createGpuEvolution({ size: RULES.size }); console.log('WebGPU evolution:', gpuEvolution.adapter); }
-        catch (error) { console.warn('WebGPU unavailable; using CPU:', error.message); }
+        try { gpuEvolution = await createGpuEvolution({ size: RULES.size }); console.log('WebGPU 演化：', gpuEvolution.adapter); }
+        catch (error) { console.warn('WebGPU 不可用，已回退 CPU 后端：', error.message); }
       }
       return new Promise(resolve => server.listen(port, host, () => resolve(server.address())));
     }, close: async () => {closed();await Promise.all([new Promise(resolve=>server.close(resolve)),...retiringWorkers]);} };
