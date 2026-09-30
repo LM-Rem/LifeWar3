@@ -46,7 +46,7 @@ export class RoomRuntime {
   packet(variant, snapshot = false, ordered = false) {
     return variant===1 ? this.game.packet(snapshot) : this.game.packetV2({
       roomEpoch:this.epoch, baseGeneration:this.baseGeneration, previous:this.baseline,
-      snapshot, forceOrdered:ordered, allowVarint:String(variant).endsWith('-varint'), allowBitmap:String(variant).startsWith('2-bitmap'), allowPalette:String(variant).includes('-palette')
+      snapshot, forceOrdered:ordered, allowVarint:String(variant).endsWith('-varint'), allowBitmap:String(variant).startsWith('2-bitmap'), allowPalette:String(variant).includes('-palette'), allowTileModes:String(variant).includes('-modes')
     });
   }
   recordFrame() {
@@ -146,7 +146,7 @@ export class RoomRuntime {
     for(const peer of this.peers.values()) {
       if(peer.session===null || peer.bot)continue;
       if(peer.awaitingStart) {
-        events.push(this.json(peer,{type:'started',id:peer.id,rules:RULES,startedAt:g.startedAt,roomEpoch:this.epoch,boardProtocol:peer.boardVersion,bitmapTiles:!!peer.bitmapTiles,paletteTiles:!!peer.paletteTiles}));
+        events.push(this.json(peer,{type:'started',id:peer.id,rules:RULES,startedAt:g.startedAt,roomEpoch:this.epoch,boardProtocol:peer.boardVersion,bitmapTiles:!!peer.bitmapTiles,paletteTiles:!!peer.paletteTiles,tileModes:!!peer.tileModes}));
         events.push(...this.states(peer));peer.awaitingStart=false;
       } else if(this.stateDue)events.push(...this.states(peer).filter(e=>e.control));
       if(peer.bufferedAmount>262144)continue;

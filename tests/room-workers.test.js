@@ -18,15 +18,15 @@ async function client(url){
 }
 const factory=(options,callbacks)=>new RoomWorkerClient({...options,gameOptions:{cardDrawTimes:[0]},bots:false},{...callbacks,workerURL:new URL('./fixtures/room-worker-instrumented.mjs',import.meta.url)});
 
-for(const paletteTiles of [false,true])test(`real dense worker negotiates bitmap/palette=${paletteTiles} and legacy peers independently and resumes sessions`,async t=>{
+for(const [paletteTiles,tileModes] of [[false,false],[true,false],[true,true]])test(`real dense worker negotiates bitmap/palette=${paletteTiles}/modes=${tileModes} and legacy peers independently and resumes sessions`,async t=>{
   const app=createServer({port:0,host:'127.0.0.1',roomWorkers:true,boardProtocol:2,evolutionMode:'sparse',
-    roomWorkerFactory:(options,callbacks)=>new RoomWorkerClient({...options,testLoad:true,testPalette:paletteTiles,bots:false,gameOptions:{cardDrawTimes:[]}},{...callbacks,workerURL:new URL('./fixtures/room-worker-instrumented.mjs',import.meta.url)})});
+    roomWorkerFactory:(options,callbacks)=>new RoomWorkerClient({...options,testLoad:true,testPalette:paletteTiles,testTileModes:tileModes,bots:false,gameOptions:{cardDrawTimes:[]}},{...callbacks,workerURL:new URL('./fixtures/room-worker-instrumented.mjs',import.meta.url)})});
   const {port}=await app.listen(),url=`ws://127.0.0.1:${port}/ws`,peers=[];
   t.after(async()=>{for(const p of peers)p.ws.terminate();await app.close();});
   const a=await client(url),b=await client(url);peers.push(a,b);
   for(const [peer,bitmapTiles] of [[a,true],[b,false]]){
     assert.ok((await peer.wait('hello')).boardEncodings.includes(3));
-    peer.send({type:'protocol',version:2,deltaVarint:true,bitmapTiles,paletteTiles});const ack=await peer.wait('protocol');assert.equal(ack.bitmapTiles,bitmapTiles);assert.equal(ack.paletteTiles,bitmapTiles&&paletteTiles);
+    peer.send({type:'protocol',version:2,deltaVarint:true,bitmapTiles,paletteTiles,tileModes});const ack=await peer.wait('protocol');assert.equal(ack.bitmapTiles,bitmapTiles);assert.equal(ack.paletteTiles,bitmapTiles&&paletteTiles);assert.equal(ack.tileModes,bitmapTiles&&paletteTiles&&tileModes);
   }
   a.send({type:'create',name:'Bitmap'});const welcome=await a.wait('welcome');
   b.send({type:'join',code:welcome.code,name:'Legacy'});await b.wait('welcome');b.send({type:'ready'});
@@ -36,18 +36,18 @@ for(const paletteTiles of [false,true])test(`real dense worker negotiates bitmap
   for(let generation=0;generation<5;generation++){
     for(let i=0;i<2;i++){
       const {data}=await peers[i].wait('binary'),p=decodeBoardPacket(data.buffer.slice(data.byteOffset,data.byteOffset+data.byteLength));
-      assert.equal(p.generation,generation);if(generation>0)assert.equal(p.encoding===(paletteTiles?4:3),i===0);
+      assert.equal(p.generation,generation);if(generation>0)assert.equal(p.encoding===(tileModes?5:paletteTiles?4:3),i===0);
       if(p.snapshot)boards[i].fill(0);
       for(const value of orderedBoardEntries(p,boards[i]))boards[i][value%1000000]=Math.floor(value/1000000);
     }
-    assert.deepEqual(boards[0],boards[1]);
+    const mismatch=boards[0].findIndex((owner,key)=>owner!==boards[1][key]);assert.equal(mismatch,-1,`first board mismatch at ${mismatch}`);
   }
   a.ws.terminate();const resumed=await client(url);peers.push(resumed);
   // Bitmap without varint is a distinct, supported capability combination.
-  resumed.send({type:'protocol',version:2,bitmapTiles:true,paletteTiles});assert.equal((await resumed.wait('protocol')).deltaVarint,false);
+  resumed.send({type:'protocol',version:2,bitmapTiles:true,paletteTiles,tileModes});assert.equal((await resumed.wait('protocol')).deltaVarint,false);
   resumed.send({type:'resume',code:welcome.code,token:welcome.token});assert.equal((await resumed.wait('started')).bitmapTiles,true);
-  const snapshot=(await resumed.wait('binary')).data;assert.equal(snapshot.readUInt16LE(6),1);assert.equal(snapshot[5],paletteTiles?4:3);
-  const next=(await resumed.wait('binary')).data;assert.equal(next.readUInt32LE(12),snapshot.readUInt32LE(12)+1);assert.equal(next.readUInt16LE(6),0);assert.equal(next[5],paletteTiles?4:3);
+  const snapshot=(await resumed.wait('binary')).data;assert.equal(snapshot.readUInt16LE(6),1);assert.equal(snapshot[5],tileModes?5:paletteTiles?4:3);
+  const next=(await resumed.wait('binary')).data;assert.equal(next.readUInt32LE(12),snapshot.readUInt32LE(12)+1);assert.equal(next.readUInt16LE(6),0);assert.equal(next[5],tileModes?5:paletteTiles?4:3);
 });
 
 test('worker disconnect expiry migrates host before a three-player match finishes',async t=>{

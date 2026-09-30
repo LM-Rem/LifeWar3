@@ -1,45 +1,55 @@
-// Encoding 3: tile-local sparse updates or a complete occupancy/owner bitmap.
-// Network order is deliberately independent of the simulation's alive order.
+// EXPERIMENT ONLY. Encoding 250 is never advertised by production.
+// Forked bitmap reader/writer keeps legacy validation comparable; see validation report.
+import {planBitmap as legacyPlan,visitBitmap as legacyVisit} from '../public/bitmap-codec.js';
+import {encodeBoardV2,decodeBoardPacket} from '../public/board-protocol.js';
 export const SOLID=0x8003, RLE=0x8004, MASK=0x8005;
+// Network order is deliberately independent of the simulation's alive order.
 const SIZE=1000, TILES=1024, BITMAP=0x8001, PALETTE=0x8002;
 const tileOf=k=>((Math.floor(k/SIZE)>>>5)*32)+((k%SIZE)>>>5);
 const localOf=k=>(Math.floor(k/SIZE)&31)*32+(k%SIZE&31);
 const check=(ok,message)=>{if(!ok)throw new Error('board-protocol: bitmap '+message);};
 
-export function planBitmap(keys,board,allowPalette=false) {
-  const counts=new Uint16Array(TILES),tiles=[];
-  for(let i=0;i<keys.length;i++)counts[tileOf(keys[i])]++;
-  let payload=4,represented=0;
-  for(let tile=0;tile<TILES;tile++){
-    const count=counts[tile];if(!count)continue;
-    const x=(tile&31)*32,y=(tile>>>5)*32,width=Math.min(32,SIZE-x),height=Math.min(32,SIZE-y);
-    let live=0,bitmap=false,bytes=count*2,mask=0,bits=2,palette=false;
-    if(bytes>128){
-      for(let row=0;row<height;row++)for(let col=0;col<width;col++){const owner=board[(y+row)*SIZE+x+col];if(owner){live++;if(allowPalette)mask|=1<<(owner-1);}}
-      let packed=128+Math.ceil(live/4);
-      const colors=POPCOUNT[mask];
-      if(allowPalette&&colors>0&&colors<=2){
-        const localBits=colors-1,localBytes=129+Math.ceil(live*localBits/8);
-        if(localBytes<packed){packed=localBytes;bits=localBits;palette=true;}
+export function planModes(keys,board,{solid=false,rle=false,mask=false}={}) {
+  const plan=legacyPlan(keys,board,true);
+  plan.payload=4;plan.represented=0;
+  for(const t of plan.tiles){
+    t.mode=t.bitmap?(t.palette?PALETTE:BITMAP):t.count;
+    const maskBytes=128+Math.ceil(t.count*3/8);
+    if(mask&&maskBytes<t.bytes){t.mode=MASK;t.bytes=maskBytes;}
+    if(solid||rle){
+      const runs=[];let owner=-1,length=0,aborted=false;
+      scan:for(let row=0;row<t.height;row++)for(let col=0;col<t.width;col++){
+        const value=board[(t.y+row)*SIZE+t.x+col];
+        if(value===owner)length++;
+        else{
+          if(length)runs.push((length-1)|(owner<<10));owner=value;length=1;
+          // Once two states are seen SOLID is impossible. Stop when RLE also
+          // cannot beat the current candidate; later runs only add bytes.
+          if(runs.length&&(!rle||2+2*(runs.length+1)>=t.bytes)){aborted=true;break scan;}
+        }
       }
-      if(packed<bytes){bitmap=true;bytes=packed;}
+      if(!aborted){
+        runs.push((length-1)|(owner<<10));
+        if(solid&&runs.length===1&&1<t.bytes){t.mode=SOLID;t.bytes=1;t.solidOwner=owner;}
+        else if(rle&&2+2*runs.length<t.bytes){t.mode=RLE;t.bytes=2+2*runs.length;t.runs=runs;}
+      }
     }
-    tiles.push({tile,count,x,y,width,height,live,bitmap,bytes,mask,bits,palette:bitmap&&palette});
-    payload+=4+bytes;represented+=bitmap?width*height:count;
+    plan.payload+=4+t.bytes;
+    plan.represented+=t.mode<=1024||t.mode===MASK?t.count:t.width*t.height;
   }
-  return {tiles,payload,represented};
+  return plan;
 }
 
 export function writeBitmap(buffer,plan,keys,ownerAt,board) {
   const v=new DataView(buffer),bytes=new Uint8Array(buffer),offsets=new Uint32Array(TILES);
-  const maskTiles=plan.hasMask?new Uint8Array(TILES):null;
+  plan.tilesById=Object.fromEntries(plan.tiles.map(t=>[t.tile,t]));
   let p=32;v.setUint16(p,plan.tiles.length,true);p+=4;
   for(const t of plan.tiles){
-    v.setUint16(p,t.tile,true);v.setUint16(p+2,t.mode??(t.bitmap?(t.palette?PALETTE:BITMAP):t.count),true);p+=4;
+    v.setUint16(p,t.tile,true);v.setUint16(p+2,t.mode,true);p+=4;
     if(t.mode===SOLID){bytes[p]=t.solidOwner;}
     else if(t.mode===RLE){v.setUint16(p,t.runs.length,true);for(let i=0;i<t.runs.length;i++)v.setUint16(p+2+2*i,t.runs[i],true);}
-    else if(t.mode===MASK){offsets[t.tile]=p;maskTiles[t.tile]=1;}
-    else if(t.bitmap){
+    else if(t.mode===MASK){offsets[t.tile]=p;}
+    else if(t.mode>1024){
       let live=0;const colors=[];
       if(t.palette){bytes[p+128]=t.mask;for(let o=1;o<=4;o++)if(t.mask&(1<<(o-1)))colors.push(o);}
       for(let row=0;row<t.height;row++)for(let col=0;col<t.width;col++){
@@ -54,7 +64,7 @@ export function writeBitmap(buffer,plan,keys,ownerAt,board) {
   }
   for(let i=0;i<keys.length;i++){
     const key=keys[i],tile=tileOf(key),offset=offsets[tile];if(!offset)continue;
-    if(maskTiles?.[tile]){bytes[offset+(localOf(key)>>>3)]|=1<<(localOf(key)&7);}
+    if(plan.tilesById[tile].mode===MASK){bytes[offset+(localOf(key)>>>3)]|=1<<(localOf(key)&7);}
     else{v.setUint16(offset,localOf(key)+ownerAt(key)*1024,true);offsets[tile]+=2;}
   }
   for(const t of plan.tiles)if(t.mode===MASK){
@@ -68,7 +78,7 @@ export function writeBitmap(buffer,plan,keys,ownerAt,board) {
 }
 
 // Validate the entire payload before exposing indexes to the renderer.
-export function readBitmap(buffer,count,snapshot,compact=false,allowPalette=false,allowTileModes=false) {
+export function readBitmap(buffer,count,snapshot,compact=false,allowPalette=false) {
   const v=new DataView(buffer),bytes=new Uint8Array(buffer);
   check(buffer.byteLength>=36,'header');
   const tileCount=v.getUint16(32,true);check(tileCount>0&&tileCount<=TILES&&v.getUint16(34,true)===0,'tile count');
@@ -80,16 +90,13 @@ export function readBitmap(buffer,count,snapshot,compact=false,allowPalette=fals
     tiles.set([tile,mode,p],t*3);
     const x=(tile&31)*32,y=(tile>>>5)*32,width=Math.min(32,SIZE-x),height=Math.min(32,SIZE-y);
     if(mode===SOLID){
-      check(allowTileModes,'mode capability');
       check(p<bytes.length&&bytes[p]<=4&&n+width*height<=count,'solid owner/count');p++;n+=width*height;
     }else if(mode===RLE){
-      check(allowTileModes,'mode capability');
       check(p+2<=bytes.length,'rle header');const runs=v.getUint16(p,true);p+=2;
       check(runs>0&&runs<=width*height&&p+runs*2<=bytes.length,'rle length');let area=0,last=-1;
       for(let i=0;i<runs;i++){const value=v.getUint16(p,true);p+=2;const owner=value>>>10;check(owner<=4&&owner!==last,'rle owner/canonical');last=owner;area+=(value&1023)+1;check(area<=width*height,'rle overrun');}
       check(area===width*height&&n+area<=count,'rle area/count');n+=area;
     }else if(mode===MASK){
-      check(allowTileModes,'mode capability');
       check(p+128<=bytes.length,'mask header');let changed=0;
       for(let local=0;local<1024;local++)if(bytes[p+(local>>>3)]&(1<<(local&7))){check((local&31)<width&&(local>>>5)<height,'mask edge');changed++;}
       const ownerBytes=Math.ceil(changed*3/8),at=p+128;
@@ -157,4 +164,30 @@ export function visitBitmap({buffer,tiles},visit) {
       const value=v.getUint16(p+i*2,true),local=value&1023;visit((y+(local>>>5))*SIZE+x+(local&31),value>>>10);
     }
   }
+}
+
+
+export function encodeExperimental(options,modes={solid:true,rle:true,mask:true}) {
+  const baseline=encodeBoardV2({...options,allowBitmap:true,allowPalette:true,allowVarint:true});
+  if(!options.keys.length)return baseline;
+  const plan=planModes(options.keys,options.board,modes);
+  if(32+plan.payload>=baseline.byteLength)return baseline;
+  const buffer=new ArrayBuffer(32+plan.payload),v=new DataView(buffer);
+  new Uint8Array(buffer,0,32).set(new Uint8Array(baseline,0,32));v.setUint8(5,250);
+  v.setUint32(20,plan.payload,true);v.setUint32(24,plan.represented,true);v.setUint32(28,0,true);
+  writeBitmap(buffer,plan,options.keys,options.ownerAt,options.board);return buffer;
+}
+export function decodeExperimental(buffer) {
+  check(buffer instanceof ArrayBuffer&&buffer.byteLength>=32&&buffer.byteLength<=4*1024*1024,'packet length');
+  const v=new DataView(buffer);if(v.getUint8(5)!==250)return decodeBoardPacket(buffer,{compactBitmap:true});
+  const snapshot=v.getUint16(6,true)===1,generation=v.getUint32(12,true),baseGeneration=v.getUint32(16,true),count=v.getUint32(24,true);
+  check(v.getUint32(0,true)===0x3252574c&&v.getUint8(4)===2&&v.getUint16(6,true)<=1&&v.getUint32(8,true)>0,'packet header');
+  check(v.getUint32(20,true)===buffer.byteLength-32&&count<=1000000&&v.getUint32(28,true)===0,'packet count');
+  check(snapshot?baseGeneration===0xffffffff:baseGeneration<=generation&&generation-baseGeneration<=1,'packet generation');
+  return {version:2,encoding:250,snapshot,generation,baseGeneration,roomEpoch:v.getUint32(8,true),entryCount:count,bitmap:readBitmap(buffer,count,snapshot,true,true)};
+}
+export function applyExperimental(packet,board) {
+  if(packet.snapshot)board.fill(0);
+  if(packet.bitmap)(packet.encoding===250?visitBitmap:legacyVisit)(packet.bitmap,(key,owner)=>{board[key]=owner;});
+  else for(const value of packet.entries)board[value%1000000]=Math.floor(value/1000000);
 }

@@ -20,7 +20,7 @@
 |---:|---:|---|---|
 | 0 | 4 | magic | `0x3252574c`，字节 ASCII `LWR2`，与 v1 的 0/1 标记不混淆 |
 | 4 | 1 | version | 2 |
-| 5 | 1 | encoding | 0 = ordered24；1 = tiled；2 = delta-varint；3 = bitmap-tiles；4 = palette-tiles（2/3/4分别另行协商） |
+| 5 | 1 | encoding | 0 = ordered24；1 = tiled；2 = delta-varint；3 = bitmap-tiles；4 = palette-tiles；5 = structured-tiles（2/3/4/5分别另行协商） |
 | 6 | 2 | flags | 0 = 增量；1 = 快照；其他拒绝 |
 | 8 | 4 | roomEpoch | 非零，与 started 一致 |
 | 12 | 4 | generation | 本消息的棋盘代 |
@@ -139,3 +139,32 @@ hello 的 `boardEncodings` 增加4。客户端仅在同时提供3和4时请求 `
 network_status增加 `bufferedBytes`（采样时主棋盘socket的bufferedAmount），界面悬停延迟数字同步显示。它是待发送应用缓冲，不是客户端送达确认，也不包含全部操作系统/TLS/隧道队列。computed/sent是服务端处理反馈时的值，received/displayed是客户端更早采样的值，代号差不代表同时刻单向延迟。
 
 测量、场景定义、复现与真实线路采集入口见 [局部调色板结果](performance/2026-09-29-local-palette.md)。
+
+
+## 结构化瓦片生产扩展（2026-10-01）
+
+正式encoding **5**，与实验工具的250完全不同。hello在v2可用时发送`boardEncodings:[0,1,2,3,4,5]`。新客户端仅在3/4/5均存在时请求`bitmapTiles:true,paletteTiles:true,tileModes:true`；服务端仅在bitmapTiles和paletteTiles已成立时确认tileModes，protocol和started均返回该布尔值。旧能力缺失时按已有0–4回退；没有新能力的连接不会收到5，加入房间后仍不可切换。GenerationQueue reset清除全部能力，未协商5时拒绝该包。编码API默认allowTileModes=false。
+
+encoding5沿用32字节头与32×32瓦片，insertionCount=0；允许encoding4原有sparse/bitmap/palette模式，并新增：
+
+| mode | 载荷（不含4字节瓦片头） | 语义 |
+| --- | --- | --- |
+| 0x8003 SOLID | 1字节owner，0–4 | 所有有效格设为owner，0整块清空 |
+| 0x8004 RLE | uint16段数，再逐段uint16：低10bit为length−1，高位为owner | 有效格按行序排列，跳过地图外填充，允许段跨行；全块替换 |
+| 0x8005 MASK | 128字节变化位图，然后ceil(3D/8)字节 | 按local递增顺序，为D个变化格写3bit最终owner（0–4）；其余格不变 |
+
+RLE段数1–有效面积，每段长度1–1024，owner≤4，相邻段owner必须不同，长度之和严格等于有效面积。MASK低位优先、3bit跨字节连续，死亡值0有明确意义；D必须>0，地图外变化位及未用尾位必须0，快照MASK owner不得为0。SOLID/RLE的entryCount贡献为有效面积，MASK为D；全包计数严格相等。编码3/4不接受上述新mode，250始终不是生产编码。
+
+三模式仍完整验证后才入队，紧凑索引每瓦片3个uint32；呈现代时使用同一visitBitmap/世界纹理，只更新实际变化。SOLID和RLE会访问全瓦片，不能将减少字节等同于减少绘制计算。
+
+### 规划与有界开销
+
+复用一次planBitmap及活格/阵营统计，整包只编码一次。MASK直接由变化数计算成本。SOLID可用已有live/mask证明全死或全活同阵营；其他情况结合RLE扫描。RLE最多考虑32段，在前32格已有8次状态切换或段数达到字节收益上界时立即放弃。该保守筛选可能放弃可压缩块，但不影响状态准确性，也不增加包大小；不承诺所有数学上可能表示的全局最优。
+
+在筛选后的候选中按实际长度取更小瓦片，再和已协商的ordered24/varint比较完整包；没有选中新mode时仍发送原编码0/2/3/4。旧能力连接仍走原规划，原字节格式不变。
+
+### 历史、恢复与生效
+
+主线程与worker增加`2-bitmap-palette-modes`及`2-bitmap-palette-modes-varint`缓存变体；不同能力不串包。仍保留逐代传输、明确快照恢复、32代/16MiB历史及客户端队列边界。多种能力混用会增加缓存变体数量，共享的字节上限不变。快照后的首代采用原有bitmap连接语义，重连重新协商。
+
+运行脚本无需新环境变量，服务器重启、客户端刷新后自动协商。`LIFEWAR_BOARD_PROTOCOL=1`仍可回退整套v2。本轮没有自动重启已有对局。成本和验证见[生产接入报告](performance/2026-10-01-tile-modes-rollout.md)。

@@ -212,7 +212,7 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
   }
   let nextRoomEpoch=randomBytes(4).readUInt32LE(0)||1;
   const workerMember = member => ({id:member.id,name:member.name,bot:member.bot,
-    session:member.ws?.roomSession??null,boardVersion:member.ws?.boardVersion??1,deltaVarint:!!member.ws?.deltaVarint,bitmapTiles:!!member.ws?.bitmapTiles,paletteTiles:!!member.ws?.paletteTiles});
+    session:member.ws?.roomSession??null,boardVersion:member.ws?.boardVersion??1,deltaVarint:!!member.ws?.deltaVarint,bitmapTiles:!!member.ws?.bitmapTiles,paletteTiles:!!member.ws?.paletteTiles,tileModes:!!member.ws?.tileModes});
   function failRoom(room,error) {
     if(room.fault)return;
     room.fault=String(error?.message??error);
@@ -259,11 +259,11 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
     const ordered=ws.boardVersion===2 && !ws.bitmapTiles && ws.v2NeedsOrdered;
     const key=`${boardVariant(ws)}:${snapshot}:${!!ordered}`;
     if(!cache.has(key))cache.set(key,ws.boardVersion===2
-      ?room.game.packetV2({roomEpoch:room.epoch,baseGeneration:room.boardGeneration,previous:room.broadcastBoard,snapshot,forceOrdered:ordered,allowVarint:!!ws.deltaVarint,allowBitmap:!!ws.bitmapTiles,allowPalette:!!ws.paletteTiles})
+      ?room.game.packetV2({roomEpoch:room.epoch,baseGeneration:room.boardGeneration,previous:room.broadcastBoard,snapshot,forceOrdered:ordered,allowVarint:!!ws.deltaVarint,allowBitmap:!!ws.bitmapTiles,allowPalette:!!ws.paletteTiles,allowTileModes:!!ws.tileModes})
       :room.game.packet(snapshot));
     return cache.get(key);
   }
-  function started(ws,room,id) {send(ws,{type:'started',id,rules:RULES,startedAt:room.startedAt,roomEpoch:room.epoch,boardProtocol:ws?.boardVersion??1,bitmapTiles:!!ws?.bitmapTiles,paletteTiles:!!ws?.paletteTiles});}
+  function started(ws,room,id) {send(ws,{type:'started',id,rules:RULES,startedAt:room.startedAt,roomEpoch:room.epoch,boardProtocol:ws?.boardVersion??1,bitmapTiles:!!ws?.bitmapTiles,paletteTiles:!!ws?.paletteTiles,tileModes:!!ws?.tileModes});}
   function requestBoardDrain(room) {
     if(room.drainScheduled||shuttingDown||room.fault)return;
     const worker=room.worker,game=room.game;
@@ -360,7 +360,7 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
   wss.on('connection', ws => {
     ws.alive = true; ws.budget = 40; ws.refillAt = Date.now();ws.boardVersion=1;
     ws.on('pong', () => { ws.alive = true; });
-    send(ws, { type: 'hello', version: '1.0.0',cardControl:true,clientProgress:true,boardProtocols:boardProtocol===2?[1,2]:[1],boardEncodings:boardProtocol===2?[0,1,2,3,4]:[] }); lobbyList(ws);
+    send(ws, { type: 'hello', version: '1.0.0',cardControl:true,clientProgress:true,boardProtocols:boardProtocol===2?[1,2]:[1],boardEncodings:boardProtocol===2?[0,1,2,3,4,5]:[] }); lobbyList(ws);
     ws.on('error', () => {});
     ws.on('message', (raw, isBinary) => {
       ws.budget = Math.min(40, ws.budget + (Date.now() - ws.refillAt) / 100); ws.refillAt = Date.now();
@@ -403,7 +403,7 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
         case 'protocol': {
           if(room)return fail('请在加入战区前协商协议');
           if(msg.version!==1&&(msg.version!==2||boardProtocol!==2))return fail('不支持的棋盘协议版本');
-          ws.boardVersion=msg.version;ws.deltaVarint=msg.version===2&&msg.deltaVarint===true;ws.bitmapTiles=msg.version===2&&msg.bitmapTiles===true;ws.paletteTiles=ws.bitmapTiles&&msg.paletteTiles===true;send(ws,{type:'protocol',version:ws.boardVersion,deltaVarint:ws.deltaVarint,bitmapTiles:ws.bitmapTiles,paletteTiles:ws.paletteTiles});return;
+          ws.boardVersion=msg.version;ws.deltaVarint=msg.version===2&&msg.deltaVarint===true;ws.bitmapTiles=msg.version===2&&msg.bitmapTiles===true;ws.paletteTiles=ws.bitmapTiles&&msg.paletteTiles===true;ws.tileModes=ws.paletteTiles&&msg.tileModes===true;send(ws,{type:'protocol',version:ws.boardVersion,deltaVarint:ws.deltaVarint,bitmapTiles:ws.bitmapTiles,paletteTiles:ws.paletteTiles,tileModes:ws.tileModes});return;
         }
         case 'ping': return send(ws, { type: 'pong', time: msg.time });
         case 'list': return lobbyList(ws);
@@ -530,7 +530,7 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
       for (const {ws} of room.members) {
         if(!ws)continue;
         const variant=boardVariant(ws);
-        if(!historyPackets.has(variant))historyPackets.set(variant,boardPacket({boardVersion:ws.boardVersion,deltaVarint:ws.deltaVarint,bitmapTiles:ws.bitmapTiles,paletteTiles:ws.paletteTiles,v2NeedsOrdered:false},room,false,packets));
+        if(!historyPackets.has(variant))historyPackets.set(variant,boardPacket({boardVersion:ws.boardVersion,deltaVarint:ws.deltaVarint,bitmapTiles:ws.bitmapTiles,paletteTiles:ws.paletteTiles,tileModes:ws.tileModes,v2NeedsOrdered:false},room,false,packets));
         if(ws.boardVersion===2&&ws.v2NeedsOrdered)historyPackets.set(`${variant}ordered`,boardPacket(ws,room,false,packets));
       }
       room.history ??= new PacketHistory();

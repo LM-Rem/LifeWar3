@@ -1,4 +1,5 @@
 // All multibyte fields are little-endian. See docs/board-protocol-v2.md.
+import {planTileModes} from './tile-mode-planner.js';
 import {planBitmap,writeBitmap,readBitmap} from './bitmap-codec.js';
 export const BOARD_SIZE=1000, CELL_COUNT=1000000, MAGIC=0x3252574c, HEADER_BYTES=32;
 export const MAX_PACKET_BYTES=4*1024*1024;
@@ -14,11 +15,11 @@ const check=(condition,message)=>{if(!condition)throw new Error('board-protocol:
 
 export function boardVariant(peer) {
   if(peer.boardVersion!==2)return 1;
-  if(peer.bitmapTiles)return `2-bitmap${peer.paletteTiles?'-palette':''}${peer.deltaVarint?'-varint':''}`;
+  if(peer.bitmapTiles)return `2-bitmap${peer.paletteTiles?'-palette':''}${peer.tileModes&&peer.paletteTiles?'-modes':''}${peer.deltaVarint?'-varint':''}`;
   return peer.deltaVarint?'2-varint':2;
 }
 
-export function encodeBoardV2({keys,ownerAt,board,previous,generation,baseGeneration,roomEpoch,snapshot=false,forceOrdered=false,allowVarint=false,allowBitmap=false,allowPalette=false}) {
+export function encodeBoardV2({keys,ownerAt,board,previous,generation,baseGeneration,roomEpoch,snapshot=false,forceOrdered=false,allowVarint=false,allowBitmap=false,allowPalette=false,allowTileModes=false}) {
   const count=keys.length;
   check(count<=CELL_COUNT&&Number.isInteger(roomEpoch)&&roomEpoch>0&&roomEpoch<=0xffffffff&&Number.isInteger(generation)&&generation>=0&&generation<=0xffffffff,'encoder bounds');
   check(snapshot||(Number.isInteger(baseGeneration)&&baseGeneration>=0&&baseGeneration<=generation&&generation-baseGeneration<=1),'encoder base');
@@ -44,14 +45,14 @@ export function encodeBoardV2({keys,ownerAt,board,previous,generation,baseGenera
   }
   // Unordered tiles dominate legacy tiled (same sparse cost, smaller dense cost,
   // no insertion table). They also work immediately after a mid-tick snapshot.
-  const bitmap=allowBitmap&&count>=8?planBitmap(keys,board,allowPalette):null;
-  if(bitmap&&bitmap.payload<payload){encoding=bitmap.tiles.some(t=>t.palette)?4:3;payload=bitmap.payload;}
+  const bitmap=allowBitmap&&count>=8?(allowTileModes&&allowPalette?planTileModes(keys,board):planBitmap(keys,board,allowPalette)):null;
+  if(bitmap&&bitmap.payload<payload){encoding=bitmap.tiles.some(t=>t.mode>=0x8003)?5:bitmap.tiles.some(t=>t.palette)?4:3;payload=bitmap.payload;}
   const buffer=new ArrayBuffer(HEADER_BYTES+payload),v=new DataView(buffer);
   v.setUint32(0,MAGIC,true);v.setUint8(4,2);v.setUint8(5,encoding);v.setUint16(6,+snapshot,true);
   v.setUint32(8,roomEpoch,true);v.setUint32(12,generation,true);v.setUint32(16,snapshot?0xffffffff:baseGeneration,true);
   v.setUint32(20,payload,true);v.setUint32(24,count,true);v.setUint32(28,encoding===1?births:0,true);
   let p=HEADER_BYTES;
-  if(encoding===3||encoding===4){v.setUint32(24,bitmap.represented,true);writeBitmap(buffer,bitmap,keys,ownerAt,board);return buffer;}
+  if(encoding>=3&&encoding<=5){v.setUint32(24,bitmap.represented,true);writeBitmap(buffer,bitmap,keys,ownerAt,board);return buffer;}
   if(!encoding){for(let i=0;i<count;i++){const key=keys[i];write24(v,p,key+ownerAt(key)*PACK);p+=3;}return buffer;}
   if(encoding===2){
     const bytes=new Uint8Array(buffer);let last=0;
@@ -95,13 +96,13 @@ export function decodeBoardPacket(buffer,{compactBitmap=false}={}) {
   check(type===MAGIC&&buffer.byteLength>=HEADER_BYTES,'magic/header');
   const version=v.getUint8(4),encoding=v.getUint8(5),flags=v.getUint16(6,true),roomEpoch=v.getUint32(8,true),generation=v.getUint32(12,true),baseGeneration=v.getUint32(16,true);
   const payload=v.getUint32(20,true),count=v.getUint32(24,true),insertCount=v.getUint32(28,true),snapshot=flags===1;
-  check(version===2&&encoding<=4&&flags<=1&&roomEpoch!==0,'version/flags/epoch');
+  check(version===2&&encoding<=5&&flags<=1&&roomEpoch!==0,'version/flags/epoch');
   check(payload===buffer.byteLength-HEADER_BYTES&&count<=CELL_COUNT&&insertCount<=count,'length/count');
   check(snapshot?baseGeneration===0xffffffff&&encoding!==1:baseGeneration<=generation&&generation-baseGeneration<=1,'base generation');
-  if(encoding===3||encoding===4){
+  if(encoding>=3&&encoding<=5){
     check(insertCount===0,'bitmap insertion count');
-    if(compactBitmap){const bitmap=readBitmap(buffer,count,snapshot,true,encoding===4);return {version,encoding,snapshot,roomEpoch,generation,baseGeneration,entryCount:count,bitmap,memoryBytes:bitmap.tiles.byteLength};}
-    const entries=readBitmap(buffer,count,snapshot,false,encoding===4);
+    if(compactBitmap){const bitmap=readBitmap(buffer,count,snapshot,true,encoding>=4,encoding===5);return {version,encoding,snapshot,roomEpoch,generation,baseGeneration,entryCount:count,bitmap,memoryBytes:bitmap.tiles.byteLength};}
+    const entries=readBitmap(buffer,count,snapshot,false,encoding>=4,encoding===5);
     return {version,encoding,snapshot,roomEpoch,generation,baseGeneration,entries,memoryBytes:entries.byteLength};
   }
   const tiled=encoding===1;

@@ -4,8 +4,8 @@ export class GenerationQueue {
   constructor({capacity=32,maxBytes=64*1024*1024,maxAgeMs=500,now=()=>performance.now(),onEvent=()=>{},onRecovery=()=>{}}={}) {
     this.capacity=capacity;this.maxBytes=maxBytes;this.maxAgeMs=maxAgeMs;this.now=now;this.onEvent=onEvent;this.onRecovery=onRecovery;this.reset('initial');
   }
-  reset(epoch) {if(this.packets?.length)this.onEvent('presentation.cancelled',{epoch:this.epoch,reason:'epoch-reset',queued:this.packets.length});this.failures=0;this.lastFailure=null;this.maxDepth=0;this.epoch=epoch;this.packets=[];this.states=[];this.bytes=0;this.received=-1;this.displayed=-1;this.stateGeneration=-1;this.waiting=true;this.interval=0;this.paused=false;this.lastPacket=null;this.version=1;this.roomEpoch=null;this.bitmapTiles=false;this.paletteTiles=false;}
-  configure(version=1,roomEpoch=null,{bitmapTiles=false,paletteTiles=false}={}) {this.version=version;this.roomEpoch=roomEpoch;this.bitmapTiles=bitmapTiles;this.paletteTiles=bitmapTiles&&paletteTiles;}
+  reset(epoch) {if(this.packets?.length)this.onEvent('presentation.cancelled',{epoch:this.epoch,reason:'epoch-reset',queued:this.packets.length});this.failures=0;this.lastFailure=null;this.maxDepth=0;this.epoch=epoch;this.packets=[];this.states=[];this.bytes=0;this.received=-1;this.displayed=-1;this.stateGeneration=-1;this.waiting=true;this.interval=0;this.paused=false;this.lastPacket=null;this.version=1;this.roomEpoch=null;this.bitmapTiles=false;this.paletteTiles=false;this.tileModes=false;}
+  configure(version=1,roomEpoch=null,{bitmapTiles=false,paletteTiles=false,tileModes=false}={}) {this.version=version;this.roomEpoch=roomEpoch;this.bitmapTiles=bitmapTiles;this.paletteTiles=bitmapTiles&&paletteTiles;this.tileModes=this.paletteTiles&&tileModes;}
   fail(reason) {
     this.failures++;this.lastFailure={reason,received:this.received,displayed:this.displayed,queued:this.packets.length};
     this.onEvent('presentation.failure', this.lastFailure);
@@ -21,7 +21,7 @@ export class GenerationQueue {
     let decoded;try{decoded=decodeBoardPacket(buffer,{compactBitmap:true});}catch{this.fail('invalid-packet');return false;}
     if(decoded.version!==this.version){this.fail('protocol-version');return false;}
     if(decoded.version===2&&decoded.roomEpoch!==this.roomEpoch)return false;
-    if((decoded.encoding===3&&!this.bitmapTiles)||(decoded.encoding===4&&!this.paletteTiles)){this.fail('protocol-encoding');return false;}
+    if((decoded.encoding===3&&!this.bitmapTiles)||(decoded.encoding===4&&!this.paletteTiles)||(decoded.encoding===5&&!this.tileModes)){this.fail('protocol-encoding');return false;}
     const {snapshot,generation}=decoded,bytes=buffer.byteLength+decoded.memoryBytes;
     if(snapshot){
       if(generation<this.displayed||(!this.waiting&&generation<this.received))return false;

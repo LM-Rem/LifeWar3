@@ -7,7 +7,8 @@ const tick=RoomRuntime.prototype.tick;
 RoomRuntime.prototype.tick=function(){
   runtime=this;
   if(failNext)throw new Error('Injected room failure');
-  if(workerData.testLoad&&!this.testLoaded){seedRoomLoad(this.game);if(workerData.testPalette){for(const p of this.game.players)p.cells=0;for(const k of this.game.alive){const owner=k%1000<500?1:2;this.game.board[k]=owner;this.game.players[owner-1].cells++;}this.game.rebuildDerivedState();}this.baseline.set(this.game.board);for(const p of this.peers.values())p.needsSnapshot=true;this.testLoaded=true;}
+  if(workerData.testLoad&&!this.testLoaded){seedRoomLoad(this.game);if(workerData.testPalette){for(const p of this.game.players)p.cells=0;for(const k of this.game.alive){const owner=k%1000<500?1:2;this.game.board[k]=owner;this.game.players[owner-1].cells++;}this.game.rebuildDerivedState();}this.baseline.set(this.game.board);for(const p of this.peers.values())p.needsSnapshot=true;this.testLoaded=true;
+    if(workerData.testTileModes)this.game.step=()=>{const g=this.game;g.generation++;for(let y=0;y<64;y++)for(let x=0;x<64;x++){const k=y*1000+x,o=y%32<16?1:2;if(!g.board[k])g.alive.push(k);g.board[k]=o;g.changes.set(k,o);}g.rebuildDerivedState();};}
   if(workerData.testDrafts){for(const p of this.game.players)p.bot=false;repeatDraft(this.game);}
   return tick.call(this);
 };
