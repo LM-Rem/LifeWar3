@@ -456,7 +456,8 @@
           18,
           2
         ]
-      ]
+      ],
+      "direction": "右下"
     },
     {
       "id": "lib-mu6a3a7n-f75nr",
@@ -1295,7 +1296,8 @@
           5,
           30
         ]
-      ]
+      ],
+      "direction": "右下"
     },
     {
       "id": "lib-mu8j9xsm-wsb9k",
@@ -1673,7 +1675,8 @@
           5,
           21
         ]
-      ]
+      ],
+      "direction": "右下"
     },
     {
       "id": "lib-mu8jcgzq-ufysy",
@@ -2235,7 +2238,8 @@
           28,
           27
         ]
-      ]
+      ],
+      "direction": "右上"
     },
     {
       "id": "lib-mu8jpfwx-ygg55",
@@ -2729,7 +2733,8 @@
           28,
           28
         ]
-      ]
+      ],
+      "direction": "右"
     },
     {
       "id": "lib-mu8jttms-91dvi",
@@ -2963,7 +2968,8 @@
           21,
           41
         ]
-      ]
+      ],
+      "direction": "右下"
     },
     {
       "id": "lib-mu8jxibp-smofg",
@@ -4081,7 +4087,8 @@
           20,
           38
         ]
-      ]
+      ],
+      "direction": "右"
     },
     {
       "id": "lib-mu8jyecn-fiydm",
@@ -5011,7 +5018,8 @@
           50,
           21
         ]
-      ]
+      ],
+      "direction": "左下"
     },
     {
       "id": "lib-mu8k0xlc-b86gs",
@@ -5313,7 +5321,8 @@
           12,
           26
         ]
-      ]
+      ],
+      "direction": "右下"
     },
     {
       "id": "lib-mu8k34gv-1qs5e",
@@ -5747,7 +5756,8 @@
           27,
           53
         ]
-      ]
+      ],
+      "direction": "右下"
     },
     {
       "id": "lib-mu8ka0na-p2sff",
@@ -6177,7 +6187,8 @@
           30,
           23
         ]
-      ]
+      ],
+      "direction": "右上"
     },
     {
       "id": "lib-mu8kf9a7-2805h",
@@ -6807,7 +6818,8 @@
           8,
           39
         ]
-      ]
+      ],
+      "direction": "下"
     },
     {
       "id": "lib-mu8ki048-bb7g3",
@@ -7137,7 +7149,8 @@
           25,
           37
         ]
-      ]
+      ],
+      "direction": "右下"
     },
     {
       "id": "lib-mu8kknmj-bn8tf",
@@ -7807,7 +7820,8 @@
           33,
           44
         ]
-      ]
+      ],
+      "direction": "右下"
     },
     {
       "id": "lib-mu8km6m3-w1dyi",
@@ -7961,7 +7975,8 @@
           23,
           20
         ]
-      ]
+      ],
+      "direction": "左上"
     },
     {
       "id": "lib-mu8kotcx-340d2",
@@ -8719,7 +8734,8 @@
           16,
           48
         ]
-      ]
+      ],
+      "direction": "右"
     },
     {
       "id": "lib-mu9n0a6c-mohly",
@@ -9405,7 +9421,7 @@
       "en": "LIBRARY DNA",
       "role": "图案库 / 导入",
       "desc": "来自图案集 4blocks，共 16 个细胞。",
-      "category": "spaceship",
+      "category": "still",
       "cells": [
         [
           0,
@@ -9471,7 +9487,8 @@
           4,
           4
         ]
-      ]
+      ],
+      "direction": null
     },
     {
       "id": "lib-mu9n8w32-kcrpb",
@@ -14217,7 +14234,8 @@
           2,
           4
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mu9s0jzh-fvh4j",
@@ -14335,7 +14353,8 @@
           5,
           11
         ]
-      ]
+      ],
+      "direction": "左上"
     },
     {
       "id": "lib-mu9s2f0i-eqxvk",
@@ -14465,7 +14484,8 @@
           9,
           8
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mu9s4xej-gr0vc",
@@ -14599,7 +14619,8 @@
           7,
           10
         ]
-      ]
+      ],
+      "direction": "左"
     },
     {
       "id": "lib-mu9s68ti-yfe31",
@@ -14741,7 +14762,8 @@
           6,
           13
         ]
-      ]
+      ],
+      "direction": "左上"
     },
     {
       "id": "lib-mu9s8ay6-25gbb",
@@ -14899,7 +14921,8 @@
           9,
           15
         ]
-      ]
+      ],
+      "direction": "左上"
     },
     {
       "id": "lib-mu9s8m2d-nx7xq",
@@ -15065,7 +15088,8 @@
           9,
           13
         ]
-      ]
+      ],
+      "direction": "左上"
     },
     {
       "id": "lib-mu9sak7f-yyjxq",
@@ -15239,7 +15263,8 @@
           2,
           15
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mu9sbpyq-ntk34",
@@ -15425,7 +15450,8 @@
           10,
           10
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mu9sefn0-98a0w",
@@ -15651,7 +15677,8 @@
           6,
           12
         ]
-      ]
+      ],
+      "direction": "右"
     },
     {
       "id": "lib-mu9sf5h2-69qtj",
@@ -15789,7 +15816,8 @@
           3,
           14
         ]
-      ]
+      ],
+      "direction": "左"
     },
     {
       "id": "lib-mu9sgq2p-86zgn",
@@ -15943,7 +15971,8 @@
           3,
           11
         ]
-      ]
+      ],
+      "direction": "左上"
     },
     {
       "id": "lib-mu9shgd4-ml7qu",
@@ -16065,7 +16094,8 @@
           8,
           8
         ]
-      ]
+      ],
+      "direction": "右"
     },
     {
       "id": "lib-mu9shtp6-z1av5",
@@ -16287,7 +16317,8 @@
           12,
           13
         ]
-      ]
+      ],
+      "direction": "左"
     },
     {
       "id": "lib-mu9sigjs-qvy11",
@@ -16409,7 +16440,8 @@
           4,
           11
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mu9sj3et-otdr2",
@@ -16587,7 +16619,8 @@
           12,
           12
         ]
-      ]
+      ],
+      "direction": "左"
     },
     {
       "id": "lib-mu9sjpvo-buyfr",
@@ -16649,7 +16682,8 @@
           5,
           4
         ]
-      ]
+      ],
+      "direction": "左"
     },
     {
       "id": "lib-mu9slfdl-yvdft",
@@ -16739,7 +16773,8 @@
           8,
           8
         ]
-      ]
+      ],
+      "direction": "左"
     },
     {
       "id": "lib-mu9slz1u-ula3g",
@@ -16785,7 +16820,8 @@
           3,
           3
         ]
-      ]
+      ],
+      "direction": "左"
     },
     {
       "id": "lib-mu9snohk-16xre",
@@ -16919,7 +16955,8 @@
           4,
           15
         ]
-      ]
+      ],
+      "direction": "左"
     },
     {
       "id": "lib-mu9soblq-yq1t2",
@@ -16973,7 +17010,8 @@
           4,
           4
         ]
-      ]
+      ],
+      "direction": "左"
     },
     {
       "id": "lib-mu9squdr-nrkto",
@@ -17139,7 +17177,8 @@
           6,
           14
         ]
-      ]
+      ],
+      "direction": "左上"
     },
     {
       "id": "lib-mu9srwme-du83x",
@@ -17325,7 +17364,8 @@
           11,
           9
         ]
-      ]
+      ],
+      "direction": "左"
     },
     {
       "id": "lib-mu9stzf5-91glu",
@@ -17451,7 +17491,8 @@
           18,
           8
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mu9sv4y5-9z99e",
@@ -17609,7 +17650,8 @@
           15,
           6
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mu9swr1b-8pnrq",
@@ -18031,7 +18073,8 @@
           11,
           14
         ]
-      ]
+      ],
+      "direction": "左"
     },
     {
       "id": "lib-mu9sx7xr-p2ho5",
@@ -18189,7 +18232,8 @@
           5,
           17
         ]
-      ]
+      ],
+      "direction": "左上"
     },
     {
       "id": "lib-mu9syc0e-o0g5t",
@@ -18371,7 +18415,8 @@
           6,
           24
         ]
-      ]
+      ],
+      "direction": "右"
     },
     {
       "id": "lib-mu9t1ykp-a069y",
@@ -18597,7 +18642,8 @@
           8,
           16
         ]
-      ]
+      ],
+      "direction": "左"
     },
     {
       "id": "lib-mu9t2v6v-o87fz",
@@ -18811,7 +18857,8 @@
           16,
           12
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mu9t4ofp-glee5",
@@ -19037,7 +19084,8 @@
           18,
           8
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mu9t51x4-iz29x",
@@ -19267,7 +19315,8 @@
           13,
           12
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mu9t75ef-lvtpa",
@@ -19501,7 +19550,8 @@
           17,
           11
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mu9t86th-zy1i1",
@@ -19739,7 +19789,8 @@
           20,
           10
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mu9tai06-29c7z",
@@ -20013,7 +20064,8 @@
           21,
           12
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mu9tc0sp-qhztq",
@@ -20263,7 +20315,8 @@
           18,
           10
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mu9tee0l-7dt5v",
@@ -20517,7 +20570,8 @@
           12,
           12
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mu9tggfx-pdjrl",
@@ -20783,7 +20837,8 @@
           30,
           7
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mu9tkr65-pzdpx",
@@ -21057,7 +21112,8 @@
           12,
           19
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mu9tl6of-is3cy",
@@ -21331,7 +21387,8 @@
           11,
           15
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mu9tn0ty-v6pov",
@@ -21661,7 +21718,8 @@
           0,
           20
         ]
-      ]
+      ],
+      "direction": "右"
     },
     {
       "id": "lib-mu9tnnzg-v1hby",
@@ -21959,7 +22017,8 @@
           14,
           14
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mu9ttsu8-mz6m8",
@@ -22257,7 +22316,8 @@
           16,
           13
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mu9tvark-t3bv1",
@@ -22563,7 +22623,8 @@
           10,
           20
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mu9twqan-01w9g",
@@ -22897,7 +22958,8 @@
           13,
           14
         ]
-      ]
+      ],
+      "direction": "右"
     },
     {
       "id": "lib-mu9txwdi-7kmiw",
@@ -23239,7 +23301,8 @@
           10,
           25
         ]
-      ]
+      ],
+      "direction": "右上"
     },
     {
       "id": "lib-mu9tys05-o005g",
@@ -23593,7 +23656,8 @@
           14,
           22
         ]
-      ]
+      ],
+      "direction": "左上"
     },
     {
       "id": "lib-mu9tzl35-jkvk5",
@@ -23963,7 +24027,8 @@
           17,
           24
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mu9u237t-s33sx",
@@ -24269,7 +24334,8 @@
           21,
           12
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mu9u3dev-1efer",
@@ -24551,7 +24617,8 @@
           13,
           17
         ]
-      ]
+      ],
+      "direction": "左上"
     },
     {
       "id": "lib-mu9u4762-nvzry",
@@ -24841,7 +24908,8 @@
           15,
           10
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mu9u59yo-lryol",
@@ -25155,7 +25223,8 @@
           14,
           27
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mu9uah7i-y43ri",
@@ -25573,7 +25642,8 @@
           12,
           17
         ]
-      ]
+      ],
+      "direction": "左"
     },
     {
       "id": "lib-mu9ubdam-zip8m",
@@ -25871,7 +25941,8 @@
           7,
           20
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mu9ucd5d-u2fe6",
@@ -26457,7 +26528,8 @@
           14,
           27
         ]
-      ]
+      ],
+      "direction": "左上"
     },
     {
       "id": "lib-mu9ud3ah-3pbpx",
@@ -26771,7 +26843,8 @@
           4,
           15
         ]
-      ]
+      ],
+      "direction": "左"
     },
     {
       "id": "lib-mu9udmlo-qycp2",
@@ -27085,7 +27158,8 @@
           13,
           14
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mu9uehcm-b2595",
@@ -27251,7 +27325,8 @@
           4,
           10
         ]
-      ]
+      ],
+      "direction": "左"
     },
     {
       "id": "lib-mu9uh5mq-tyvb1",
@@ -27525,7 +27600,8 @@
           13,
           10
         ]
-      ]
+      ],
+      "direction": "左"
     },
     {
       "id": "lib-mu9uhr47-qclqf",
@@ -28003,7 +28079,8 @@
           2,
           27
         ]
-      ]
+      ],
+      "direction": "左上"
     },
     {
       "id": "lib-mu9uixg5-b1xv3",
@@ -28245,7 +28322,8 @@
           21,
           7
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mu9ujnrp-komnx",
@@ -28487,7 +28565,8 @@
           24,
           8
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mu9ukmda-75vyq",
@@ -28813,7 +28892,8 @@
           10,
           17
         ]
-      ]
+      ],
+      "direction": "左上"
     },
     {
       "id": "lib-mu9ulieg-m5bjw",
@@ -29011,7 +29091,8 @@
           3,
           8
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mu9un2xx-xjsbi",
@@ -29297,7 +29378,8 @@
           3,
           21
         ]
-      ]
+      ],
+      "direction": "左上"
     },
     {
       "id": "lib-mu9unytc-94d7t",
@@ -29775,7 +29857,8 @@
           21,
           18
         ]
-      ]
+      ],
+      "direction": "左"
     },
     {
       "id": "lib-mu9uq1sq-m2ua2",
@@ -30729,7 +30812,8 @@
           46,
           43
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-muccv4cs-rju9d",
@@ -79159,7 +79243,8 @@
           2,
           5
         ]
-      ]
+      ],
+      "direction": "左上"
     },
     {
       "id": "lib-mucm4u5e-zza1v",
@@ -79281,7 +79366,8 @@
           5,
           9
         ]
-      ]
+      ],
+      "direction": "右下"
     },
     {
       "id": "lib-mucm7scr-lquor",
@@ -79659,7 +79745,8 @@
           11,
           1
         ]
-      ]
+      ],
+      "direction": "右上"
     },
     {
       "id": "lib-mucmo335-uilqy",
@@ -79725,7 +79812,8 @@
           12,
           8
         ]
-      ]
+      ],
+      "direction": "右下"
     },
     {
       "id": "lib-mucmq2ih-vkmg1",
@@ -81321,7 +81409,8 @@
           4,
           4
         ]
-      ]
+      ],
+      "direction": "左上"
     },
     {
       "id": "lib-mucmwa4l-sn5zn",
@@ -81891,7 +81980,8 @@
           15,
           3
         ]
-      ]
+      ],
+      "direction": "左上"
     },
     {
       "id": "lib-mucna7db-71oot",
@@ -81999,7 +82089,7 @@
       "en": "LIBRARY DNA",
       "role": "图案库 / 导入",
       "desc": "来自图案集 boatonsparkcoil，共 23 个细胞。",
-      "category": "spaceship",
+      "category": "puffer",
       "cells": [
         [
           0,
@@ -82093,7 +82183,8 @@
           6,
           8
         ]
-      ]
+      ],
+      "direction": null
     },
     {
       "id": "lib-mucnd2d8-bdf1b",
@@ -82155,7 +82246,7 @@
       "en": "LIBRARY DNA",
       "role": "图案库 / 导入",
       "desc": "来自图案集 bunnies，共 9 个细胞。",
-      "category": "spaceship",
+      "category": "puffer",
       "cells": [
         [
           0,
@@ -82193,7 +82284,8 @@
           3,
           3
         ]
-      ]
+      ],
+      "direction": null
     },
     {
       "id": "lib-mucng0rp-49hul",
@@ -82543,7 +82635,8 @@
           8,
           14
         ]
-      ]
+      ],
+      "direction": "左上"
     },
     {
       "id": "lib-mucntll9-zoe8c",
@@ -82947,7 +83040,8 @@
           5,
           12
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-muco56te-57pus",
@@ -83831,7 +83925,8 @@
           10,
           11
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucoslwb-zseea",
@@ -84225,7 +84320,8 @@
           3,
           5
         ]
-      ]
+      ],
+      "direction": "左上"
     },
     {
       "id": "lib-mucp1s88-d6rzi",
@@ -84665,7 +84761,8 @@
           13,
           14
         ]
-      ]
+      ],
+      "direction": "左"
     },
     {
       "id": "lib-mucp8r4r-6tfaq",
@@ -84983,7 +85080,8 @@
           14,
           20
         ]
-      ]
+      ],
+      "direction": "左上"
     },
     {
       "id": "lib-mucp9fy0-uhudr",
@@ -85623,7 +85721,8 @@
           19,
           13
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucpdutd-20m50",
@@ -86945,7 +87044,8 @@
           3,
           6
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucr1kpn-8fb2p",
@@ -87299,7 +87399,8 @@
           20,
           14
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucr2lwz-cpsgm",
@@ -87397,7 +87498,8 @@
           16,
           4
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucr3o64-fw4mi",
@@ -87583,7 +87685,8 @@
           24,
           6
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucr4baj-j5car",
@@ -87893,7 +87996,8 @@
           12,
           26
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucr6w6x-0uef8",
@@ -88099,7 +88203,8 @@
           11,
           10
         ]
-      ]
+      ],
+      "direction": "左上"
     },
     {
       "id": "lib-mucr7g7y-9f8su",
@@ -88369,7 +88474,8 @@
           14,
           14
         ]
-      ]
+      ],
+      "direction": "左上"
     },
     {
       "id": "lib-mucr87xn-jftup",
@@ -88645,7 +88751,8 @@
           11,
           5
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucriuue-1jo4x",
@@ -89279,7 +89386,8 @@
           7,
           30
         ]
-      ]
+      ],
+      "direction": "右"
     },
     {
       "id": "lib-mucrol99-yeucn",
@@ -89879,7 +89987,8 @@
           21,
           12
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucrqw5t-te1wr",
@@ -90193,7 +90302,8 @@
           20,
           11
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucrtckj-yp1lc",
@@ -90531,7 +90641,8 @@
           20,
           14
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucrtwdz-qe3dp",
@@ -90781,7 +90892,8 @@
           15,
           19
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucruc0h-039w8",
@@ -91051,7 +91163,8 @@
           3,
           19
         ]
-      ]
+      ],
+      "direction": "右"
     },
     {
       "id": "lib-mucryr8r-zqtqf",
@@ -91273,7 +91386,8 @@
           23,
           14
         ]
-      ]
+      ],
+      "direction": "右"
     },
     {
       "id": "lib-mucs1ei6-lnu0l",
@@ -91535,7 +91649,8 @@
           2,
           17
         ]
-      ]
+      ],
+      "direction": "左"
     },
     {
       "id": "lib-mucs9tgu-5ct6o",
@@ -91733,7 +91848,8 @@
           0,
           23
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucscgkx-wmtsy",
@@ -93073,7 +93189,8 @@
           32,
           20
         ]
-      ]
+      ],
+      "direction": "右"
     },
     {
       "id": "lib-muct421t-rcgan",
@@ -93623,7 +93740,8 @@
           32,
           23
         ]
-      ]
+      ],
+      "direction": "右"
     },
     {
       "id": "lib-muct5wth-4okbs",
@@ -94333,7 +94451,8 @@
           21,
           22
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-muct9uih-trefx",
@@ -95227,7 +95346,8 @@
           2,
           62
         ]
-      ]
+      ],
+      "direction": "右下"
     },
     {
       "id": "lib-muctaui1-0bqjj",
@@ -95725,7 +95845,8 @@
           24,
           53
         ]
-      ]
+      ],
+      "direction": "左上"
     },
     {
       "id": "lib-muctbqrd-wzgzt",
@@ -96115,7 +96236,8 @@
           11,
           34
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-muctcg6h-unwcu",
@@ -99843,7 +99965,8 @@
           12,
           24
         ]
-      ]
+      ],
+      "direction": "左"
     },
     {
       "id": "lib-muctmjny-tzsub",
@@ -101389,7 +101512,8 @@
           17,
           60
         ]
-      ]
+      ],
+      "direction": "左上"
     },
     {
       "id": "lib-muctq1gz-wehi7",
@@ -102371,7 +102495,8 @@
           23,
           44
         ]
-      ]
+      ],
+      "direction": "下"
     },
     {
       "id": "lib-muctst7k-ud5uh",
@@ -108049,7 +108174,8 @@
           51,
           28
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucu7h2c-tpg76",
@@ -108443,7 +108569,8 @@
           28,
           28
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucu8dtn-kfr30",
@@ -109157,7 +109284,8 @@
           31,
           15
         ]
-      ]
+      ],
+      "direction": "右"
     },
     {
       "id": "lib-mucu8xmb-ue1op",
@@ -109751,7 +109879,8 @@
           28,
           19
         ]
-      ]
+      ],
+      "direction": "右"
     },
     {
       "id": "lib-mucubczm-m3724",
@@ -110545,7 +110674,8 @@
           23,
           64
         ]
-      ]
+      ],
+      "direction": "右"
     },
     {
       "id": "lib-mucud7h0-c28vy",
@@ -112147,7 +112277,8 @@
           25,
           64
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucufvkb-3m7nw",
@@ -112801,7 +112932,8 @@
           5,
           66
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucui22j-k5o9h",
@@ -113815,7 +113947,8 @@
           19,
           67
         ]
-      ]
+      ],
+      "direction": "右"
     },
     {
       "id": "lib-mucujxkx-ywuo9",
@@ -115305,7 +115438,8 @@
           44,
           78
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucumguq-qi3me",
@@ -116939,7 +117073,8 @@
           19,
           80
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucumr28-y2ysm",
@@ -118785,7 +118920,8 @@
           32,
           96
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucun5ch-jiyko",
@@ -120151,7 +120287,8 @@
           13,
           95
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucunxfu-7r01a",
@@ -123961,7 +124098,8 @@
           36,
           65
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucuo87x-lt6ry",
@@ -125099,7 +125237,8 @@
           26,
           78
         ]
-      ]
+      ],
+      "direction": "左上"
     },
     {
       "id": "lib-mucuqa2n-z865z",
@@ -125741,7 +125880,8 @@
           21,
           42
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucuqy51-xfj4j",
@@ -126271,7 +126411,8 @@
           9,
           38
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucur9i9-fohae",
@@ -126757,7 +126898,8 @@
           33,
           18
         ]
-      ]
+      ],
+      "direction": "左"
     },
     {
       "id": "lib-mucuroi2-ukehr",
@@ -127271,7 +127413,8 @@
           10,
           32
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucusi5g-azqdu",
@@ -127837,7 +127980,8 @@
           15,
           34
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucussxs-bolwd",
@@ -128451,7 +128595,8 @@
           28,
           20
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucutm8t-j12ha",
@@ -129113,7 +129258,8 @@
           20,
           16
         ]
-      ]
+      ],
+      "direction": "左"
     },
     {
       "id": "lib-mucuv211-w6tn4",
@@ -129867,7 +130013,8 @@
           24,
           35
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucuvg50-7owsm",
@@ -130821,7 +130968,8 @@
           46,
           43
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucuvwic-6cj41",
@@ -131199,7 +131347,8 @@
           22,
           36
         ]
-      ]
+      ],
+      "direction": "右"
     },
     {
       "id": "lib-mucuwgvn-yfh0y",
@@ -132389,7 +132538,8 @@
           43,
           51
         ]
-      ]
+      ],
+      "direction": "左上"
     },
     {
       "id": "lib-mucuydrw-1nzau",
@@ -132687,7 +132837,8 @@
           31,
           15
         ]
-      ]
+      ],
+      "direction": "左上"
     },
     {
       "id": "lib-mucuzjq4-pjhj3",
@@ -133185,7 +133336,8 @@
           21,
           23
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucuztww-re9c5",
@@ -134423,7 +134575,8 @@
           41,
           51
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucv2dar-vbt12",
@@ -135225,7 +135378,8 @@
           12,
           24
         ]
-      ]
+      ],
+      "direction": "左"
     },
     {
       "id": "lib-mucv2m9v-z3mn9",
@@ -135475,7 +135629,8 @@
           9,
           7
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucv2yz4-tvci2",
@@ -135821,7 +135976,8 @@
           26,
           7
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucv3b9k-s0d6c",
@@ -136175,7 +136331,8 @@
           21,
           10
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucv3gwr-4gysa",
@@ -136529,7 +136686,8 @@
           23,
           12
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucv3muc-uw2or",
@@ -137791,7 +137949,8 @@
           22,
           53
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucv3rxc-fp0d0",
@@ -138497,7 +138656,8 @@
           32,
           19
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucv42t4-rsyn8",
@@ -139115,7 +139275,8 @@
           13,
           27
         ]
-      ]
+      ],
+      "direction": "左上"
     },
     {
       "id": "lib-mucv63d3-3ji8p",
@@ -140673,7 +140834,8 @@
           19,
           51
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucv68um-y71j3",
@@ -141275,7 +141437,8 @@
           12,
           40
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucv6dq0-w6im8",
@@ -142129,7 +142292,8 @@
           36,
           27
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucv6ixt-4ks4i",
@@ -142451,7 +142615,8 @@
           5,
           33
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucv6wvi-judu3",
@@ -143525,7 +143690,8 @@
           24,
           40
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucv7f60-hgozq",
@@ -144807,7 +144973,8 @@
           60,
           29
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucv7w73-ipxn7",
@@ -145341,7 +145508,8 @@
           17,
           22
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucv832y-hhqst",
@@ -145979,7 +146147,8 @@
           32,
           19
         ]
-      ]
+      ],
+      "direction": "左"
     },
     {
       "id": "lib-mucv8ajq-867ml",
@@ -146757,7 +146926,8 @@
           32,
           32
         ]
-      ]
+      ],
+      "direction": "左"
     },
     {
       "id": "lib-mucv8o7q-l9bou",
@@ -147947,7 +148117,8 @@
           59,
           27
         ]
-      ]
+      ],
+      "direction": "左"
     },
     {
       "id": "lib-mucv9dci-fxzys",
@@ -148657,7 +148828,8 @@
           25,
           33
         ]
-      ]
+      ],
+      "direction": "左上"
     },
     {
       "id": "lib-mucva2vs-6dyzw",
@@ -149063,7 +149235,8 @@
           19,
           16
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucvae6y-nilbo",
@@ -150013,7 +150186,8 @@
           50,
           36
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucvaylm-lh40w",
@@ -151247,7 +151421,8 @@
           47,
           54
         ]
-      ]
+      ],
+      "direction": "左上"
     },
     {
       "id": "lib-mucvbiu6-bcpep",
@@ -152285,7 +152460,8 @@
           21,
           39
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucvbqkq-205r8",
@@ -152623,7 +152799,8 @@
           11,
           20
         ]
-      ]
+      ],
+      "direction": "左上"
     },
     {
       "id": "lib-mucvddex-ijduw",
@@ -153121,7 +153298,8 @@
           45,
           9
         ]
-      ]
+      ],
+      "direction": "上"
     },
     {
       "id": "lib-mucvdopt-16ix9",
@@ -153899,7 +154077,8 @@
           10,
           46
         ]
-      ]
+      ],
+      "direction": "左上"
     }
   ]
 }
