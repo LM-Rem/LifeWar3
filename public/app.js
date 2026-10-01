@@ -2,6 +2,8 @@ import { PATTERNS, PATTERN_CATEGORIES, setPatternData, transform, transformDirec
 import { Battlefield, Ambient, COLORS, drawPattern } from './renderer.js';
 import { CARD_CONFIG, isTargetedCard, ruleLabel } from './cards.js';
 import { browserMetrics } from './performance-metrics.js';
+import { isCartoon, canvasColor, drawCell } from './theme-palette.js';
+import { mountThemePicker } from './theme-picker.js';
 
 let cardState = null, cardEpoch = null, controlSocket = null, controlReady = false, controlSupported = false;
 let pendingCardPick = null, controlRetry, progressSupported = false;
@@ -56,7 +58,7 @@ const icons = {
 };
 const icon = name => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name] || icons.cells}</svg>`;
 $$('[data-icon]').forEach(el => el.innerHTML = icon(el.dataset.icon));
-const settings = { grid: true, ranges: true, motion: !matchMedia('(prefers-reduced-motion: reduce)').matches, sound: false, ...readStorage('lifewar.settings', {}) };
+const settings = { grid: true, ranges: true, motion: !matchMedia('(prefers-reduced-motion: reduce)').matches, sound: false, ...readStorage('lifewar.settings', {}), theme: document.documentElement.dataset.theme || 'nexus' };
 const ambient = new Ambient($('#ambient'), settings);
 const battlefield = new Battlefield($('#battlefield'), $('#minimap'), settings);
 let page = 'home', room = null, playerId = 1, state = null, socket = null, connectionPromise = null;
@@ -600,7 +602,8 @@ if (cardGridEl) {
         const gg = clamp(base[1] * lum, 0, 255);
         const b = clamp(base[2] * lum * (2 - warm), 0, 255);
         // 核心方块颜色：比外发光更亮、更贴近原卡牌色
-        const cr = clamp(r + 55, 0, 255), cg = clamp(gg + 55, 0, 255), cb = clamp(b + 55, 0, 255);
+        const lift = document.documentElement?.dataset.theme === 'cartoon' ? 0 : 55;
+        const cr = clamp(r + lift, 0, 255), cg = clamp(gg + lift, 0, 255), cb = clamp(b + lift, 0, 255);
         cells.push({
           x: x0, y: y0, cw, ch, edge, baseAng,
           t0: 999, appearDur: 0.15, holdDur: 0.2, fadeDur: 0.6,
@@ -637,7 +640,8 @@ if (cardGridEl) {
 
   // 绘制分解过程：只绘制发光方块粒子（颜色、大小各有差异），canvas 其余部分完全透明
   function drawDisintegrating(g, cells, disT, W, H, ox, oy) {
-    g.globalCompositeOperation = 'lighter';
+    const cartoon = document.documentElement?.dataset.theme === 'cartoon';
+    g.globalCompositeOperation = cartoon ? 'source-over' : 'lighter';
     for (const c of cells) {
       const lt = disT - c.t0;
       if (lt < 0) continue;
@@ -668,7 +672,8 @@ if (cardGridEl) {
       // 核心小方块：每格颜色、大小各有差异，不再是统一高亮的发光点
       g.globalAlpha = Math.min(1, alpha * c.boost);
       g.fillStyle = c.coreColor;
-      g.fillRect(cx - s * 0.5, cy - s * 0.5, s, s);
+      if (cartoon) { roundRect(g,cx-s*.5,cy-s*.5,s,s,s*.4);g.fill(); }
+      else g.fillRect(cx - s * 0.5, cy - s * 0.5, s, s);
     }
     g.globalAlpha = 1;
     g.globalCompositeOperation = 'source-over';
@@ -762,6 +767,16 @@ function syncSettings() {
   document.body.classList.toggle('no-motion',!settings.motion); $('#toggle-sound').innerHTML=icon(settings.sound?'volume':'muted');$('#toggle-sound').setAttribute('aria-pressed',String(settings.sound));
   ambient.staticRendered=null;saveStorage('lifewar.settings',settings);
 }
+const themePicker = document.createElement('div');
+$('#settings-dialog .modal-heading').after(themePicker);
+mountThemePicker(themePicker, theme => { settings.theme = theme; syncSettings(); });
+window.addEventListener('lifewar:theme', event => {
+  settings.theme = event.detail; battlefield.syncTheme(); ambient.staticRendered = null;
+  renderPatterns(); if (selected) selectPattern(selected, true);
+  if (room) renderRoom();
+  if (state) updateGameHUD();
+  if ($('#editor-dialog').open) drawEditor();
+});
 for(const name of ['grid','ranges','motion','sound'])$('#setting-'+name).onchange=e=>{settings[name]=e.target.checked;syncSettings();sound();};
 $('#toggle-sound').onclick=()=>{settings.sound=!settings.sound;syncSettings();sound();};syncSettings();
 
@@ -1071,7 +1086,7 @@ function updateGameHUD(){
   $('#battle-players').innerHTML=state.players.map(p=>`<div class="battle-player ${p.eliminated?'eliminated':''}" style="--player:${COLORS[p.id-1]}"><div class="battle-player-top"><i class="player-dot"></i><span>${escapeHTML(p.name)}</span>${p.id===playerId?'<span class="you-tag">YOU</span>':''}<span>${p.eliminated?'OUT':(+p.hp.toFixed(1))+' HP'}</span></div><div class="hp-meter"><i style="width:${p.hp/maxHP*100}%"></i></div><div class="player-metrics"><span>◈ ${p.nodes} NODES</span><span>${p.cells.toLocaleString()} CELLS</span></div></div>`).join('');
   for(const event of state.events){const id=`${event.generation}/${event.type}/${event.player}/${event.text}`;if(eventIds.has(id))continue;eventIds.add(id);
     if(event.type==='damage'){const p=state.players.find(p=>p.id===event.player);if(p)battlefield.effect(p.x,p.y,'damage',COLORS[1]);if(event.player===playerId&&!(state.generation%Math.max(1,Math.round(gameHz))))toast('警报：你的基地正在受到攻击',true);continue;}
-    const div=document.createElement('div');div.className='event-item';div.innerHTML=`<time>${startedAt&&event.time?formatClock(event.time-startedAt):formatTime(event.generation)}</time><span style="color:${COLORS[event.player-1]||'#9ab0ba'}">${escapeHTML(event.text)}</span>`;$('#event-feed').prepend(div);while($('#event-feed').children.length>4)$('#event-feed').lastChild.remove();
+    const div=document.createElement('div');div.className='event-item';div.innerHTML=`<time>${startedAt&&event.time?formatClock(event.time-startedAt):formatTime(event.generation)}</time><span style="color:var(--faction-${event.player},var(--muted))">${escapeHTML(event.text)}</span>`;$('#event-feed').prepend(div);while($('#event-feed').children.length>4)$('#event-feed').lastChild.remove();
     if(event.type==='capture'&&event.player===playerId)sound('capture');
     if(event.type==='eliminated'&&event.player===playerId)toast('你的核心已被摧毁。可继续观察战场。',true);
   }
@@ -1284,21 +1299,21 @@ const EDITOR_MIN_SCALE = editor.width / EDITOR_SIZE; // 最小缩放恰好显示
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 function drawEditor() {
   const c = editor.getContext('2d'), W = editor.width, H = editor.height, { x, y, scale } = editorView;
-  c.fillStyle = '#08131a'; c.fillRect(0, 0, W, H);
+  c.fillStyle = canvasColor('#08131a'); c.fillRect(0, 0, W, H);
   const startX = Math.max(0, Math.floor(x)), endX = Math.min(EDITOR_SIZE, Math.ceil(x + W / scale));
   const startY = Math.max(0, Math.floor(y)), endY = Math.min(EDITOR_SIZE, Math.ceil(y + H / scale));
   // 细网格（每格）
-  c.strokeStyle = '#253f4b'; c.lineWidth = 1; c.beginPath();
+  c.strokeStyle = canvasColor('#253f4b'); c.lineWidth = 1; c.beginPath();
   for (let i = startX; i <= endX; i++) { const px = (i - x) * scale; c.moveTo(px, 0); c.lineTo(px, H); }
   for (let j = startY; j <= endY; j++) { const py = (j - y) * scale; c.moveTo(0, py); c.lineTo(W, py); }
   c.stroke();
   // 粗网格（每 8 格）
-  c.strokeStyle = '#2f5566'; c.lineWidth = 1; c.beginPath();
+  c.strokeStyle = canvasColor('#2f5566'); c.lineWidth = 1; c.beginPath();
   for (let i = Math.ceil(startX / 8) * 8; i <= endX; i += 8) { const px = (i - x) * scale; c.moveTo(px, 0); c.lineTo(px, H); }
   for (let j = Math.ceil(startY / 8) * 8; j <= endY; j += 8) { const py = (j - y) * scale; c.moveTo(0, py); c.lineTo(W, py); }
   c.stroke();
   // 图案边界 128×128
-  c.strokeStyle = '#67f5d1'; c.lineWidth = 2;
+  c.strokeStyle = COLORS[0]; c.lineWidth = 2;
   c.strokeRect((0 - x) * scale, (0 - y) * scale, EDITOR_SIZE * scale, EDITOR_SIZE * scale);
   // 细胞
   c.fillStyle = COLORS[playerId - 1];
@@ -1306,7 +1321,7 @@ function drawEditor() {
     const [gx, gy] = cell.split(',').map(Number);
     const px = (gx - x) * scale, py = (gy - y) * scale;
     if (px + scale < 0 || py + scale < 0 || px > W || py > H) continue;
-    c.fillRect(px + 1, py + 1, scale - 1, scale - 1);
+    drawCell(c, px + 1, py + 1, scale - 1);
   }
   $('#editor-count').textContent = `${editorCells.size} / ${EDITOR_MAX_CELLS} CELLS`;
 }

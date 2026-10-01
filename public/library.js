@@ -1,4 +1,6 @@
 import { normalize, DIRECTIONS } from './patterns.js';
+import { COLORS, canvasColor, drawCell } from './theme-palette.js';
+import { mountThemePicker } from './theme-picker.js';
 
 document.querySelector('#library-direction').insertAdjacentHTML('beforeend', Object.keys(DIRECTIONS).map(d => `<option value="${d}">${d}</option>`).join(''));
 
@@ -91,20 +93,20 @@ class LifeSim {
   updatePlayButton() { $('#sim-play').textContent = this.running ? '❚❚ 暂停' : '▶ 演化'; }
   render() {
     const c = this.ctx, W = this.canvas.width, H = this.canvas.height;
-    c.fillStyle = '#08131a'; c.fillRect(0, 0, W, H);
+    c.fillStyle = canvasColor('#08131a'); c.fillRect(0, 0, W, H);
     const { x: cx, y: cy, scale } = this.camera;
     const ox = W / 2 - cx * scale, oy = H / 2 - cy * scale;
-    c.strokeStyle = '#14262f'; c.lineWidth = 1; c.beginPath();
+    c.strokeStyle = canvasColor('#14262f'); c.lineWidth = 1; c.beginPath();
     const x0 = Math.floor((0 - ox) / scale), x1 = Math.ceil((W - ox) / scale);
     const y0 = Math.floor((0 - oy) / scale), y1 = Math.ceil((H - oy) / scale);
     for (let x = x0; x <= x1; x++) { const px = ox + x * scale; c.moveTo(px, 0); c.lineTo(px, H); }
     for (let y = y0; y <= y1; y++) { const py = oy + y * scale; c.moveTo(0, py); c.lineTo(W, py); }
     c.stroke();
-    c.fillStyle = '#67f5d1';
+    c.fillStyle = COLORS[0];
     for (const [x, y] of this.cells.values()) {
       const px = ox + x * scale, py = oy + y * scale;
       if (px + scale < 0 || py + scale < 0 || px > W || py > H) continue;
-      c.fillRect(px + 0.5, py + 0.5, scale - 1, scale - 1);
+      drawCell(c, px + 0.5, py + 0.5, scale - 1);
     }
     $('#sim-generation').textContent = `GEN ${this.generation}`;
     $('#sim-population').textContent = this.cells.size;
@@ -112,6 +114,10 @@ class LifeSim {
 }
 
 const sim = new LifeSim($('#sim-canvas'));
+mountThemePicker($('#theme-picker'));
+$('#library-settings').onclick = () => $('#settings-dialog').showModal();
+$('#settings-dialog .close-dialog').onclick = () => $('#settings-dialog').close();
+window.addEventListener('lifewar:theme', () => sim.render());
 
 // ---------- 全局状态 ----------
 let mode = 'files'; // 'files' | 'game'

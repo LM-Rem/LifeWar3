@@ -1,0 +1,121 @@
+/* Shape and composition layer. Color tokens cover every existing component. */
+:root[data-theme="cartoon"] {
+  color-scheme: light;
+  --bg: #faf7ef; --panel: #fffdf6f2; --panel-solid: #fffdf6;
+  --text: #304c43; --muted: #63776c; --line: #c8d8cb;
+  --accent: #23856c; --red: #ce594b;
+  --font: 'Microsoft YaHei UI', 'Microsoft YaHei', 'Trebuchet MS', sans-serif;
+}
+:root { --faction-1:#67f5d1; --faction-2:#ff796c; --faction-3:#ac98ff; --faction-4:#f4cc75; }
+:root[data-theme="cartoon"] { --faction-1:#23856c; --faction-2:#ce594b; --faction-3:#8061bb; --faction-4:#ad791e; }
+:root[data-theme="nexus"] { color-scheme: dark; }
+html[data-theme="cartoon"] body {
+  background: radial-gradient(ellipse at 85% 18%, #e8f1dd99, transparent 45%), var(--bg);
+}
+html[data-theme="cartoon"] .noise { opacity: .015; }
+html[data-theme="cartoon"] :is(.panel,.modal,.features-strip) {
+  border: 2px solid #c8d8cb; border-radius: 24px;
+  box-shadow: 0 5px 0 #dce4d5, 0 12px 28px #5065530a;
+}
+html[data-theme="cartoon"] .panel { background: var(--panel); }
+html[data-theme="cartoon"] .panel::before { display: none; }
+html[data-theme="cartoon"] .panel-heading { border-radius: 22px 22px 0 0; background: #f0f4e7; color: #3c5d4e; border-bottom-color: #d8e3d2; }
+html[data-theme="cartoon"] .arsenal-panel .panel-heading { border-radius: 0 0 22px 22px; }
+html[data-theme="cartoon"] .collapsed .panel-heading { border-radius: 22px; }
+html[data-theme="cartoon"] :is(input,textarea,select) { border-radius: 13px; color: #304c43; background: #fffef9; border-color: #bdcfc1; accent-color: var(--accent); }
+html[data-theme="cartoon"] :is(input,textarea,select):focus-visible { outline: 2px solid #23856c; outline-offset: 2px; }
+html[data-theme="cartoon"] input::placeholder, html[data-theme="cartoon"] textarea::placeholder { color: #728378; }
+html[data-theme="cartoon"] :is(.button,.icon-button,.category-tag,.library-tab,#cancel-card-target) { border-radius: 13px; }
+html[data-theme="cartoon"] .button { border-width: 2px; letter-spacing: .3px; box-shadow: 0 3px 0 #d1ddcb; }
+html[data-theme="cartoon"] .button:hover { transform: translateY(-2px); background: #edf4e6; border-color: #86b4a1; }
+html[data-theme="cartoon"] .button:active { transform: translateY(1px); box-shadow: none; }
+html[data-theme="cartoon"] .button.primary { color: #fffdf6; background: #23856c; border-color: #1b705a; box-shadow: 0 4px 0 #185d4a; }
+html[data-theme="cartoon"] .button.primary:hover { background: #2c9679; }
+html[data-theme="cartoon"] .button.ghost, html[data-theme="cartoon"] .button.subtle { color: #3f6555; background: #fffdf6; }
+html[data-theme="cartoon"] .danger-button { color: #a43e35; background: #ffebe1; border-color: #e9afa0; }
+html[data-theme="cartoon"] .icon-button { background: #edf3e6; border: 1px solid #c8d8cb; color: #4b6d5b; }
+html[data-theme="cartoon"] .icon-button:hover { background: #dcecdf; color: #23856c; }
+html[data-theme="cartoon"] .brand { letter-spacing: 1px; }
+html[data-theme="cartoon"] .brand-symbol { border-radius: 18px; width: 48px; height: 48px; display: inline-grid; place-items: center; background: #dceede; color: #23856c; }
+html[data-theme="cartoon"] .battle-brand .brand-symbol { width: 34px; height: 34px; border-radius: 12px; }
+html[data-theme="cartoon"] :is(.build-tag,.small-tag,.you-tag,.slot-icon,.library-meta span) { border-radius: 9px; }
+html[data-theme="cartoon"] .hero h1 { font-weight: 900; letter-spacing: -3px; text-shadow: 0 5px 0 #dfE8d4; }
+html[data-theme="cartoon"] .outline-text { color: #23856c; -webkit-text-stroke: 0; }
+html[data-theme="cartoon"] .title-period { color: #df9465; }
+html[data-theme="cartoon"] .hero .eyebrow { letter-spacing: 1px; }
+html[data-theme="cartoon"] .hero-art-label { padding: 12px 18px; border-radius: 18px; background: #fffdf6dd; border: 1px solid #c8d8cb; }
+html[data-theme="cartoon"] .features-strip { background: #fffdf6e6; overflow: hidden; }
+html[data-theme="cartoon"] .feature-index { color: #23856c; background: #e3efe0; border-radius: 50%; padding: 6px 9px; }
+html[data-theme="cartoon"] .feature-icon { color: #23856c; }
+html[data-theme="cartoon"] .commander-avatar { border-radius: 28px; background: #e3efe0; border: 2px solid #94bba1; color: #23856c; }
+html[data-theme="cartoon"] :is(.server-address,.player-slot,.room-entry,.manual-tip) { border-radius: 16px; }
+html[data-theme="cartoon"] .player-slot { background: #f6f8ee; }
+html[data-theme="cartoon"] :is(.pattern-card,.selected-header canvas) { border-radius: 16px; background: #f1f5e8; border: 2px solid #d0decb; }
+html[data-theme="cartoon"] .pattern-card.selected { background: #e0efdf; border-color: #23856c; box-shadow: 0 3px 0 #b4ceb9; }
+html[data-theme="cartoon"] :is(.hp-meter,.energy-meter) { border-radius: 9px; background: #e1e8d8; overflow: hidden; }
+html[data-theme="cartoon"] .energy-meter i { border-radius: 9px; box-shadow: none; }
+html[data-theme="cartoon"] :is(.minimap-panel canvas,#pattern-editor,.library-canvas-wrap canvas) { border-radius: 17px; border: 2px solid #c1d2bd; }
+html[data-theme="cartoon"] .map-controls { border-radius: 18px; background: #fffdf6f2; border: 2px solid #c8d8cb; box-shadow: 0 4px 0 #dce4d5; }
+html[data-theme="cartoon"] :is(.event-item,.card-status > div,.placement-tooltip,.notice-banner,.connection-banner,.toast,.card-empty) { border-radius: 14px; }
+html[data-theme="cartoon"] .event-item { background: #fffdf6e6; border-left: 3px solid #79ac91; }
+html[data-theme="cartoon"] #card-schedule, html[data-theme="cartoon"] #node-pressure-status { text-shadow: none; background: #fffdf6e8; border-radius: 12px; padding: 3px 10px; }
+html[data-theme="cartoon"] .placement-tooltip { color: #23856c; background: #f0f8ebf2; }
+html[data-theme="cartoon"] .placement-tooltip.invalid { color: #a43e35; background: #fff0e9f2; }
+html[data-theme="cartoon"] :is(.notice-banner,.connection-banner) { background: #fff0d8f2; color: #8d5e21; }
+html[data-theme="cartoon"] .card-status > div { background: #fffdf6ed; }
+html[data-theme="cartoon"] #law-status { color: #ac4b38; border-color: #dc9b7b; }
+html[data-theme="cartoon"] #card-effects { color: #23856c; }
+html[data-theme="cartoon"] :is(#inheritance-status,#card-target-status) { color: #7351a1; }
+html[data-theme="cartoon"] .card {
+  --card-color: #23856c; border: 2px solid color-mix(in srgb, var(--card-color) 45%, #e6e8d8);
+  border-radius: 20px; background: linear-gradient(165deg, #fffdf6, color-mix(in srgb, var(--card-color) 9%, #fffdf6));
+  box-shadow: 0 5px 0 color-mix(in srgb, var(--card-color) 25%, #e6e8d8);
+}
+html[data-theme="cartoon"] .card::before { border-radius: 16px; opacity: .35; }
+html[data-theme="cartoon"] .card::after { border-radius: 14px; opacity: .2; }
+html[data-theme="cartoon"] .card.law { --card-color: #ce594b; }
+html[data-theme="cartoon"] .card.buff { --card-color: #ad791e; }
+html[data-theme="cartoon"] .card.item { --card-color: #8061bb; }
+html[data-theme="cartoon"] .card-name { color: #304c43; }
+html[data-theme="cartoon"] .card-desc { color: #5d7165; }
+html[data-theme="cartoon"] .card-cost { color: var(--card-color); }
+html[data-theme="cartoon"] .card-type { color: var(--card-color); border-radius: 20px; background: color-mix(in srgb, var(--card-color) 12%, #fffdf6); }
+html[data-theme="cartoon"] .card:is(:hover,.selected,.dragging) { border-color: var(--card-color); box-shadow: 0 5px 0 color-mix(in srgb, var(--card-color) 35%, #e6e8d8), 0 10px 25px #50655312; }
+html[data-theme="cartoon"] .card-placeholder { border-radius: 20px; }
+html[data-theme="cartoon"] .modal { background: #fffdf6; }
+html[data-theme="cartoon"] .modal::backdrop { background: #48645466; backdrop-filter: blur(6px); }
+html[data-theme="cartoon"] .toast { background: #edf7e9f2; color: #246d52; border-color: #91b69a; }
+html[data-theme="cartoon"] .toast.error { background: #fff0e9f2; color: #a43e35; border-color: #dc9b87; }
+html[data-theme="cartoon"] .library-tab.active { color: #fffdf6; background: #23856c; border-color: #1b705a; box-shadow: 0 3px 0 #185d4a; }
+html[data-theme="cartoon"] .library-file { border-radius: 12px; margin: 3px 8px; border-bottom: 0; }
+html[data-theme="cartoon"] .library-file.selected { background: #e2efdf; }
+html[data-theme="cartoon"] .library-canvas-wrap { background: #f2f5e8; }
+html[data-theme="cartoon"] kbd { border-radius: 6px; border-bottom-width: 2px; background: #f0f4e7; color: #4f6c5b; }
+html[data-theme="cartoon"] ::selection { background: #b9dbc2; color: #244c3d; }
+html[data-theme="cartoon"] ::-webkit-scrollbar-thumb { background: #adc5b0; border-radius: 9px; }
+.theme-picker { margin: 20px 0 24px; padding: 0; border: 0; }
+.theme-picker legend { margin-bottom: 10px; color: var(--text); font-weight: 600; }
+.theme-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.theme-option { position: relative; padding: 12px; border: 2px solid var(--line); border-radius: 14px; text-align: left; background: var(--panel-solid); }
+.theme-option[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb,var(--accent) 18%,transparent); }
+.theme-option strong,.theme-option small { display: block; }
+.theme-option small { font-size: 10px; color: var(--muted); }
+html[data-theme="cartoon"] .theme-option { color: #304c43; background: #fffdf6; border-color: #c8d8cb; }
+html[data-theme="cartoon"] .theme-option[aria-pressed="true"] { border-color: #23856c; background: #eaf3e2; }
+.theme-swatch { display: flex; gap: 7px; align-items: center; height: 46px; margin-bottom: 8px; padding: 10px; border-radius: 10px; }
+.theme-swatch i { display: block; width: 13px; height: 13px; }
+.theme-swatch.nexus { background: #0b151d; }
+.theme-swatch.nexus i { background: #67f5d1; }
+.theme-swatch.nexus i:nth-child(2) { background: #ff796c; }
+.theme-swatch.nexus i:nth-child(3) { background: #ac98ff; }
+.theme-swatch.cartoon { background: #eff4e4; }
+.theme-swatch.cartoon i { background: #23856c; border-radius: 5px; }
+.theme-swatch.cartoon i:nth-child(2) { background: #ce594b; }
+.theme-swatch.cartoon i:nth-child(3) { background: #8061bb; }
+@media(max-width:760px) {
+  html[data-theme="cartoon"] :is(.panel,.features-strip) { border-radius: 18px; }
+  html[data-theme="cartoon"] .battle-top { border-radius: 0 0 16px 16px; }
+  html[data-theme="cartoon"] .hero h1 { letter-spacing: -2px; }
+  html[data-theme="cartoon"] .hero-art-label { padding: 8px 12px; }
+  html[data-theme="cartoon"] .brand-symbol { width: 36px; height: 36px; font-size: 28px; border-radius: 12px; }
+}

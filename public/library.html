@@ -7,7 +7,10 @@
   <meta name="description" content="LIFEWAR 图案库 — 浏览、演化并导入图案集中的生命图案，添加到游戏生命图谱。">
   <title>LIFEWAR — 图案库</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <script src="/theme.js"></script>
+  <link rel="stylesheet" href="/theme-colors.css">
   <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/cartoon.css">
   <script type="module" src="/library.js"></script>
 </head>
 <body>
@@ -15,7 +18,7 @@
   <div class="noise" aria-hidden="true"></div>
   <header class="site-header">
     <a class="brand" href="/"><span class="brand-symbol">✣</span><span>LIFEWAR<span class="brand-version"> / PATTERN LIBRARY</span></span></a>
-    <nav><a class="nav-link" href="/">返回战区 <span>↗</span></a></nav>
+    <nav><button class="icon-button" id="library-settings" aria-label="设置">⚙</button><a class="nav-link" href="/">返回战区 <span>↗</span></a></nav>
   </header>
   <main class="library-layout">
     <aside class="library-side panel">
@@ -59,6 +62,7 @@
       </div>
     </section>
   </main>
+  <dialog id="settings-dialog" class="modal small-modal"><div class="modal-heading"><div><div class="eyebrow">APPEARANCE</div><h2>界面设置</h2></div><button class="icon-button close-dialog" aria-label="关闭">×</button></div><div id="theme-picker"></div><p class="hint-note">主题自动保存，与战区和战场同步。</p></dialog>
   <div id="toasts" aria-live="polite"></div>
 </body>
 </html>
