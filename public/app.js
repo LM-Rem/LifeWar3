@@ -101,11 +101,12 @@ function positionBattleNotices() {
   const header = $('#battle-top'), status = $('#card-status');
   const gameTop = $('#game').getBoundingClientRect().top;
   const headerBottom = header.getBoundingClientRect().bottom - gameTop;
+  // Notices overlay the battlefield without moving either side panel.
   status.style.top = `${headerBottom + 10}px`;
   const statusBottom = status.getBoundingClientRect().bottom - gameTop;
   $('#notice-banner').style.top = `${Math.max(18, headerBottom + 10, statusBottom + 10)}px`;
 }
-// Track header expansion, responsive layout and changing card status content.
+// Track header expansion and changing card status content.
 const battleNoticeLayout = new ResizeObserver(positionBattleNotices);
 battleNoticeLayout.observe($('#battle-top'));
 battleNoticeLayout.observe($('#card-status'));
@@ -943,7 +944,7 @@ function cycleCategory(delta){
 }
 function renderPatterns(){
   allPatterns=visiblePatterns();
-  $('#pattern-list').innerHTML=allPatterns.map((p,i)=>`<button class="pattern-card ${selected&&p.id===selected.id?'selected':''}" data-pattern="${escapeHTML(p.id)}" title="${escapeHTML(p.desc)}"><span class="shortcut">${i<7?i+1:'C'}</span><canvas width="118" height="94"></canvas><strong>${escapeHTML(p.name)}</strong><span class="pattern-cost">${p.cells.length} EN</span></button>`).join('');
+  $('#pattern-list').innerHTML=allPatterns.map(p=>`<button class="pattern-card ${selected&&p.id===selected.id?'selected':''}" data-pattern="${escapeHTML(p.id)}" title="${escapeHTML(p.desc)}"><span class="pattern-cost" title="能量消耗">${p.cells.length}</span><canvas width="118" height="94"></canvas><strong>${escapeHTML(p.name)}</strong></button>`).join('');
   $$('.pattern-card').forEach((b,i)=>{drawPattern(b.querySelector('canvas'),allPatterns[i].cells,COLORS[playerId-1],allPatterns[i].direction);b.onclick=()=>{selectPattern(allPatterns[i]);sound();};});
 }
 function selectPattern(pattern,keepTransform=false){

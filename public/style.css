@@ -1768,19 +1768,14 @@ kbd {
 }
 
 .pattern-card .pattern-cost {
-  font: 8px var(--mono);
-  color: var(--ink-668880)
-}
-
-.pattern-card .shortcut {
   position: absolute;
   left: 5px;
   top: 4px;
-  font: 7px var(--mono);
+  font: 8px var(--mono);
   color: var(--ink-536c76)
 }
 
-.pattern-card.selected .shortcut {
+.pattern-card.selected .pattern-cost {
   color: var(--accent)
 }
 
@@ -1993,6 +1988,7 @@ kbd {
   border: 1px solid var(--edge-67f5d144);
   color: var(--accent);
   font: 9px var(--mono);
+  text-align: center;
   border-radius: 3px;
   z-index: 2
 }
@@ -2307,6 +2303,8 @@ kbd {
   bottom: 27px;
   left: 50%;
   transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100vw - 32px);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2316,6 +2314,10 @@ kbd {
 }
 
 .toast {
+  width: max-content;
+  max-width: 100%;
+  margin-inline: auto;
+  text-align: center;
   padding: 11px 20px;
   border: 1px solid var(--edge-456455);
   background: var(--surface-11251ff2);
@@ -3717,11 +3719,7 @@ body.no-motion *::after {
   }
 
   .pattern-card .pattern-cost {
-    font: 7px var(--mono)
-  }
-
-  .pattern-card .shortcut {
-    font-size: 6px;
+    font-size: 7px;
     left: 3px;
     top: 3px
   }
@@ -3889,12 +3887,14 @@ body.no-motion *::after {
 }
 
 /* Card effects remain legible without reopening the hand panel. */
+#game-hud > .card-status { pointer-events:none }
 .card-status { position:absolute; top:92px; left:50%; transform:translateX(-50%); width:min(510px,42vw); display:grid; gap:5px; pointer-events:none; font:11px var(--mono); color:var(--ink-a1babf); z-index:5 }
-.card-status > div { padding:8px 12px; background:var(--surface-08151aee); border:1px solid var(--edge-36525c); line-height:1.5 }
+.card-status > div { width:max-content; max-width:100%; justify-self:center; text-align:center; padding:8px 12px; background:var(--surface-08151aee); border:1px solid var(--edge-36525c); line-height:1.5 }
+.card-status > small { width:max-content; max-width:100%; justify-self:center; text-align:center; pointer-events:none }
 #law-status { color:var(--ink-ffbc9e); border-color:var(--edge-c8724b); box-shadow:0 0 16px var(--shadow-da74441a) }
 #card-effects { color:var(--ink-7fe8cd) }
 #card-schedule { text-align:center; text-shadow:0 1px 4px var(--shadow-000) }
-#card-target-status { display:flex; align-items:center; justify-content:space-between; gap:8px; color:var(--ink-c7adff) }
+#card-target-status { display:flex; align-items:center; justify-content:center; gap:8px; color:var(--ink-c7adff) }
 #cancel-card-target { pointer-events:auto; padding:5px 9px; border:1px solid var(--edge-9370d4); background:var(--surface-231c35); color:var(--ink-ece1ff); cursor:pointer; white-space:nowrap }
 .draft-options { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px }
 .draft-options .draft-card { width:100%; min-width:0; min-height:220px; aspect-ratio:auto; cursor:pointer }
