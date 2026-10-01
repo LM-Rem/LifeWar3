@@ -2742,6 +2742,20 @@ body.no-motion *::after {
   min-height: 28px
 }
 
+#planet-rotate {
+  position: fixed;
+  z-index: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+#planet-rotate.dragging { cursor: grabbing; }
+#planet-rotate:focus-visible { outline: 1px dashed var(--accent); outline-offset: 8px; }
+
 .library-direction { display: flex; align-items: center; gap: 8px; color: var(--ink-a4bbc2); font-size: 12px; }
 .library-direction select { background: var(--surface-0a141b); color: var(--ink-d9e8eb); border: 1px solid var(--line); border-radius: 4px; padding: 7px 9px; font: inherit; }
 .library-direction select:focus { outline: 1px solid var(--accent); }
