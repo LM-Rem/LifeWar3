@@ -97,6 +97,8 @@ test('private drafts and hands, law prewarning and active buffs survive WebSocke
   assert.equal((await b.wait('state',s=>s.generation>sa.generation)).cards.hand[0],null);
   a.send({type:'play_card',cardId:choice.id});await a.wait('card_played');
   const warning=await b.wait('state',s=>s.pendingRule);assert.equal(warning.pendingRule.cardId,choice.id);assert.ok(Array.isArray(warning.pendingRule.birth));
+  // Restore a simultaneous law/shield fixture independently of use cooldown.
+  g.players[0].cardCooldownEndsAt=0;
   g.cards.hand[0]=[CARDS.find(c=>c.id==='shield')];assert.ok(g.playCard(1,'shield').ok);
   g.cards.hand[0]=[CARDS.find(c=>c.id==='purge'),CARDS.find(c=>c.id==='purge'),CARDS.find(c=>c.id==='repair')];
   now=warning.pendingRule.startsAt;g.step();
@@ -105,5 +107,10 @@ test('private drafts and hands, law prewarning and active buffs survive WebSocke
   await resumed.wait('started');const restored=await resumed.wait('state');
   assert.equal(restored.ruleOverride.cardId,choice.id);assert.ok(restored.cards.effects.some(e=>e.stat==='shield'&&e.playerId===1));
   assert.deepEqual(restored.cards.hand[0].map(c=>c.id),['purge','purge','repair']);
+  assert.equal(restored.cards.cooldownEndsAt,g.players[0].cardCooldownEndsAt);
+  assert.ok(restored.cards.cooldownEndsAt>restored.serverTime);
+  resumed.send({type:'play_card',cardId:'purge',x:400,y:400});
+  assert.match((await resumed.wait('error')).message,/冷却/);
+  assert.equal(g.cards.hand[0].length,3);
   assert.equal(restored.cards.hand[1],null);await resumed.wait('binary');
 });

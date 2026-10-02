@@ -53,11 +53,11 @@ test('evolution exceeds personal and former global caps; other players can still
 });
 
 test('discount has a bounded budget; energy and repair scale with configured limits',()=>{
- const {g}=make();play(g,'flash_deploy');g.players[0].energy=100;
+ const {g,time}=make();play(g,'flash_deploy');g.players[0].energy=100;
  const cells=Array.from({length:100},(_,i)=>[i%10,Math.floor(i/10)]);
  assert.equal(g.deploy(1,200,200,cells).cost,10);
- g.players[0].energy=0;play(g,'energy_burst');assert.equal(g.players[0].energy,63);
- g.players[0].hp=1;play(g,'repair');assert.equal(g.players[0].hp,61);
+ time(10000);g.players[0].energy=0;play(g,'energy_burst');assert.equal(g.players[0].energy,63);
+ time(20000);g.players[0].hp=1;play(g,'repair');assert.equal(g.players[0].hp,61);
 });
 
 

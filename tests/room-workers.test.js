@@ -18,6 +18,40 @@ async function client(url){
 }
 const factory=(options,callbacks)=>new RoomWorkerClient({...options,gameOptions:{cardDrawTimes:[0]},bots:false},{...callbacks,workerURL:new URL('./fixtures/room-worker-instrumented.mjs',import.meta.url)});
 
+test('real room worker enforces ten-second card cooldown and restores it on resume',async t=>{
+  const app=createServer({port:0,host:'127.0.0.1',roomWorkers:true,evolutionMode:'sparse',
+    roomWorkerFactory:(options,callbacks)=>new RoomWorkerClient({...options,gameOptions:{cardDrawTimes:[0,1000]},bots:false},
+      {...callbacks,workerURL:new URL('./fixtures/room-worker-instrumented.mjs',import.meta.url)})});
+  const {port}=await app.listen(),url=`ws://127.0.0.1:${port}/ws`,peers=[];
+  t.after(async()=>{for(const p of peers)p.ws.terminate();await app.close();});
+  const a=await client(url);peers.push(a);
+  a.send({type:'create',name:'Cooldown',practice:true});const session=await a.wait('welcome');await a.wait('started');
+  const room=app.rooms.get(session.code);
+  for(const round of [1,2]){
+    const draft=await a.wait('card_state',s=>s.cardDraft?.round===round);
+    const choice=draft.cardDraft.players.find(p=>p.playerId===1).options.find(c=>c.type==='buff');
+    a.send({type:'pick_card',cardId:choice.id});await a.wait('card_picked');
+    await a.wait('card_state',s=>s.cards.hand[0].length===round);
+    if(round===1)room.worker.post({type:'test_advance_clock',ms:1000});
+  }
+  const hand=(await a.wait('card_state',s=>s.cards.hand[0].length===2)).cards.hand[0];
+  a.send({type:'play_card',cardId:hand[0].id,instanceId:hand[0].instanceId});
+  const played=await a.wait('card_played');assert.equal(played.cooldownEndsAt-played.serverTime,10000);
+  const cooling=await a.wait('card_state',s=>s.cards.hand[0].length===1);
+  assert.equal(cooling.cards.cooldownEndsAt,played.cooldownEndsAt);
+  a.send({type:'play_card',cardId:hand[1].id,instanceId:hand[1].instanceId});
+  assert.match((await a.wait('error')).message,/冷却/);
+  a.ws.terminate();const resumed=await client(url);peers.push(resumed);
+  resumed.send({type:'resume',code:session.code,token:session.token});await resumed.wait('started');
+  const restored=await resumed.wait('card_state',s=>s.cards.hand[0].length===1);
+  assert.equal(restored.cards.cooldownEndsAt,played.cooldownEndsAt);
+  assert.ok(restored.cards.cooldownEndsAt>restored.serverTime);
+  room.worker.post({type:'test_advance_clock',ms:10000});
+  await resumed.wait('card_state',s=>s.serverTime>=played.cooldownEndsAt);
+  resumed.send({type:'play_card',cardId:hand[1].id,instanceId:hand[1].instanceId});
+  await resumed.wait('card_played');await resumed.wait('card_state',s=>s.cards.hand[0].length===0);
+});
+
 for(const [paletteTiles,tileModes] of [[false,false],[true,false],[true,true]])test(`real dense worker negotiates bitmap/palette=${paletteTiles}/modes=${tileModes} and legacy peers independently and resumes sessions`,async t=>{
   const app=createServer({port:0,host:'127.0.0.1',roomWorkers:true,boardProtocol:2,evolutionMode:'sparse',
     roomWorkerFactory:(options,callbacks)=>new RoomWorkerClient({...options,testLoad:true,testPalette:paletteTiles,testTileModes:tileModes,bots:false,gameOptions:{cardDrawTimes:[]}},{...callbacks,workerURL:new URL('./fixtures/room-worker-instrumented.mjs',import.meta.url)})});

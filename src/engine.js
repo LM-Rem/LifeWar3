@@ -6,7 +6,7 @@ import { CircleIndex } from './spatial-index.js';
 import { OrderedCells } from './ordered-cells.js';
 import { CellChanges } from './cell-changes.js';
 import { generateNodes, createTerritories, canDeployInTerritory, territoryAt, adjacentNeutralTerritories } from '../public/territory.js';
-import { CARDS, CARD_CONFIG, isTargetedCard, materializeCard } from '../public/cards.js';
+import { CARDS, CARD_CONFIG, CARD_COOLDOWN_SECONDS, isTargetedCard, materializeCard } from '../public/cards.js';
 import { RegionalCycleDetector } from './dormancy.js';
 import { RULES } from './config.js';
 export { RULES };
@@ -347,9 +347,11 @@ export class Game {
     const hand = this.cards.hand[playerId - 1];
     const handIndex = hand.findIndex(c => c.id === cardId && (instanceId === undefined || c.instanceId === instanceId));
     if (handIndex < 0) return { error: '手牌中没有这张卡' };
+    const now = this.now();
+    if (p.cardCooldownEndsAt > now) return { error: `卡牌冷却中，剩余 ${Math.ceil((p.cardCooldownEndsAt - now) / 1000)} 秒` };
     const card = materializeCard(hand[handIndex], this.random);
     if (!card) return { error: '无效卡牌' };
-    const eff = card.effect, now = this.now();
+    const eff = card.effect;
     if (isTargetedCard(card) && (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0 || x >= this.size || y >= this.size)) return { error: '请选择地图内的目标位置' };
     this.expireCardEffects();
     switch (eff.kind) {
@@ -411,8 +413,9 @@ export class Game {
       default: return { error: '该卡牌效果尚未实现' };
     }
     hand.splice(handIndex, 1);
+    p.cardCooldownEndsAt = now + CARD_COOLDOWN_SECONDS * 1000;
     this.event('card', playerId, `${eff.kind === 'rule' ? '法则预告' : '使用卡牌'}：${card.name}`);
-    return { ok: true };
+    return { ok: true, cooldownEndsAt: p.cardCooldownEndsAt, serverTime: now };
   }
 
 
@@ -456,7 +459,7 @@ export class Game {
       ruleOverride: serializeRule(this.ruleOverride),
       pendingRule: serializeRule(this.pendingRule),
       localRules: this.localRules.map(serializeRule),
-      cards: { hand: this.cards.hand.map((c, i) => viewerId === null || i + 1 === viewerId ? c : null), effects: this.cards.effects.filter(e => e.endsAt > now) }
+      cards: { hand: this.cards.hand.map((c, i) => viewerId === null || i + 1 === viewerId ? c : null), effects: this.cards.effects.filter(e => e.endsAt > now), cooldownEndsAt: this.players.find(p => p.id === viewerId)?.cardCooldownEndsAt ?? 0 }
     };
   }
 }

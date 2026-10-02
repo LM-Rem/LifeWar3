@@ -80,7 +80,7 @@ test('default auto remains sparse and allocates no frontier cache',()=>{const g=
 test('purge circle boundary and seed cards preserve cached evolution through actual command paths',()=>{
  const purge=CARDS.find(c=>c.id==='purge'),seed=CARDS.find(c=>c.id==='seed'),cells=[];
  for(const x of [450,450+purge.effect.radius,452+purge.effect.radius])for(const [dx,dy]of [[0,0],[1,0],[0,1],[1,1]])cells.push([(450+dy)*1000+x+dx,1]);
- replay({ReferenceGame,Game:FrontierGame,generations:20,cells,setup:g=>{g.cards.hand[0]=[purge,seed].map(c=>g.acquireCard(c));},operations:[
+ replay({ReferenceGame,Game:FrontierGame,generations:20,cells,atMs:i=>i*50+(i>=4?10000:0),setup:g=>{g.cards.hand[0]=[purge,seed].map(c=>g.acquireCard(c));},operations:[
  {seq:1,generation:3,action:'playCard',playerId:1,cardId:'purge',x:450,y:450},
  {seq:2,generation:4,action:'playCard',playerId:1,cardId:'seed',x:450,y:450}
  ]});

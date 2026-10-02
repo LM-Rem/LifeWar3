@@ -103,6 +103,31 @@ function setup(card = energy) {
     event: (type, target, options = {}) => grid.emit(type, { target, ...options }) };
 }
 
+for (const card of [energy,purge]) test(`${card.id}: cooling snapshots block dragging and use without replacing the hand`,()=>{
+  const ui=setup(card), el=ui.card();
+  ui.context.state.serverTime=5000;
+  ui.context.state.cards.cooldownEndsAt=15000;
+  vm.runInContext('renderCards()',ui.context);
+  assert.equal(ui.card(),el);
+  ui.event('pointerdown',el);ui.document.emit('pointerup',{clientY:600});
+  assert.equal(el.parent,ui.grid);
+  ui.context.targetEl=el;vm.runInContext('playCardAnimated(targetEl)',ui.context);
+  ui.animate();assert.equal(ui.sent.length,0);
+  ui.context.state.serverTime=15000;vm.runInContext('renderCards()',ui.context);
+  assert.equal(ui.card(),el);
+  ui.event('pointerdown',el);ui.document.emit('pointerup',{clientY:600});
+  if(card===purge)vm.runInContext('playCardAnimated(targetEl,{x:400,y:400})',ui.context);
+  ui.animate();assert.equal(ui.sent.length,1);
+});
+
+test('play acknowledgement blocks the next card immediately before the next state arrives',()=>{
+  const ui=setup([energy,purge]);
+  vm.runInContext("onMessage({type:'card_played',playerId:1,cooldownEndsAt:11000,serverTime:1000})",ui.context);
+  ui.event('pointerdown',ui.card());
+  assert.equal(ui.card().parent,ui.grid);
+  assert.equal(ui.context.state.cards.cooldownEndsAt,11000);
+});
+
 test('PC: repeated state snapshots during dragging never create a second card or replace the placeholder', () => {
   const ui = setup(), card = ui.card();
   ui.event('pointerdown', card);

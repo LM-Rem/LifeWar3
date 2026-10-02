@@ -15,26 +15,23 @@ const TAU = Math.PI * 2;
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 const hexAlpha = (color, opacity) => canvasColor(color) + Math.round(opacity * 255).toString(16).padStart(2, '0');
 
-export function drawPattern(canvas, cells, color = COLORS[0], direction = null) {
+export function drawPattern(canvas, cells, color = COLORS[0], direction = null, directionElement = null) {
   const ctx = canvas.getContext('2d'), w = canvas.width, h = canvas.height;
   ctx.clearRect(0, 0, w, h);
   const vector = Object.hasOwn(DIRECTIONS, direction) ? DIRECTIONS[direction] : null;
   canvas.setAttribute('role', 'img');
   canvas.setAttribute('aria-label', vector ? `图案预览，方向：${direction}` : '图案预览，无方向');
   canvas.title = vector ? `方向：${direction}` : '';
-  const availableWidth = w - (vector ? 24 : 0);
-  if (vector) {
-    ctx.save();
-    ctx.translate(w - 13, 15);
-    ctx.rotate(Math.atan2(vector[1], vector[0]));
-    ctx.beginPath(); ctx.moveTo(-7, 0); ctx.lineTo(7, 0);
-    ctx.moveTo(2, -5); ctx.lineTo(7, 0); ctx.lineTo(2, 5);
-    ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.stroke();
-    ctx.restore();
+  if (directionElement) {
+    directionElement.hidden = !vector;
+    directionElement.title = vector ? `方向：${direction}` : '';
+    directionElement.setAttribute('aria-label', vector ? `方向：${direction}` : '无方向');
+    directionElement.style.color = color;
+    directionElement.innerHTML = vector ? `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12H19M14 7L19 12L14 17" transform="rotate(${Math.atan2(vector[1], vector[0]) * 180 / Math.PI} 12 12)" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>` : '';
   }
   if (!cells.length) return;
   const pw = Math.max(...cells.map(c => c[0])) + 1, ph = Math.max(...cells.map(c => c[1])) + 1;
-  const s = Math.min((availableWidth - 16) / pw, (h - 16) / ph, 9), ox = (availableWidth - pw * s) / 2, oy = (h - ph * s) / 2;
+  const s = Math.min((w - 16) / pw, (h - 16) / ph, 9), ox = (w - pw * s) / 2, oy = (h - ph * s) / 2;
   ctx.fillStyle = color;
   for (const [x, y] of cells) drawCell(ctx, ox + x * s, oy + y * s, Math.max(1, s - 1.3));
 }

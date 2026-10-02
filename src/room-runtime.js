@@ -110,7 +110,7 @@ export class RoomRuntime {
         const result=g.playCard(id,String(msg.cardId||''),Number.isInteger(msg.x)?msg.x:undefined,Number.isInteger(msg.y)?msg.y:undefined,msg.instanceId);
         if(result.error)return fail(result.error);
         return [...this.peers.values()].filter(p=>p.session!==null&&!p.bot).flatMap(p=>[
-          this.json(p,{type:'card_played',playerId:id,cardId:String(msg.cardId||''),x:msg.x,y:msg.y},true),...this.states(p)]);
+          this.json(p,{type:'card_played',playerId:id,cardId:String(msg.cardId||''),x:msg.x,y:msg.y,cooldownEndsAt:result.cooldownEndsAt,serverTime:result.serverTime},true),...this.states(p)]);
       }
       default:return fail('不支持的房间操作');
     }

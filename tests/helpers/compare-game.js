@@ -5,6 +5,8 @@ export function captureGame(game, { history = false } = {}) {
     internal: structuredClone({ generation: game.generation, startedAt: game.startedAt, birthRule: game.birthRule,
       survivalRule: game.survivalRule, cardDrawTimes: game.cardDrawTimes, cardSerial: game.cardSerial,
       drawCount: game.drawCount, nodeDamageTick: game.nodeDamageTick, nodeShieldPeriods: game.nodeShieldPeriods }) };
+  // Older frozen engines omit the new ready-state cooldown metadata.
+  result.state.cards.cooldownEndsAt ??= 0;
   if (history) result.dormancy = Object.fromEntries(Object.entries(game.dormancy).filter(([key, value]) => key !== 'metrics' && typeof value !== 'function').map(([key, value]) => [key, structuredClone(value)]));
   return result;
 }

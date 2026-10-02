@@ -86,7 +86,8 @@ test('多张手牌：主动选择新卡会追加而不替换旧卡', () => {
 });
 
 test('增益卡：能量爆发增加能量且不超过上限，使用后消耗手牌', () => {
-  const g = game();
+  let now = 0;
+  const g = new Game([{name:'A'},{name:'B'}], { now: () => now });
   const p = g.players[0];
   g.cards.hand[0] = [card('energy_burst')];
   assert.ok(g.playCard(1, 'energy_burst').ok);
@@ -94,6 +95,7 @@ test('增益卡：能量爆发增加能量且不超过上限，使用后消耗�
   assert.deepEqual(g.cards.hand[0], []); // 使用后消耗
   g.cards.hand[0] = [card('energy_burst')];
   p.energy = 0;
+  now = 10000;
   assert.ok(g.playCard(1, 'energy_burst').ok);
   assert.equal(p.energy, 63);
 });

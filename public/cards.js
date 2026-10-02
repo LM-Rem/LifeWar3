@@ -1,5 +1,6 @@
 // One validated data source for the server and browser. Edit cards.json to balance cards.
 const pools = ['early', 'mid', 'late'];
+export const CARD_COOLDOWN_SECONDS = 10;
 const kinds = { rule: 'law', randomRule: 'law', inheritance: 'law', energy: 'buff', repair: 'buff', buff: 'buff', purge: 'item', seed: 'item', nebula: 'item', localRule: 'item' };
 const stats = ['maxEnergy', 'regen', 'freeDeploy', 'deployCost', 'neutralDeploy', 'capture', 'contest', 'shield', 'capacity', 'dormancy'];
 export const isTargetedCard = card => ['purge', 'seed', 'nebula', 'localRule'].includes(card?.effect?.kind);

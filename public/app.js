@@ -273,6 +273,17 @@ let renderedCardKey;
 let resetCardInteraction = () => {};
 let pendingCardPlay = false;
 let playCardAnimated = () => {};
+function cardCooldownRemaining() {
+  const live = cardState || state;
+  return Math.max(0, Math.ceil(((live?.cards?.cooldownEndsAt ?? 0) - (live?.serverTime ?? 0)) / 1000));
+}
+function renderCardCooldown() {
+  const seconds = cardCooldownRemaining(), label = $('#card-cooldown');
+  if (label) { label.hidden = !seconds; label.textContent = seconds ? `卡牌冷却 ${seconds} 秒` : ''; }
+  const container = $('#card-container');
+  if (seconds) container?.classList.add('cooling-down');
+  else container?.classList.remove('cooling-down');
+}
 if (cardGridEl) {
   let dragCard = null, placeholder = null, dragOffsetX = 0, dragOffsetY = 0, dragging = false;
   let dragPointerId = null;
@@ -344,7 +355,7 @@ if (cardGridEl) {
 
   cardGridEl.addEventListener('pointerdown', e => {
     const card = e.target.closest('.card');
-    if (pendingCardPlay || e.button !== 0 || e.isPrimary === false || dragging || tapCandidate) return;
+    if (pendingCardPlay || cardCooldownRemaining() || e.button !== 0 || e.isPrimary === false || dragging || tapCandidate) return;
     if (card && e.target.closest('button, a')) return;
     const touch = e.pointerType === 'touch';
 
@@ -497,6 +508,7 @@ if (cardGridEl) {
 
   // 拖出容器：使用卡牌，播放与卡牌本体完全一致的科幻粒子分解动画
   function useCard(card) {
+    if (cardCooldownRemaining()) { onDragCancel(); toast(`卡牌冷却中，剩余 ${cardCooldownRemaining()} 秒`); return; }
     const name = card.querySelector('.card-name')?.textContent || '未知卡牌';
     const cardObj = (cardState || state)?.cards?.hand?.[playerId - 1]?.find(c => c.id === card.dataset.cardId && c.instanceId === card.dataset.instanceId);
     const cardId = card.dataset.cardId || cardObj?.id;
@@ -519,6 +531,7 @@ if (cardGridEl) {
 
   playCardAnimated = (card, target = {}) => {
     if (pendingCardPlay || !card) return;
+    if (cardCooldownRemaining()) { toast(`卡牌冷却中，剩余 ${cardCooldownRemaining()} 秒`); return; }
     const cardId = card.dataset.cardId;
     const operation = pendingCardPlay = { cardId, instanceId:card.dataset.instanceId, target: battlefield.cardTarget };
     battlefield.cardTarget = null;
@@ -874,7 +887,12 @@ function onMessage(msg) {
       if(first)battlefield.focusBase();updateGameHUD();break;
     }
     case 'card_picked': if (msg.playerId === playerId) { pendingCardPick=null; $('#open-draft').classList.add('hidden'); if($('#card-draft-dialog').open)$('#card-draft-dialog').close(); } break;
-    case 'card_played': if (msg.playerId === playerId) { pendingCardPlay = false; battlefield.cardTarget = null; } break;
+    case 'card_played': if (msg.playerId === playerId) {
+      pendingCardPlay = false; battlefield.cardTarget = null;
+      const live = cardState || state;
+      if (live?.cards && Number.isFinite(msg.cooldownEndsAt)) { live.cards.cooldownEndsAt = msg.cooldownEndsAt; live.serverTime = msg.serverTime; }
+      renderCardCooldown();
+    } break;
     case 'deployed':battlefield.effect(msg.x,msg.y);sound('deploy');if(state){const me=state.players.find(p=>p.id===playerId);if(me)me.energy=Math.max(0,me.energy-msg.cost);}break;
     case 'error':browserMetrics?.record('action.rejectedWithBacklog',Math.max(0,battlefield.presentation.received-battlefield.generation),battlefield.generation);if(pendingCardPlay){const target=pendingCardPlay.target;pendingCardPlay=false;renderCards(true);battlefield.cardTarget=target;}toast(msg.message,true);break;
     case 'pong':latency=Math.max(0,Date.now()-msg.time);$('#ping').textContent=latency+' ms';break;
@@ -944,8 +962,8 @@ function cycleCategory(delta){
 }
 function renderPatterns(){
   allPatterns=visiblePatterns();
-  $('#pattern-list').innerHTML=allPatterns.map(p=>`<button class="pattern-card ${selected&&p.id===selected.id?'selected':''}" data-pattern="${escapeHTML(p.id)}" title="${escapeHTML(p.desc)}"><span class="pattern-cost" title="能量消耗">${p.cells.length}</span><canvas width="118" height="94"></canvas><strong>${escapeHTML(p.name)}</strong></button>`).join('');
-  $$('.pattern-card').forEach((b,i)=>{drawPattern(b.querySelector('canvas'),allPatterns[i].cells,COLORS[playerId-1],allPatterns[i].direction);b.onclick=()=>{selectPattern(allPatterns[i]);sound();};});
+  $('#pattern-list').innerHTML=allPatterns.map(p=>`<button class="pattern-card ${selected&&p.id===selected.id?'selected':''}" data-pattern="${escapeHTML(p.id)}" title="${escapeHTML(p.desc)}"><span class="pattern-cost" title="能量消耗">${p.cells.length}</span><span class="pattern-direction" hidden></span><canvas width="118" height="94"></canvas><strong>${escapeHTML(p.name)}</strong></button>`).join('');
+  $$('.pattern-card').forEach((b,i)=>{drawPattern(b.querySelector('canvas'),allPatterns[i].cells,COLORS[playerId-1],allPatterns[i].direction,b.querySelector('.pattern-direction'));b.onclick=()=>{selectPattern(allPatterns[i]);sound();};});
 }
 function selectPattern(pattern,keepTransform=false){
   if(selected)transformState.set(selected.id,{rotation,flipped});
@@ -956,7 +974,7 @@ function selectPattern(pattern,keepTransform=false){
   battlefield.pattern=transform(selected.cells,rotation,flipped);
   $('#selected-name').textContent=selected.name;$('#selected-en').textContent=selected.en;$('#selected-role').textContent=selected.role;$('#selected-description').textContent=selected.desc;$('#selected-cost').textContent=selected.cells.length;
   $('#transform-label').textContent=`${rotation*90}° / ${flipped?'镜像':'正向'}`;
-  drawPattern($('#selected-preview'),battlefield.pattern,COLORS[playerId-1],transformDirection(selected.direction,rotation,flipped));
+  drawPattern($('#selected-preview'),battlefield.pattern,COLORS[playerId-1],transformDirection(selected.direction,rotation,flipped),$('#selected-direction'));
   $('.range-legend').style.color=COLORS[playerId-1];
   $('.range-legend i').style.borderColor=COLORS[playerId-1];
   $('.range-legend i').style.background=COLORS[playerId-1]+'1a';
@@ -979,6 +997,7 @@ initPatterns();
 
 // 阶段3：动态渲染手牌（来自 state.cards.hand），替换静态示例卡
 function renderCards(force = false) {
+  renderCardCooldown();
   const hand = (cardState || state)?.cards?.hand?.[playerId - 1] || [];
   if (pendingCardPlay && !force) {
     if ((!(cardState || state)?.status || (cardState || state).status === 'playing') && hand.some(c => c.id === pendingCardPlay.cardId && c.instanceId === pendingCardPlay.instanceId)) return;

@@ -1481,6 +1481,7 @@ kbd {
 }
 
 .selected-header canvas {
+  display: block;
   width: 74px;
   height: 65px;
   border: 1px solid var(--edge-263b43);
@@ -1761,6 +1762,25 @@ kbd {
   height: 47px;
   margin-bottom: 1px
 }
+
+.pattern-direction {
+  position: absolute;
+  top: 4px;
+  right: 5px;
+  width: 12px;
+  height: 12px;
+  pointer-events: none;
+}
+.pattern-direction svg { display: block; width: 100%; height: 100%; }
+.pattern-direction[hidden] { display: none; }
+.pattern-card canvas { margin-top: 12px; flex-shrink: 0; }
+.selected-preview { position: relative; flex: 0 0 auto; padding-top: 20px; }
+.selected-preview .pattern-direction { top: 0; right: 3px; width: 18px; height: 18px; }
+.card-container { position: relative; }
+.card-cooldown { position: absolute; top: 6px; left: 17px; color: var(--accent); font: 11px var(--mono); }
+.card-cooldown[hidden] { display: none; }
+.battle-top.expanded .card-container.cooling-down { padding-top: 26px; }
+.card-container.cooling-down .card { cursor: wait; }
 
 .pattern-card strong {
   font-size: 9px;
@@ -3723,6 +3743,8 @@ body.no-motion *::after {
     left: 3px;
     top: 3px
   }
+
+  .pattern-card .pattern-direction { top: 3px; right: 3px; width: 10px; height: 10px; }
 
   .category-tag {
     font-size: 7px;

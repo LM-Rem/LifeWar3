@@ -489,7 +489,7 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
           const result = room.game.playCard(member.id, String(msg.cardId || ''), Number.isInteger(msg.x) ? msg.x : undefined, Number.isInteger(msg.y) ? msg.y : undefined, msg.instanceId);
           if (result.error) return fail(result.error);
           for (const m of room.members) {
-            send(m.ws, { type: 'card_played', playerId: member.id, cardId: String(msg.cardId || ''), x: msg.x, y: msg.y });
+            send(m.ws, { type: 'card_played', playerId: member.id, cardId: String(msg.cardId || ''), x: msg.x, y: msg.y, cooldownEndsAt: result.cooldownEndsAt, serverTime: result.serverTime });
             sendCards(room,m);
             send(m.ws, room.game.state(m.id));
           }

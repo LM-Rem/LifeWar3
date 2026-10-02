@@ -10,6 +10,8 @@ function setup(members = [{name:'A'},{name:'B'}]) {
   // Lifecycle tests use a fixed fixture, independent of the editable production schedule.
   const g = new Game(members, { cardDrawTimes:[180000,300000,420000], now:()=>time, random:()=>((seed=seed*16807%2147483647)/2147483647) });
   return {g, clock: t=>{time=t;}, play:(id,player=1,x,y)=>{
+    // These fixtures isolate simultaneous effect combinations; cooldown has dedicated tests.
+    g.players[player-1].cardCooldownEndsAt = 0;
     g.cards.hand[player-1] = [CARDS.find(c=>c.id===id)];
     return g.playCard(player,id,x,y);
   }};

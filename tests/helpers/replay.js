@@ -20,6 +20,22 @@ function observeCommands(game) {
   }
   return log;
 }
+// Keep the frozen evolution oracle intact while applying the new gameplay rule
+// at its command boundary. Board/effect mutations still come from that oracle.
+function addReferenceCardCooldown(game) {
+  if ('cooldownEndsAt' in game.state().cards) return;
+  const play = game.playCard;
+  game.playCard = function(playerId, cardId, x, y, instanceId) {
+    const player = this.players.find(p => p.id === playerId), now = this.now();
+    const owns = this.cards.hand[playerId-1]?.some(c=>c.id===cardId && (instanceId===undefined || c.instanceId===instanceId));
+    if (this.status==='playing' && player && !player.eliminated && owns && player.cardCooldownEndsAt>now)
+      return {error:`卡牌冷却中，剩余 ${Math.ceil((player.cardCooldownEndsAt-now)/1000)} 秒`};
+    const result = play.call(this,playerId,cardId,x,y,instanceId);
+    if (!result.ok) return result;
+    player.cardCooldownEndsAt = now + 10000;
+    return {...result,cooldownEndsAt:player.cardCooldownEndsAt,serverTime:now};
+  };
+}
 export function replay({ ReferenceGame, Game, seed = 91, generations = 200, members = [{ name: 'A' }, { name: 'B' }],
   cells = [], setup, operations = [], atMs = i => i * 50, referenceBots, bots, mutate,
   failureDir = 'artifacts/performance/replay-failures' }) {
@@ -30,6 +46,7 @@ export function replay({ ReferenceGame, Game, seed = 91, generations = 200, memb
   const stages = new Map(); let phaseComparisons = 0;
   try {
     reference = new ReferenceGame(members, args()); actual = new Game(members, args());
+    if ('cooldownEndsAt' in actual.state().cards) addReferenceCardCooldown(reference);
     for (const game of [reference, actual]) { loadFixtureState(game, cells); setup?.(game); }
     referenceCommands = observeCommands(reference); actualCommands = observeCommands(actual);
     compareGame(captureGame(reference, { history: true }), captureGame(actual, { history: true }), 'initial');
