@@ -17,6 +17,7 @@ import { RoomWorkerClient } from './room-worker-client.js';
 import { boardVariant } from '../public/board-protocol.js';
 import { acceptClientProgress } from './client-progress.js';
 import { normalizeDirection } from '../public/patterns.js';
+import { RoomConversation } from './conversation.js';
 
 const ROOT = fileURLToPath(new URL('../public/', import.meta.url));
 const LIBRARY_DIR = fileURLToPath(new URL('../图案集_128/', import.meta.url));
@@ -196,15 +197,53 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
     concurrencyLimit: 2, zlibDeflateOptions: { level: 1, memLevel: 7, chunkSize: 4 * 1024 * 1024 }
   } : false });
   server.on('upgrade', (req, socket, head) => {
-    let allowed = (req.url === '/ws' || req.url === '/ws?trace=1') && wss.clients.size < 64;
+    let allowed = ['/ws','/ws?trace=1','/ws/chat'].includes(req.url) && wss.clients.size < 128;
     try { if (req.headers.origin && new URL(req.headers.origin).host !== req.headers.host) allowed = false; } catch { allowed = false; }
     if (!allowed) { socket.destroy(); return; }
-    wss.handleUpgrade(req, socket, head, ws => { ws.trace = !!metrics && req.url === '/ws?trace=1'; wss.emit('connection', ws); });
+    wss.handleUpgrade(req, socket, head, ws => { ws.trace = !!metrics && req.url === '/ws?trace=1'; ws.chatEndpoint=req.url==='/ws/chat'; wss.emit('connection', ws); });
   });
   function roomView(room) {
     return { type: 'room', code: room.code, host: room.host, status: room.game?.status || 'lobby', players: room.members.map(m => ({ id: m.id, name: m.name, ready: m.ready, bot: m.bot, connected: !!m.ws || m.bot })), capacity: 4 };
   }
   function broadcastRoom(room) { for (const m of room.members) send(m.ws, roomView(room)); }
+  function closeChat(member) { const old=member.chat;member.chat=null;old?.close(4000,'Primary session changed'); }
+  function resetConversation(room) {
+    room.conversation=new RoomConversation(room.epoch,room.startedAt??Date.now());
+    for(const member of room.members)closeChat(member);
+  }
+  function flushChat(room,member,reset=false) {
+    const ws=member.chat,history=room.conversation;
+    if(!history||ws?.readyState!==WebSocket.OPEN||member.ws?.readyState!==WebSocket.OPEN)return;
+    if(reset)ws.chatCursor=-1;
+    if(ws.chatCursor===history.sequence)return;
+    if(ws.bufferedAmount>65536){ws.chatDirty=true;return;}
+    const packet=history.packet(ws.chatCursor);
+    ws.chatCursor=history.sequence;ws.chatDirty=false;
+    ws.send(JSON.stringify(packet),error=>{if(!error&&member.chat===ws)flushChat(room,member);});
+  }
+  function broadcastChat(room) { for(const member of room.members)flushChat(room,member); }
+  function chatMessage(ws,msg) {
+    const fail=message=>send(ws,{type:'chat_error',requestId:msg.requestId,message});
+    if(msg.type==='bind_chat'){
+      if(ws.chatMember)return;
+      const room=rooms.get(String(msg.code||''));
+      const member=room?.members.find(m=>m.token&&m.token===msg.token&&m.ws?.readyState===WebSocket.OPEN);
+      if(!member||!room.conversation){send(ws,{type:'chat_rejected'});ws.close(4003,'Chat session rejected');return;}
+      closeChat(member);member.chat=ws;ws.chatMember=member;ws.chatRoom=room;ws.chatCursor=-1;
+      send(ws,{type:'chat_ready',roomEpoch:room.epoch});flushChat(room,member);return;
+    }
+    const member=ws.chatMember,room=ws.chatRoom;
+    if(!member)return fail('请先绑定战区会话');
+    if(member.chat!==ws||member.ws?.readyState!==WebSocket.OPEN||!room.members.includes(member))return ws.close(4000,'Session expired');
+    if(msg.type==='chat_sync'){flushChat(room,member,true);return;}
+    if(msg.type==='ping'){send(ws,{type:'pong',time:msg.time});return;}
+    if(msg.type!=='chat_send')return fail('聊天通道不支持该操作');
+    try {
+      const {entry}=room.conversation.chat(member,msg.requestId,msg.text);
+      broadcastChat(room);
+      send(ws,{type:'chat_sent',roomEpoch:room.epoch,requestId:msg.requestId,sequence:entry.sequence});
+    }catch(error){fail(error.message);}
+  }
   function sendCards(room, member) {
     if (!room.game || !member.ws) return;
     if(room.worker){room.worker.command(member.id,member.ws.roomSession,{type:'cards'});return;}
@@ -228,6 +267,7 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
   function startWorker(room) {
     room.game={status:'starting',generation:0,players:[]};room.fault=null;
     room.epoch=nextRoomEpoch;nextRoomEpoch=(nextRoomEpoch+1)>>>0||1;
+    resetConversation(room);
     for(const m of room.members)m.cardSequence=0;
     const bridge=room.worker=roomWorkerFactory({members:room.members.map(workerMember),epoch:room.epoch,evolutionMode},{
       onFault:error=>{if(room.worker===bridge)failRoom(room,error);},
@@ -239,7 +279,7 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
           return;
         }
         const oldStatus=room.game.status;
-        if(message.meta){room.game=message.meta;room.startedAt=message.meta.startedAt;}
+        if(message.meta){room.game=message.meta;room.startedAt=message.meta.startedAt;room.conversation.startedAt=message.meta.startedAt;}
         for(const event of message.events??[]) {
           const member=room.members.find(m=>m.id===event.id),ws=member?.ws;
           if(ws?.readyState!==WebSocket.OPEN||ws.roomSession!==event.session)continue;
@@ -316,12 +356,13 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
     }
   }
   function lobbyList(ws) { send(ws, { type: 'rooms', rooms: [...rooms.values()].map(r => ({ code: r.code, name: `${r.members[0]?.name || '未知'} 的战区`, count: r.members.length, status: r.game?.status || 'lobby' })) }); }
-  function updateLists() { for (const ws of wss.clients) if (!ws.member && !ws.controlMember) lobbyList(ws); }
+  function updateLists() { for (const ws of wss.clients) if (!ws.chatEndpoint && !ws.member && !ws.controlMember) lobbyList(ws); }
   function unlink(ws, explicit = false) {
     if(shuttingDown)return;
     const room = ws.room, member = ws.member;
     if (!room || !member) return;
     member.control?.close(4000, 'Primary disconnected'); member.control = null;
+    closeChat(member);
     if (room.game && ['playing','starting'].includes(room.game.status)) {
       room.worker?.post({type:'disconnect',id:member.id,session:ws.roomSession,explicit});
       member.ws = null; member.offlineGen = room.game.generation; member.offlineAt=Date.now();
@@ -357,6 +398,7 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
     room.history = new PacketHistory(); room.fault = null;
     room.startedGen = serverGen; room.startedAt = room.game.startedAt; room.lastActiveGen = serverGen; room.finishedBroadcast = false;
     room.epoch=nextRoomEpoch;nextRoomEpoch=(nextRoomEpoch+1)>>>0||1;
+    resetConversation(room);
     room.broadcastBoard=boardProtocol===2?room.game.board.slice():null;room.boardGeneration=room.game.generation;
     if (metrics) instrumentGame(room.game, metrics, room.code);
     const snapshots=new Map();
@@ -366,13 +408,15 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
   wss.on('connection', ws => {
     ws.alive = true; ws.budget = 40; ws.refillAt = Date.now();ws.boardVersion=1;
     ws.on('pong', () => { ws.alive = true; });
-    send(ws, { type: 'hello', version: '1.0.0',cardControl:true,clientProgress:true,boardProtocols:boardProtocol===2?[1,2]:[1],boardEncodings:boardProtocol===2?[0,1,2,3,4,5]:[] }); lobbyList(ws);
+    if(ws.chatEndpoint)send(ws,{type:'chat_hello'});
+    else {send(ws, { type: 'hello', version: '1.0.0',cardControl:true,chatControl:true,clientProgress:true,boardProtocols:boardProtocol===2?[1,2]:[1],boardEncodings:boardProtocol===2?[0,1,2,3,4,5]:[] }); lobbyList(ws);}
     ws.on('error', () => {});
     ws.on('message', (raw, isBinary) => {
       ws.budget = Math.min(40, ws.budget + (Date.now() - ws.refillAt) / 100); ws.refillAt = Date.now();
-      if (--ws.budget < 0) return send(ws, { type: 'error', message: '操作过快，请稍后重试' });
+      if (--ws.budget < 0) return send(ws, { type: ws.chatEndpoint?'chat_error':'error', message: '操作过快，请稍后重试' });
       let msg;
       try { if (isBinary) return; msg = JSON.parse(raw.toString()); if (!msg || typeof msg !== 'object') return; } catch { return; }
+      if(ws.chatEndpoint){chatMessage(ws,msg);return;}
       if (ws.controlMember) {
         const m = ws.controlMember;
         if (m.control !== ws || m.ws?.readyState !== WebSocket.OPEN) return ws.close(4000, 'Session expired');
@@ -438,7 +482,7 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
           if (room) return;
           const r = rooms.get(String(msg.code || '')), m = r?.members.find(m => m.token && m.token === msg.token);
           if (!m) return send(ws, { type: 'resume_failed' });
-          if (m.ws && m.ws !== ws) { m.control?.close(4000,'Session resumed'); m.control=null; const old = m.ws; old.member = null; old.room = null; old.close(4001, 'Session resumed elsewhere'); }
+          if (m.ws && m.ws !== ws) { closeChat(m);m.control?.close(4000,'Session resumed'); m.control=null; const old = m.ws; old.member = null; old.room = null; old.close(4001, 'Session resumed elsewhere'); }
           attach(ws, r, m); return;
         }
         case 'resync': {
@@ -464,6 +508,8 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
         case 'rematch': {
           if (!room || room.game?.status !== 'finished' || room.host !== member.id) return fail('对局结束后由房主返回备战');
           retireWorker(room);
+          for(const m of room.members)closeChat(m);
+          room.conversation=null;
           room.game = null; room.members = room.members.filter(m => m.ws || m.bot); room.members.forEach(m => { m.ready = m.bot || m.id === room.host; });
           for (const m of room.members) send(m.ws, { type: 'lobby' }); broadcastRoom(room); updateLists(); return;
         }
@@ -497,7 +543,7 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
         }
       }
     });
-    ws.on('close', () => { if(ws.controlMember?.control===ws)ws.controlMember.control=null; unlink(ws); });
+    ws.on('close', () => { if(ws.chatMember?.chat===ws)ws.chatMember.chat=null;if(ws.controlMember?.control===ws)ws.controlMember.control=null; unlink(ws); });
   });
 
   const timer = scheduler(() => {
@@ -588,8 +634,9 @@ export function createServer({ port = Number(process.env.PORT) || 3000, host = '
   const heartbeat = setInterval(() => {
     for (const ws of wss.clients) { if (!ws.alive) ws.terminate(); else { ws.alive = false; ws.ping(); } }
   }, 15000);
+  const chatPump=setInterval(()=>{for(const room of rooms.values())for(const member of room.members)if(member.chat?.chatDirty)flushChat(room,member);},100);
   let shuttingDown=false;
-  const closed = () => { if(shuttingDown)return;shuttingDown=true;timer.stop(); clearInterval(heartbeat); eventLoop?.close(); void gpuEvolution?.close();for(const room of rooms.values())retireWorker(room); for (const ws of wss.clients) ws.terminate(); wss.close(); };
+  const closed = () => { if(shuttingDown)return;shuttingDown=true;timer.stop(); clearInterval(heartbeat);clearInterval(chatPump); eventLoop?.close(); void gpuEvolution?.close();for(const room of rooms.values())retireWorker(room); for (const ws of wss.clients) ws.terminate(); wss.close(); };
   server.on('close', closed);
   return { server, rooms, wss, performanceReport: () => metrics ? { ...metrics.export(), eventLoop: eventLoop.export() } : null,
     listen: async () => {

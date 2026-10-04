@@ -4,9 +4,10 @@ import { CARD_CONFIG, isTargetedCard, ruleLabel } from './cards.js';
 import { browserMetrics } from './performance-metrics.js';
 import { isCartoon, canvasColor, drawCell } from './theme-palette.js';
 import { mountThemePicker } from './theme-picker.js';
+import { ConversationPanel } from './conversation.js';
 
 let cardState = null, cardEpoch = null, controlSocket = null, controlReady = false, controlSupported = false;
-let pendingCardPick = null, controlRetry, progressSupported = false;
+let pendingCardPick = null, controlRetry, progressSupported = false, chatSupported = false;
 function openCardControl() {
   clearTimeout(controlRetry);
   if (!controlSupported || !session || socket?.readyState !== WebSocket.OPEN || cardEpoch === null) return;
@@ -74,13 +75,17 @@ let eventIds = new Set(), editorCells = new Set(), editingId = null;
 const transformState = new Map();
 let gameHz = 10; // 服务器实际演化频率（代/秒），开局时从 rules 获取
 let startedAt = 0; // 对局开始时间（服务器时间戳），用于真实时间计时
+const conversation=new ConversationPanel({primaryOpen:()=>socket?.readyState===WebSocket.OPEN,getPlayerId:()=>playerId,
+  onOpen:()=>{battlefield.keys.clear();battlefield.pointer=null;drag=null;}});
 let lastDormancyThreshold = null; // 最近一次状态中的休眠清理阈值，用于检测衰减
 let dormancyNoticeTimer = null;   // 休眠阈值衰减提示横幅的显示时长定时器
 let dormancyFadeTimer = null;     // 休眠阈值衰减提示横幅的退场动画定时器
 $('#commander-name').value = readStorage('lifewar.name', '指挥官');
 
-function toast(message, error = false) {
+function toast(message, error = false, key = null) {
+  if(key&&$$('.toast').some(el=>el.dataset.toastKey===key))return;
   const el = document.createElement('div'); el.className = 'toast' + (error ? ' error' : ''); el.textContent = message;
+  if(key)el.dataset.toastKey=key;
   const dialog = $$('dialog[open]').at(-1); (dialog || $('#toasts')).append(el);
   setTimeout(() => { el.classList.add('exiting'); setTimeout(() => el.remove(), 250); }, 3400);
 }
@@ -110,6 +115,12 @@ function positionBattleNotices() {
 const battleNoticeLayout = new ResizeObserver(positionBattleNotices);
 battleNoticeLayout.observe($('#battle-top'));
 battleNoticeLayout.observe($('#card-status'));
+const conversationLayout=new ResizeObserver(()=>{
+  if(page!=='game')return;
+  const bottom=$('.roster-panel').getBoundingClientRect().bottom-$('#game').getBoundingClientRect().top;
+  $('#event-feed').style.top=`${bottom+14}px`;
+});
+conversationLayout.observe($('.roster-panel'));
 
 function showPage(next) {
   page = next; $$('.screen').forEach(el => el.classList.toggle('active', el.id === next));
@@ -818,7 +829,7 @@ async function connect() {
     ws.onmessage=e=>{if(ws!==socket)return;if(e.data instanceof ArrayBuffer)battlefield.receivePacket(e.data);else{
       const traceStart=browserMetrics?browserMetrics.now():0;
       try{const msg=JSON.parse(e.data);if(msg.type==='hello'){
-        controlSupported = msg.cardControl === true;progressSupported=msg.clientProgress===true;
+        controlSupported = msg.cardControl === true;progressSupported=msg.clientProgress===true;chatSupported=msg.chatControl===true;
         if(msg.boardProtocols?.includes(2))ws.send(JSON.stringify({type:'protocol',version:2,deltaVarint:msg.boardEncodings?.includes(2)===true,bitmapTiles:msg.boardEncodings?.includes(3)===true,paletteTiles:msg.boardEncodings?.includes(3)===true&&msg.boardEncodings?.includes(4)===true,tileModes:[3,4,5].every(e=>msg.boardEncodings?.includes(e))}));
         if(session)ws.send(JSON.stringify({type:'resume',...session}));connectionPromise=null;resolve();
       }onMessage(msg);}catch(err){console.error('Message error',err);}
@@ -828,6 +839,7 @@ async function connect() {
     ws.onclose=e=>{
       if(ws!==socket)return;
       closeCardControl(); pendingCardPick = null;
+      conversation.stop();
       connectionPromise=null;$('#connection-status').textContent='服务器连接中断';
       if(e.code===4001){session=null;saveStorage('lifewar.session',null,sessionStorage);toast('此会话已在其他页面恢复',true);showPage('lobby');return;}
       if(page==='game')$('#connection-banner').classList.remove('hidden');
@@ -853,6 +865,7 @@ function onMessage(msg) {
     return;
   }
   if (['left','lobby','resume_failed'].includes(msg.type)) { closeCardControl(); cardEpoch=null; cardState=null; pendingCardPick=null; }
+  if (['left','lobby','resume_failed'].includes(msg.type)) conversation.stop(true);
   if (msg.type === 'error' && pendingCardPick) {
     pendingCardPick=null;
     const draft=(cardState || state)?.cardDraft;
@@ -873,7 +886,7 @@ function onMessage(msg) {
       closeCardControl(); cardState=null; cardEpoch=msg.roomEpoch; pendingCardPick=null; openCardControl();
       if (typeof browserMetrics !== 'undefined' && browserMetrics) browserMetrics.resetEpoch(msg.startedAt);
       state=null;pendingCardPlay=false;shownDraftGen=0;renderCards(true);
-      playerId=msg.id;if(msg.rules?.hz)gameHz=msg.rules.hz;if(msg.rules?.baseHP){maxHP=msg.rules.baseHP;battlefield.baseHP=maxHP;}if(msg.rules?.maxEnergy)maxEnergy=msg.rules.maxEnergy;if(msg.rules?.regen)energyRegen=msg.rules.regen;if(msg.rules?.nodeRegen)energyNodeRegen=msg.rules.nodeRegen;if(msg.rules?.playerCells)battlefield.playerCells=msg.rules.playerCells;if(msg.rules?.baseHitRadius)battlefield.baseHitRadius=msg.rules.baseHitRadius;if(msg.rules?.captureTime)battlefield.captureTime=msg.rules.captureTime;startedAt=msg.startedAt||Date.now();battlefield.me=playerId;battlefield.reset();battlefield.presentation.configure(msg.boardProtocol??1,msg.roomEpoch,{bitmapTiles:msg.bitmapTiles===true,paletteTiles:msg.paletteTiles===true,tileModes:msg.tileModes===true});eventIds.clear();resultShown=false;state=null;closeDialogs();showPage('game');renderPatterns();if(selected)selectPattern(selected);sound('capture');break;
+      playerId=msg.id;if(msg.rules?.hz)gameHz=msg.rules.hz;if(msg.rules?.baseHP){maxHP=msg.rules.baseHP;battlefield.baseHP=maxHP;}if(msg.rules?.maxEnergy)maxEnergy=msg.rules.maxEnergy;if(msg.rules?.regen)energyRegen=msg.rules.regen;if(msg.rules?.nodeRegen)energyNodeRegen=msg.rules.nodeRegen;if(msg.rules?.playerCells)battlefield.playerCells=msg.rules.playerCells;if(msg.rules?.baseHitRadius)battlefield.baseHitRadius=msg.rules.baseHitRadius;if(msg.rules?.captureTime)battlefield.captureTime=msg.rules.captureTime;startedAt=msg.startedAt||Date.now();battlefield.me=playerId;battlefield.reset();battlefield.presentation.configure(msg.boardProtocol??1,msg.roomEpoch,{bitmapTiles:msg.bitmapTiles===true,paletteTiles:msg.paletteTiles===true,tileModes:msg.tileModes===true});eventIds.clear();resultShown=false;state=null;closeDialogs();showPage('game');if(chatSupported)conversation.start(msg.roomEpoch,session,startedAt);renderPatterns();if(selected)selectPattern(selected);sound('capture');break;
     case 'card_state':receiveCardState(msg);break;
     case 'state':battlefield.receiveState(msg);break;
     case 'presented_state':{
@@ -916,6 +929,7 @@ $('#add-bot').onclick=()=>send({type:'bot'});
 $('#start-game').onclick=()=>send({type:'start'});
 $('#ready-game').onclick=()=>send({type:'ready'});
 $('#rematch').onclick=()=>send({type:'rematch'});
+$('#result-chat').onclick=()=>conversation.open();
 $('#result-leave').onclick=()=>send({type:'leave'});
 $('#exit-game').onclick=()=>{if(state?.status==='finished')send({type:'leave'});else openDialog('#confirm-dialog');};
 $('#confirm-exit').onclick=()=>send({type:'leave'});
@@ -1105,8 +1119,7 @@ function updateGameHUD(){
   $('#energy-number').textContent=Math.floor(me.energy);$('#energy-max').textContent=maxEnergy;$('#energy-regen').textContent=`+${me.eliminated?0:parseFloat(((energyRegen+me.nodes*energyNodeRegen)*(me.regenMultiplier??1)).toFixed(2))} / GEN`;$('#energy-meter').style.width=(me.energy/maxEnergy*100)+'%';
   $('#battle-players').innerHTML=state.players.map(p=>`<div class="battle-player ${p.eliminated?'eliminated':''}" style="--player:${COLORS[p.id-1]}"><div class="battle-player-top"><i class="player-dot"></i><span>${escapeHTML(p.name)}</span>${p.id===playerId?'<span class="you-tag">YOU</span>':''}<span>${p.eliminated?'OUT':(+p.hp.toFixed(1))+' HP'}</span></div><div class="hp-meter"><i style="width:${p.hp/maxHP*100}%"></i></div><div class="player-metrics"><span>◈ ${p.nodes} NODES</span><span>${p.cells.toLocaleString()} CELLS</span></div></div>`).join('');
   for(const event of state.events){const id=`${event.generation}/${event.type}/${event.player}/${event.text}`;if(eventIds.has(id))continue;eventIds.add(id);
-    if(event.type==='damage'){const p=state.players.find(p=>p.id===event.player);if(p)battlefield.effect(p.x,p.y,'damage',COLORS[1]);if(event.player===playerId&&!(state.generation%Math.max(1,Math.round(gameHz))))toast('警报：你的基地正在受到攻击',true);continue;}
-    const div=document.createElement('div');div.className='event-item';div.innerHTML=`<time>${startedAt&&event.time?formatClock(event.time-startedAt):formatTime(event.generation)}</time><span style="color:var(--faction-${event.player},var(--muted))">${escapeHTML(event.text)}</span>`;$('#event-feed').prepend(div);while($('#event-feed').children.length>4)$('#event-feed').lastChild.remove();
+    if(event.type==='damage'){const p=state.players.find(p=>p.id===event.player);if(p)battlefield.effect(p.x,p.y,'damage',COLORS[1]);if(event.player===playerId&&!(state.generation%Math.max(1,Math.round(gameHz))))toast('警报：你的基地正在受到攻击',true,'base-attack');continue;}
     if(event.type==='capture'&&event.player===playerId)sound('capture');
     if(event.type==='eliminated'&&event.player===playerId)toast('你的核心已被摧毁。可继续观察战场。',true);
   }
@@ -1249,7 +1262,16 @@ function makePanelDraggable(handle, panel, ignore) {
     if (!state || state.id !== e.pointerId) return;
     const dx = e.clientX - state.startX, dy = e.clientY - state.startY;
     if (Math.hypot(dx, dy) > 3) state.moved = true;
-    if (state.moved) panel.style.transform = `translate(${state.ox + dx}px, ${state.oy + dy}px)`;
+    if (state.moved) {
+      let x=state.ox+dx,y=state.oy+dy;
+      panel.style.transform=`translate(${x}px, ${y}px)`;
+      if(panel.id==='event-feed'){
+        const rect=panel.getBoundingClientRect();
+        x+=Math.max(0,-rect.left)+Math.min(0,innerWidth-rect.right);
+        y+=Math.max(0,-rect.top)+Math.min(0,innerHeight-rect.bottom);
+        panel.style.transform=`translate(${x}px, ${y}px)`;
+      }
+    }
   });
   const end = e => {
     if (!state || state.id !== e.pointerId) return;
@@ -1270,6 +1292,7 @@ function makePanelDraggable(handle, panel, ignore) {
 }
 makePanelDraggable($('.minimap-panel .panel-heading'), $('.minimap-panel'));
 makePanelDraggable($('.map-controls'), $('.map-controls'), e => e.target.closest('button, a'));
+makePanelDraggable($('#event-feed .panel-heading'),$('#event-feed'));
 const zoomLabel=$('#zoom-label'),cameraCoordinates=$('#camera-coordinates');let shownZoom,shownX,shownY;
 battlefield.onCamera=camera=>{
   const zoom=Math.round(camera.zoom*100),x=Math.round(camera.x),y=Math.round(camera.y);
@@ -1300,6 +1323,7 @@ $('#battle-top').querySelector('.battle-top-bar').addEventListener('click',e=>{
 window.addEventListener('keydown',e=>{
   if(page!=='game'||$('dialog[open]')||['INPUT','TEXTAREA'].includes(e.target.tagName)||e.ctrlKey||e.metaKey||e.altKey)return;
   const key=e.key.toLowerCase();
+  if(key==='enter'&&!e.isComposing&&!e.target.closest('button,a')){e.preventDefault();conversation.open();return;}
   if(['tab',' ','arrowup','arrowdown','arrowleft','arrowright'].includes(key))e.preventDefault();
   if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'].includes(key))battlefield.keys.add(key);
   if(e.repeat)return;

@@ -58,6 +58,9 @@ html[data-theme="cartoon"] :is(.minimap-panel canvas,#pattern-editor,.library-ca
 html[data-theme="cartoon"] .map-controls { border-radius: 18px; background: #fffdf6f2; border: 2px solid #c8d8cb; box-shadow: 0 4px 0 #dce4d5; }
 html[data-theme="cartoon"] :is(.event-item,.card-status > div,.placement-tooltip,.notice-banner,.connection-banner,.toast,.card-empty) { border-radius: 14px; }
 html[data-theme="cartoon"] .event-item { background: #fffdf6e6; border-left: 3px solid #79ac91; }
+html[data-theme="cartoon"] .conversation-history .chat { border-radius: 18px 18px 18px 4px; box-shadow: 0 3px 0 #b4ceb930; }
+html[data-theme="cartoon"] .conversation-history .chat.own { border-radius: 18px 18px 4px 18px; }
+html[data-theme="cartoon"] #chat-input { border-radius: 16px; }
 html[data-theme="cartoon"] #card-schedule, html[data-theme="cartoon"] #node-pressure-status { text-shadow: none; background: transparent; padding: 0; }
 html[data-theme="cartoon"] .placement-tooltip { color: #23856c; background: #f0f8ebf2; }
 html[data-theme="cartoon"] .placement-tooltip.invalid { color: #a43e35; background: #fff0e9f2; }
